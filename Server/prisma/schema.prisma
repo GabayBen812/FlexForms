@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                Int                @id @default(autoincrement())
+  username          String             @unique
+  email             String             @unique
+  name              String
+  password          String
+  logo              String?
+  userType          UserType
+  organizationRoles OrganizationRole[]
+  Organization      Organization[]
+  createdCalls      Call[]             @relation("CreatedCalls")
+  assignedCalls     Call[]             @relation("AssignedCalls")
+  closedCalls       Call[]             @relation("ClosedCalls")
+
+  @@map("users")
+}
+
+enum UserType {
+  EMPLOYER
+  EMPLOYEE
+}
+
+model Organization {
+  id                Int                @id @default(autoincrement())
+  ownerId           Int
+  name              String
+  customStyles      Json // JSON field for custom styles
+  logo              String
+  years             String[]
+  departments       Department[]
+  locations         Location[]
+  organizationRoles OrganizationRole[]
+  owner             User               @relation(fields: [ownerId], references: [id])
+  CallCategory      CallCategory[]
+  Role              Role[]
+
+  @@map("organizations")
+}
+
+model Department {
+  id               Int                @id @default(autoincrement())
+  name             Json
+  logo             String?
+  organizationId   Int
+  organization     Organization       @relation(fields: [organizationId], references: [id])
+  OrganizationRole OrganizationRole[]
+  Call             Call[]
+  CallCategory     CallCategory[]
+
+  @@map("departments")
+}
+
+model Location {
+  id             Int          @id @default(autoincrement())
+  name           Json
+  roomNumber     Int?
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@map("locations")
+}
+
+model Role {
+  id                Int                @id @default(autoincrement())
+  name              Json
+  organizationId    Int
+  organization      Organization       @relation(fields: [organizationId], references: [id])
+  permissions       Permission[] // Permissions attached to this role
+  organizationRoles OrganizationRole[] // Users assigned this role within an organization
+
+  // Ensure each organization cannot have duplicate role names
+  @@unique([organizationId, name])
+  @@map("roles")
+}
+
+model OrganizationRole {
+  id             Int  @id @default(autoincrement())
+  userId         Int
+  organizationId Int
+  departmentId   Int?
+  roleId         Int // References the Role model
+
+  user         User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+  department   Department?  @relation(fields: [departmentId], references: [id])
+  role         Role         @relation(fields: [roleId], references: [id])
+
+  // Ensures a user doesn't have duplicate roles in the same organization/department
+  @@unique([userId, organizationId, departmentId])
+  @@map("organizationRoles")
+}
+
+enum CallStatus {
+  OPENED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  ON_HOLD
+}
+
+model CallCategory {
+  id             Int          @id @default(autoincrement())
+  name           Json
+  departmentId   Int
+  organizationId Int
+  logo           String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  department     Department   @relation(fields: [departmentId], references: [id])
+  calls          Call[]
+
+  @@map("callCategories")
+}
+
+model Call {
+  id             String    @id @unique @default(cuid())
+  title          String
+  description    String?
+  location       String
+  roomNumber     Int?
+  createdAt      DateTime  @default(now())
+  closedAt       DateTime?
+  departmentId   Int?
+  callCategoryId Int?
+  createdById    Int
+  assignedToId   Int
+  closedById     Int? // Made optional
+  organizationId Int
+
+  Status CallStatus
+
+  createdBy    User          @relation("CreatedCalls", fields: [createdById], references: [id])
+  assignedTo   User          @relation("AssignedCalls", fields: [assignedToId], references: [id])
+  closedBy     User?         @relation("ClosedCalls", fields: [closedById], references: [id])
+  department   Department?   @relation(fields: [departmentId], references: [id])
+  callCategory CallCategory? @relation(fields: [callCategoryId], references: [id])
+}
+
+model Permission {
+  id        Int     @id @default(autoincrement())
+  roleId    Int
+  resource  String
+  canView   Boolean @default(false)
+  canUpdate Boolean @default(false)
+  canCreate Boolean @default(false)
+  canDelete Boolean @default(false)
+
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@unique([roleId, resource])
+  @@map("permissions")
+}

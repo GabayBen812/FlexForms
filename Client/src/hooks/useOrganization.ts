@@ -6,19 +6,7 @@ import {
   UpdateOrganizationPayload,
 } from "@/types/api/organization";
 
-import {
-  fetchCallCategories,
-  deleteCallCategory,
-  createCallCategory,
-} from "@/api/calls/categories";
-import { Department } from "@/types/api/departments";
-import {
-  fetchDepartments,
-  createNewDepartment,
-  deleteDepartment,
-  updateDepartment,
-} from "@/api/departments/index";
-import { CallCategory } from "@/types/api/calls";
+
 import { toast } from "sonner";
 import {
   fetchOrganizations,
@@ -74,72 +62,9 @@ export function useOrganization() {
     onError: () => toast.error("שגיאה בעדכון הארגון"),
   });
 
-  const createNewDepartmentMutation = useMutation<
-    MutationResponse<Department>,
-    Error,
-    Department
-  >({
-    retry: false,
-    mutationFn: createNewDepartment,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["departments"] }),
-  });
-  // const permissionsQuery = useQuery<Promise<MutationResponse<Permissions>>>({
-  //   queryKey: ["permissions"],
-  //   queryFn: fetchPermissions,
-  //   retry: false,
-  // });
 
-  const fetchDepartmentsQuery = useQuery<MutationResponse<Department[]>, Error>(
-    { queryKey: ["departments"], queryFn: fetchDepartments, retry: false }
-  );
 
-  const deleteDepartmentMutation = useMutation<
-    MutationResponse<null>,
-    Error,
-    number
-  >({
-    mutationFn: deleteDepartment,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["departments"] }),
-  });
-
-  const updateDepartmentMutation = useMutation<
-    MutationResponse<Department>,
-    Error,
-    Department
-  >({
-    mutationFn: updateDepartment,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["departments"] }),
-  });
-
-  const fetchCallCategoriesQuery = useQuery<
-    MutationResponse<CallCategory[]>,
-    Error
-  >({
-    queryKey: ["callCategories"],
-    queryFn: fetchCallCategories,
-    retry: false,
-    enabled: false,
-  });
-
-  const deleteCallCategoryMutation = useMutation<
-    MutationResponse<null>,
-    Error,
-    number
-  >({
-    mutationFn: deleteCallCategory,
-  });
-
-  const createNewCallCategoryMutation = useMutation<
-    MutationResponse<CallCategory>,
-    Error,
-    CallCategory
-  >({
-    mutationFn: createCallCategory,
-    onSuccess: () => fetchCallCategoriesQuery.refetch(),
-  });
+ 
   const selectOrganization = (id: number) => {
     localStorage.setItem("selectedOrganization", id.toString());
     queryClient.invalidateQueries({
@@ -191,19 +116,6 @@ export function useOrganization() {
     isOrganizationFetching: fetchOrganizationQuery.isFetching,
     organization: fetchOrganizationQuery.data?.data,
     selectOrganization: selectOrganization,
-    createNewDepartment: createNewDepartmentMutation.mutateAsync,
-    createNewDepartmentStatus: createNewDepartmentMutation.status,
-    departments: fetchDepartmentsQuery.data?.data,
-    departmentsStatus: fetchDepartmentsQuery.status,
-    deleteDepartment: deleteDepartmentMutation.mutateAsync,
-    createNewCallCategory: createNewCallCategoryMutation.mutateAsync,
-    createNewCallCategoryStatus: createNewCallCategoryMutation.status,
-    callCategories: fetchCallCategoriesQuery.data?.data,
-    fetchCallCategoriesStatus: fetchCallCategoriesQuery.status,
-    refetchCallCategories: fetchCallCategoriesQuery.refetch,
-    deleteCallCategory: deleteCallCategoryMutation.mutateAsync,
-    deleteCallCategoryStatus: deleteCallCategoryMutation.status,
-    updateDepartment: updateDepartmentMutation.mutateAsync,
     refetchOrganization,
   };
 }

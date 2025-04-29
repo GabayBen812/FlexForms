@@ -13,11 +13,12 @@ import { toast } from "sonner";
 export function useAuth() {
   const queryClient = useQueryClient();
 
-  const userQuery = useQuery<User, Error, User>({
+  const userQuery = useQuery<User | null, Error>({
     queryKey: ["user"],
     queryFn: fetchUser,
     retry: false,
   });
+  
 
   const loginMutation = useMutation<MutationResponse, Error, LoginCredentials>({
     mutationFn: login,

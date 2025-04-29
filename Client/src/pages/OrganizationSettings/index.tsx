@@ -1,15 +1,11 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import UserTable from "./Departments";
-import CallSettingsTable from "./CallSettings";
 import { GetDirection } from "@/lib/i18n";
-import Locations from "@/pages/OrganizationSettings/Locations";
 import { useTranslation } from "react-i18next";
 import GeneralSettings from "./GeneralSettings";
 import SettingsBreadcrumbs from "./SettingsBreadcrumbs";
-import Roles from "./Roles";
-import Permissions from "./Roles/Permissions";
+
 
 function OrganizationSettings() {
   const { t } = useTranslation();
@@ -18,12 +14,7 @@ function OrganizationSettings() {
   const [activeTab, setActiveTab] = useState("general");
 
   const descriptionSettings: Record<string, string> = {
-    general: t("edit_general_settings"),
-    departments: `breadcrumbs ${t("departments")}`,
-    locations: `breadcrumbs ${t("locations")}`,
-    calls: `breadcrumbs ${t("call_settings")}`,
-    roles: `breadcrumbs ${t("roles")}`,
-    permissions: `breadcrumbs ${t("permissions")}`,
+    general: t("edit_general_settings")
   };
 
   useEffect(() => {
@@ -32,12 +23,7 @@ function OrganizationSettings() {
     if (
       tabFromUrl &&
       [
-        "general",
-        "members",
-        "billing",
-        "integrations",
-        "calls",
-        "roles",
+        "general"
       ].includes(tabFromUrl)
     ) {
       setActiveTab(tabFromUrl);
@@ -65,21 +51,6 @@ function OrganizationSettings() {
         <TabsList className="grid grid-cols-4 mb-8">
           <TabsTrigger variant={"boxed"} value="general">
             {t("general")}
-          </TabsTrigger>
-          <TabsTrigger variant={"boxed"} value="departments">
-            {t("departments")}
-          </TabsTrigger>
-          <TabsTrigger variant={"boxed"} value="locations">
-            {t("locations")}
-          </TabsTrigger>
-          <TabsTrigger variant={"boxed"} value="calls">
-            {t("call_settings")}
-          </TabsTrigger>
-          <TabsTrigger variant={"boxed"} value="roles">
-            {t("roles")}
-          </TabsTrigger>
-          <TabsTrigger variant={"boxed"} value="permissions">
-            {t("permissions")}
           </TabsTrigger>
         </TabsList>
 
@@ -114,24 +85,6 @@ function OrganizationSettings() {
 
           <TabsContent value="general">
             <GeneralSettings />
-          </TabsContent>
-
-          <TabsContent value="departments">
-            <UserTable />
-          </TabsContent>
-
-          <TabsContent value="locations">
-            <Locations />
-          </TabsContent>
-
-          <TabsContent value="calls">
-            <CallSettingsTable />
-          </TabsContent>
-          <TabsContent value="roles">
-            <Roles />
-          </TabsContent>
-          <TabsContent value="permissions">
-            <Permissions />
           </TabsContent>
         </div>
       </Tabs>

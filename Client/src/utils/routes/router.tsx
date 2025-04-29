@@ -10,13 +10,12 @@ import CallsIcon from "@/assets/icons/CallsIcon";
 import PeopleIcon from "@/assets/icons/PeopleIcon";
 import Settings from "@/pages/Settings/Settings";
 // import { Departments } from "@/pages/Departments"; // Change All To That
-import Employees from "@/pages/Employees";
 import OrganizationSettings from "@/pages/OrganizationSettings";
 import SettingsIcon from "@/assets/icons/SettingsIcon";
-import Calls from "@/pages/Calls";
-import Reports from "@/pages/Reports";
-import ChatbotLauncher from "@/components/aiAgent/ChatBotLauncher";
+import Payments from "@/pages/Payments";
 import Home from "@/pages/Home";
+import Forms from "@/pages/Forms";
+import Users from "@/pages/Users";
 
 export const router = createBrowserRouter([
   {
@@ -24,7 +23,6 @@ export const router = createBrowserRouter([
     element: (
       <Layout>
         <PrivateRoute />
-        <ChatbotLauncher />
       </Layout>
     ),
     handle: { showInSidebar: true },
@@ -39,27 +37,27 @@ export const router = createBrowserRouter([
         },
       },
       {
-        path: "/dashboard",
-        element: <Reports />,
+        path: "/forms",
+        element: <Forms />,
         handle: {
-          title: "dashboard",
+          title: "forms",
           icon: ReportsIcon,
           showInSidebar: true,
         },
       },
       {
-        path: "/calls",
+        path: "/payments",
         handle: {
-          title: "calls",
+          title: "payments",
           icon: CallsIcon,
           showInSidebar: true,
         },
-        element: <Calls />,
+        element: <Payments />,
       },
       {
-        path: "/employees",
-        element: <Employees />,
-        handle: { title: "employees", showInSidebar: true, icon: PeopleIcon },
+        path: "/users",
+        element: <Users />,
+        handle: { title: "users", showInSidebar: true, icon: PeopleIcon },
       },
       {
         path: "/settings",

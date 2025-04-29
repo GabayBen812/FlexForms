@@ -10,7 +10,6 @@ import { useTranslation } from "react-i18next";
 import { OrganizationsContext } from "@/contexts/OrganizationsContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { handleLogoUpload } from "@/lib/formUtils";
-import { getImage } from "@/lib/supabase";
 import { resolveTheme } from "@/lib/themeUtils";
 
 const themeColors = ["blue", "dark", "green", "red", "gray"] as const;
@@ -87,7 +86,9 @@ export default function GeneralSettings() {
       logoPath = await handleLogoUpload(data.logo, `${organization.id}/logo`);
     }
 
-    const fullImagePath = getImage(String(logoPath));
+    // Add this later, something like this:
+    // const fullImagePath = `${process.env.NEXT_PUBLIC_CDN_URL}/${logoPath}`;
+    const fullImagePath = ""
 
     const updated = await updateOrganization({
       organizationId: organization.id,
@@ -128,7 +129,7 @@ export default function GeneralSettings() {
           <p className="text-sm text-secondary">{t("choose_org_name")}</p>
         </div>
         <div className="flex flex-col gap-1 w-full max-w-sm">
-          <Input placeholder="מלונות" {...register("name")} />
+          <Input placeholder="ארגון לדוגמה" {...register("name")} />
           {errors.name && (
             <span className="text-sm text-red-500">{errors.name.message}</span>
           )}

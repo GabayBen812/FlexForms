@@ -1,5 +1,4 @@
 import { ChevronsUpDown, LogOut, Settings } from "lucide-react";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -47,6 +46,10 @@ export function NavUser() {
     );
   }
 
+  const name = user.name || "No Name";
+  const email = user.email || "No Email";
+  const initials = name.slice(0, 2).toUpperCase();
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -57,16 +60,14 @@ export function NavUser() {
               className="data-[state=open]:bg-muted data-[state=open]:text-sidebar-accent-foreground text-sidebar-primary"
             >
               <Avatar className="h-8 w-8 rounded-lg mx-3">
-                <AvatarImage alt={user.name} />
-                <AvatarFallback className="rounded-lg">
-                  <AvatarFallback className="rounded-lg bg-sidebar-accent text-light">
-                    {user.name.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
+                <AvatarImage alt={name} />
+                <AvatarFallback className="rounded-lg bg-sidebar-accent text-light">
+                  {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight rtl:text-right">
-                <span className="truncate font-semibold">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate font-semibold">{name}</span>
+                <span className="truncate text-xs">{email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -80,21 +81,20 @@ export function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sidebar-primary text-sm rtl:flex-row-reverse ">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage alt={user.name} />
+                  <AvatarImage alt={name} />
                   <AvatarFallback className="rounded-lg bg-sidebar-accent text-light">
-                    {user.name.slice(0, 2).toUpperCase()}
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight rtl:text-right">
-                  <span className="truncate font-semibold">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate font-semibold">{name}</span>
+                  <span className="truncate text-xs">{email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-
             <DropdownMenuGroup>
-              <Link to={"/settings"}>
+              <Link to="/settings">
                 <DropdownMenuItem>
                   <Settings />
                   {t("settings")}

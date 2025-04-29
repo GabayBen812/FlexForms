@@ -1,4 +1,4 @@
-import { deleteImage, getImage, uploadImage } from "./supabase";
+// import { deleteImage, getImage, uploadImage } from "./supabase";
 
 export const handleLogoUpload = async (
   logo: File,
@@ -7,7 +7,9 @@ export const handleLogoUpload = async (
   const uuid = crypto.randomUUID();
   const fullPath = `${path}/${uuid}.png`;
 
-  const uploadedPath = await uploadImage(logo, fullPath);
+  // const uploadedPath = await uploadImage(logo, fullPath);
+  const uploadedPath = ""
+
 
   if (!uploadedPath) {
     console.log("Failed to upload image");
@@ -32,9 +34,9 @@ export const handleImageChange = async ({
 }: ImageHandlerOptions): Promise<string | undefined> => {
   if (newImage && (isCreateMode || newImage !== oldImage)) {
     const newPath = await handleLogoUpload(newImage, path);
-    if (!isCreateMode && oldImage && deleteImage) await deleteImage(oldImage);
+    // if (!isCreateMode && oldImage && deleteImage) await deleteImage(oldImage);
 
-    return getImage(newPath);
+    return "";
   } else if (!isCreateMode && newImage === oldImage) {
     return oldImage;
   }

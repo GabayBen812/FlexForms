@@ -1,22 +1,122 @@
 import { AuroraBackground } from "@/components/backgrounds/AroraBackground";
-import Step1 from "./components/Step1";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/Input";
 import { GalleryVerticalEnd } from "lucide-react";
-import LoginFooter from "./components/LoginFooter";
+import { useContext, useState } from "react";
+import { AuthContext } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { Toaster } from "sonner";
+import { Mail, Lock } from "lucide-react";
+import LanguagePicker from "@/components/LanguagePicker";
+import footerSvg from "@/assets/landing/footer.svg";
+import heroIllustration from "@/assets/landing/hero-illustration.svg";
+import logoNoBG from "@/assets/landing/logoNoBG.svg";
 
-function Login() {
+export default function Login() {
+  const navigate = useNavigate();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const auth = useContext(AuthContext);
+  const { t } = useTranslation();
+
+  if (!auth) throw new Error("AuthContext must be used within an AuthProvider");
+  const { isLoginLoading, login } = auth;
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrorMessage(null);
+    const formData = new FormData(event.currentTarget);
+    const { password, mail } = Object.fromEntries(formData);
+
+    const response = await login({
+      email: String(mail),
+      password: String(password),
+    });
+
+    if (!response || response.status !== 200) {
+      setErrorMessage(response?.error || "אירעה שגיאה, נסה שוב.");
+    }
+
+    if (response && response.status === 200) {
+      navigate("/home");
+    } else {
+      setErrorMessage(response?.error || "אירעה שגיאה, נסה שוב.");
+    }
+  };
+
   return (
-    <AuroraBackground className="min-h-[750px]">
+    <div className="flex flex-col min-h-screen overflow-hidden">
       <Toaster />
-      <div className="flex items-center justify-center w-full h-screen min-h-[750px] z-20 bg-transparent">
-        <div className="font-normal flex items-center bg-white py-12 px-4 rounded-lg min-w-[28rem] w-1/4 max-w-[36rem] aspect-square shadow-lg flex-col gap-6">
-          <GalleryVerticalEnd className="size-8" />
-          <Step1 />
-          <LoginFooter />
+      {/* HEADER */}
+      <header className="absolute w-full z-30">
+        <div className="relative w-full h-20 overflow-hidden">
+          <div className="absolute top-0 bg-gradient-to-tr from-blue-600 to-blue-500 w-full h-20 -z-10" />
+          <img
+            src={heroIllustration}
+            alt="hero"
+            width={960}
+            height={960}
+            className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 -mt-40 ml-20 pointer-events-none -z-10 max-w-none mix-blend-lighten"
+          />
         </div>
-      </div>
-    </AuroraBackground>
+        <div className="absolute w-full h-20 top-10 flex justify-center items-end">
+          <div className="bg-blue-950 border-2 border-slate-400 rounded-lg p-3 flex items-center justify-center text-white gap-2">
+            <h1 className="text-2xl">FlexForm</h1>
+            <img src={logoNoBG} alt="logo" className="w-10" />
+          </div>
+        </div>
+      </header>
+
+      {/* CONTENT */}
+      <main className="grow w-full flex flex-col justify-between">
+        <section className="w-full">
+          <div className="pt-36 pb-12">
+            <div className="flex pt-12 lg:pt-0 justify-center">
+              <div className="w-full max-w-[480px] bg-white p-6 shadow-2xl">
+                <div className="space-y-4 flex flex-col justify-center items-center">
+                  <h1>התחברו באמצעות מייל וסיסמה</h1>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+                  <Input
+                    name="mail"
+                    placeholder="מייל"
+                    icon={<Mail className="text-[#606876]" />}
+                  />
+                  <Input
+                    name="password"
+                    placeholder="סיסמה"
+                    type="password"
+                    icon={<Lock className="text-[#606876]" />}
+                  />
+                  {errorMessage && (
+                    <p className="text-red-500 text-right font-normal">
+                      {errorMessage}
+                    </p>
+                  )}
+                  <div className="text-right">
+                    <Button
+                      type="submit"
+                      loading={isLoginLoading}
+                      className="btn-sm inline-flex items-center text-blue-50 bg-blue-500 hover:bg-blue-600"
+                    >
+                      התחבר
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <footer className="h-32 justify-center flex w-full relative">
+          <img
+            src={footerSvg}
+            alt="footer"
+            className="absolute md:-top-[20%] h-60"
+          />
+        </footer>
+      </main>
+    </div>
   );
 }
-
-export default Login;

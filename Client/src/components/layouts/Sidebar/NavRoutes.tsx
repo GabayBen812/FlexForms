@@ -16,7 +16,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { router } from "@/utils/routes/router";
-import { Link, RouteObject, useLocation } from "react-router-dom";
+import { Link, NavLink, RouteObject, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { isRouteActive } from "@/utils/routes/routesUtils";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -72,40 +72,32 @@ function SideBarMenuRoute({ route }: { route: RouteObject }) {
                 </SidebarGroupLabel>
               )}
               {!childRoute.children && childRoute.path && (
-                <Link to={childRoute.path}>
-                  <SidebarMenuButton
-                    className={`ease duration-150 text-sidebar-primary-foreground rounded-none px-2 relative ${
-                      isActive && "text-sidebar-accent"
-                    }`}
-                    style={{ color: isActive ? "var(--accent)" : fill }}
-                    tooltip={t(childRoute.handle.title)}
-                  >
-                    {isActive && (
-                      <div className="absolute h-full rtl:left-0 ltr:right-0 w-1 rtl:rounded-tr-md ltr:rounded-tl-md ltr:rounded-bl-md rtl:rounded-br-md bg-sidebar-accent" />
-                    )}
-                    <span
-                      className={`mx-4 ${
-                        isActive
-                          ? "!text-sidebar-accent"
-                          : "!text-sidebar-primary-foreground"
-                      }`}
-                      style={{ color: isActive ? "var(--accent)" : fill }}
+                <NavLink
+                  to={childRoute.path}
+                  className={({ isActive }) => `
+    ease duration-150 text-sidebar-primary-foreground rounded-none px-2 relative
+    ${isActive ? "text-sidebar-accent" : ""}
+  `}
+                >
+                  {({ isActive }) => (
+                    <SidebarMenuButton
+                      tooltip={t(childRoute.handle.title)}
+                      className="flex items-center w-full"
                     >
-                      {childRoute.handle.icon && (
-                        <childRoute.handle.icon isActive={isActive} />
+                      {isActive && (
+                        <div className="absolute h-full rtl:left-0 ltr:right-0 w-1 bg-sidebar-accent" />
                       )}
-                    </span>
-
-                    <span
-                      className={`transition-colors ${
-                        state === "collapsed" && !isMobile ? "hidden" : ""
-                      } font-semibold`}
-                      style={{ color: isActive ? "var(--accent)" : fill }}
-                    >
-                      {t(childRoute.handle.title)}
-                    </span>
-                  </SidebarMenuButton>
-                </Link>
+                      <span className="mx-4">
+                        {childRoute.handle.icon && (
+                          <childRoute.handle.icon isActive={isActive} />
+                        )}
+                      </span>
+                      <span className="font-semibold">
+                        {t(childRoute.handle.title)}
+                      </span>
+                    </SidebarMenuButton>
+                  )}
+                </NavLink>
               )}
             </SidebarMenuItem>
           </Collapsible>

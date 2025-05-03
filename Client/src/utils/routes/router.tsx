@@ -1,4 +1,3 @@
-// router.js
 import { createBrowserRouter } from "react-router-dom";
 import PrivateRoute from "@/api/PrivateRoute";
 import CreateOrganization from "@/pages/CreateOrganization/CreateOrganization";
@@ -9,14 +8,13 @@ import ReportsIcon from "@/assets/icons/ReportsIcon";
 import CallsIcon from "@/assets/icons/CallsIcon";
 import PeopleIcon from "@/assets/icons/PeopleIcon";
 import Settings from "@/pages/Settings/Settings";
-// import { Departments } from "@/pages/Departments"; // Change All To That
 import OrganizationSettings from "@/pages/OrganizationSettings";
 import SettingsIcon from "@/assets/icons/SettingsIcon";
 import Payments from "@/pages/Payments";
 import Home from "@/pages/Home";
 import Forms from "@/pages/Forms";
 import Users from "@/pages/Users";
-
+import LandingPage from "@/pages/LandingPage";
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -28,52 +26,45 @@ export const router = createBrowserRouter([
     handle: { showInSidebar: true },
     children: [
       {
-        path: "/home",
+        path: "home",
         element: <Home />,
-        handle: {
-          title: "home",
-          icon: HomeIcon,
-          showInSidebar: true,
-        },
+        handle: { title: "home", icon: HomeIcon, showInSidebar: true },
       },
       {
-        path: "/forms",
+        path: "forms",
         element: <Forms />,
-        handle: {
-          title: "forms",
-          icon: ReportsIcon,
-          showInSidebar: true,
-        },
+        handle: { title: "forms", icon: ReportsIcon, showInSidebar: true },
       },
       {
-        path: "/payments",
-        handle: {
-          title: "payments",
-          icon: CallsIcon,
-          showInSidebar: true,
-        },
+        path: "payments",
         element: <Payments />,
+        handle: { title: "payments", icon: CallsIcon, showInSidebar: true },
       },
       {
-        path: "/users",
+        path: "users",
         element: <Users />,
-        handle: { title: "users", showInSidebar: true, icon: PeopleIcon },
+        handle: { title: "users", icon: PeopleIcon, showInSidebar: true },
       },
       {
-        path: "/settings",
-        element: <Settings />,
-      },
-      {
-        path: "/organization-settings",
+        path: "organization-settings",
         element: <OrganizationSettings />,
         handle: {
           title: "organization_settings",
-          showInSidebar: true,
           icon: SettingsIcon,
+          showInSidebar: true,
         },
+      },
+      {
+        path: "settings",
+        element: <Settings />,
       },
     ],
   },
-  { path: "/create-organization", element: <CreateOrganization /> },
   { path: "/login", element: <Login /> },
+  { path: "/create-organization", element: <CreateOrganization /> },
+  {
+    path: "/landing",
+    element: <LandingPage />,
+    handle: { showInSidebar: false },
+  },
 ]);

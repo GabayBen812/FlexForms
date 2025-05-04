@@ -1,14 +1,11 @@
-import { AuroraBackground } from "@/components/backgrounds/AroraBackground";
-import { useTranslation } from "react-i18next";
+// import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
-import { GalleryVerticalEnd } from "lucide-react";
 import { useContext, useState } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { Mail, Lock } from "lucide-react";
-import LanguagePicker from "@/components/LanguagePicker";
 import footerSvg from "@/assets/landing/footer.svg";
 import heroIllustration from "@/assets/landing/hero-illustration.svg";
 import logoNoBG from "@/assets/landing/logoNoBG.svg";
@@ -17,7 +14,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const auth = useContext(AuthContext);
-  const { t } = useTranslation();
+  // const { t } = useTranslation();
 
   if (!auth) throw new Error("AuthContext must be used within an AuthProvider");
   const { isLoginLoading, login } = auth;
@@ -33,12 +30,14 @@ export default function Login() {
       password: String(password),
     });
 
+
     if (!response || response.status !== 200) {
       setErrorMessage(response?.error || "אירעה שגיאה, נסה שוב.");
     }
-
+    
     if (response && response.status === 200) {
       navigate("/home");
+      alert("התחברות בוצעה בהצלחה!");
     } else {
       setErrorMessage(response?.error || "אירעה שגיאה, נסה שוב.");
     }

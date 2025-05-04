@@ -43,19 +43,18 @@ export function NavRoutes() {
 
 function SideBarMenuRoute({ route }: { route: RouteObject }) {
   const { t } = useTranslation();
-  const location = useLocation();
-  const currentPath = location.pathname;
-  const { state, isMobile } = useSidebar();
-  const { organization } = useOrganization();
-  const theme = organization?.customStyles?.accentColor;
-  const fill = resolveTheme(theme).primary;
+  // const location = useLocation();
+  // const currentPath = location.pathname;
+  // const { organization } = useOrganization();
+  // const theme = organization?.customStyles?.accentColor;
+  // const fill = resolveTheme(theme).primary;
 
   return (
     <SidebarMenu className="gap-5">
       {route.children?.map((childRoute) => {
         if (!childRoute.handle?.showInSidebar) return null;
 
-        const isActive = currentPath.startsWith(childRoute.path || "");
+        // const isActive = currentPath.startsWith(childRoute.path || "");
         return (
           <Collapsible
             key={childRoute.id}
@@ -82,7 +81,9 @@ function SideBarMenuRoute({ route }: { route: RouteObject }) {
                   {({ isActive }) => (
                     <SidebarMenuButton
                       tooltip={t(childRoute.handle.title)}
-                      className="flex items-center w-full"
+                      className={`flex items-center w-full ${
+                        isActive ? "text-sidebar-accent" : "text-gray-700"
+                      }`}
                     >
                       {isActive && (
                         <div className="absolute h-full rtl:left-0 ltr:right-0 w-1 bg-sidebar-accent" />

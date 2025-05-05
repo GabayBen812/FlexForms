@@ -7,7 +7,14 @@ const PrivateRoute: React.FC = () => {
   const auth = useContext(AuthContext);
   const { isOrganizationFetching } = useContext(OrganizationsContext);
   const location = useLocation();
-  const { isAuthenticated, isUserLoading } = auth;
+
+  const { isAuthenticated, isLoading: isUserLoading } = auth;
+
+  console.log("PrivateRoute", {
+    isAuthenticated,
+    isUserLoading,
+  });
+  
 
   if (isUserLoading || isOrganizationFetching) return <div>Loading...</div>;
 

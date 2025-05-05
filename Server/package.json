@@ -4,7 +4,8 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon src/server.ts"
+    "dev": "nodemon src/server.ts",
+    "start:nest": "ts-node src/nestjs/main.ts"
   },
   "keywords": [],
   "author": "",
@@ -12,7 +13,10 @@
   "description": "",
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
-    "@prisma/client": "^5.20.0",
+    "@nestjs/common": "^10.4.17",
+    "@nestjs/core": "^10.4.17",
+    "@nestjs/mongoose": "^11.0.3",
+    "@nestjs/platform-express": "^10.4.17",
     "@radix-ui/react-toast": "^1.2.6",
     "@supabase/supabase-js": "^2.48.1",
     "bcrypt": "^5.1.1",
@@ -22,10 +26,12 @@
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.474.0",
-    "mongoose": "^8.14.0",
+    "mongodb": "^5.9.2",
+    "mongoose": "^7.8.7",
     "pg": "^8.13.0",
-    "prisma": "^5.20.0",
-    "react-hook-form": "^7.54.2"
+    "react-hook-form": "^7.54.2",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

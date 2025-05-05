@@ -3,10 +3,11 @@ import { User } from "@/types/api/user";
 
 export const fetchUser = async (): Promise<User | null> => {
   try {
-    const { data } = await apiClient.get<User>("/users/find");
+    const { data } = await apiClient.get("/auth/user");
+    console.log("✅ USER FROM JWT:", data);
     return data;
   } catch (error) {
-    console.error("Error fetching user:", error);
+    console.error("❌ Error fetching user:", error);
     return null;
   }
 };

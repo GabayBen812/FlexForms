@@ -26,18 +26,19 @@ export default function Login() {
     const { password, mail } = Object.fromEntries(formData);
 
     const response = await login({
-      email: String(mail),
+      email: String(mail).trim().toLowerCase(),
       password: String(password),
     });
 
+    console.log("Login response:", response);
+    console.log("After login: isAuthenticated =", auth.isAuthenticated);
 
     if (!response || response.status !== 200) {
       setErrorMessage(response?.error || "אירעה שגיאה, נסה שוב.");
     }
-    
+
     if (response && response.status === 200) {
       navigate("/home");
-      alert("התחברות בוצעה בהצלחה!");
     } else {
       setErrorMessage(response?.error || "אירעה שגיאה, נסה שוב.");
     }

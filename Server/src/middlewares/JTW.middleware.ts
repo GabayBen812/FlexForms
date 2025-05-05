@@ -16,6 +16,7 @@ export const verifyJWT: RequestHandler = (req, res, next) => {
   try {
     const token =
       req.cookies?.jwt || req.cookies?.access_token || req.headers?.authorization;
+      
 
     if (!token) {
       res.status(401).json({ message: "Missing token" });

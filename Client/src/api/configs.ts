@@ -1,43 +1,34 @@
-import { getSelectedOrganization } from "@/hooks/useOrganization";
 import { MutationResponse } from "@/types/api/auth";
 import { ApiQueryParams } from "@/types/ui/data-table-types";
 import axios from "axios";
+import { useAuth } from "@/hooks/useAuth";
 
-/**
- * Builds query parameters object from API params
- */
 export const buildQueryParams = (
-  params: ApiQueryParams
+  params: ApiQueryParams,
+  organizationId: string
 ): Record<string, string> => {
-  if (!params) return {};
-  const organizationId = String(getSelectedOrganization());
+  if (!params || !organizationId) return {};
 
-  // Start with required parameters
   const queryParams: Record<string, string> = {
     organizationId,
-    page: params?.page?.toString() || "",
-    pageSize: params?.pageSize?.toString() || "",
+    page: params.page?.toString() || "",
+    pageSize: params.pageSize?.toString() || "",
   };
 
-  // Add sorting parameters if provided
-  if (params?.sortField) {
+  if (params.sortField) {
     queryParams.sortField = params.sortField;
     queryParams.sortDirection = params.sortDirection || "asc";
   }
 
-  // Add search parameter if provided
-  if (params?.search) {
+  if (params.search) {
     queryParams.search = params.search;
   }
 
   return queryParams;
 };
 
-/**
- * Handles API errors and formats them consistently
- */
 export const handleApiError = (error: unknown): MutationResponse<never> => {
-  console.error("Error fetching departments:", error);
+  console.error("API Error:", error);
 
   if (axios.isAxiosError(error)) {
     return {

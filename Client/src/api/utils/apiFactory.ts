@@ -2,7 +2,7 @@ import { MutationResponse } from "@/types/api/auth";
 import { ApiQueryParams, ApiResponse } from "@/types/ui/data-table-types";
 import { buildQueryParams, handleApiError } from "../configs";
 import apiClient from "../apiClient";
-import { getSelectedOrganization } from "@/hooks/useOrganization";
+import { getUserOrganizationId } from "./getUserOrganizationId";
 
 type CustomRoute =
   | ((...args: any[]) => string)
@@ -35,12 +35,8 @@ export const createApiService = <T>(
     args: any[] = []
   ): { url: string; config: Record<string, any> } => {
     if (!route) return { url: fallback, config: {} };
-
     const result = route(...args);
-    if (typeof result === "string") {
-      return { url: result, config: {} };
-    }
-
+    if (typeof result === "string") return { url: result, config: {} };
     const { url, ...config } = result;
     return { url, config };
   };
@@ -51,12 +47,16 @@ export const createApiService = <T>(
       rawDataOnly = false
     ): Promise<MutationResponse<T[]> | ApiResponse<T>> => {
       try {
-        const queryParams = buildQueryParams(params || {});
+        const queryParams = buildQueryParams(params || {}, getUserOrganizationId());
         const { url, config } = resolveRoute(customRoutes.fetchAll, baseUrl);
 
         const response = await apiClient.get<ApiResponse<T> | T[]>(url, {
           ...config,
-          params: { ...config.params, ...queryParams },
+          params: {
+            ...config.params,
+            ...queryParams,
+            ...(includeOrgId ? { organizationId: getUserOrganizationId() } : {}),
+          },
         });
 
         if (rawDataOnly) return response.data as ApiResponse<T>;
@@ -81,9 +81,7 @@ export const createApiService = <T>(
 
         const params = {
           ...(config?.params || {}),
-          ...(includeOrgId
-            ? { organizationId: getSelectedOrganization() }
-            : {}),
+          ...(includeOrgId ? { organizationId: getUserOrganizationId() } : {}),
         };
 
         const response = await apiClient.get<T>(url, {
@@ -100,7 +98,7 @@ export const createApiService = <T>(
     create: async (data: Partial<T>): Promise<MutationResponse<T>> => {
       try {
         const payload = includeOrgId
-          ? { ...data, organizationId: getSelectedOrganization() }
+          ? { ...data, organizationId: getUserOrganizationId() }
           : data;
 
         const { url, config } = resolveRoute(customRoutes.create, baseUrl);
@@ -115,25 +113,24 @@ export const createApiService = <T>(
     update: async (data: Partial<T> & { id: string | number }): Promise<MutationResponse<T>> => {
       try {
         const payload = includeOrgId
-          ? { ...data, organizationId: getSelectedOrganization() }
+          ? { ...data, organizationId: getUserOrganizationId() }
           : data;
-    
+
         const { url, config } = resolveRoute(customRoutes.update, `${baseUrl}/${data.id}`);
         const method = config?.method || "put";
-    
+
         const response = await apiClient.request<T>({
           method,
           url,
           data: payload,
           ...config,
         });
-    
+
         return { status: response.status, data: response.data };
       } catch (error) {
         return handleApiError(error);
       }
     },
-    
 
     delete: async (id: string | number): Promise<MutationResponse<null>> => {
       try {
@@ -165,9 +162,7 @@ export const createApiService = <T>(
         const { data, headers, rawDataOnly = false } = options || {};
         const params = {
           ...(options?.params || {}),
-          ...(includeOrgId
-            ? { organizationId: getSelectedOrganization() }
-            : {}),
+          ...(includeOrgId ? { organizationId: getUserOrganizationId() } : {}),
         };
         const response = await apiClient.request<R>({
           url: route,
@@ -188,26 +183,25 @@ export const createApiService = <T>(
       }
     },
 
-
     getRecentCalls: async (): Promise<MutationResponse<T[]>> => {
       try {
         const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    
+
         const { url, config } = resolveRoute(customRoutes.fetchAll, baseUrl);
-    
+
         const params = {
           ...(config.params || {}),
-          ...(includeOrgId ? { organizationId: getSelectedOrganization() } : {}),
+          ...(includeOrgId ? { organizationId: getUserOrganizationId() } : {}),
           createdAt: {
             gte: yesterday,
           },
         };
-    
+
         const response = await apiClient.get<T[]>(url, {
           ...config,
           params,
         });
-    
+
         return {
           status: response.status,
           data: response.data,
@@ -217,6 +211,5 @@ export const createApiService = <T>(
         return handleApiError(error);
       }
     },
-    
   };
 };

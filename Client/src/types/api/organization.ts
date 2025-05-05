@@ -1,32 +1,25 @@
 export interface Organization {
-  id: number;
+  id: string;
+  owner: string;
   name: string;
-  logo: string;
-  OrganizationRole: OrganizationRole;
-  customStyles?: CustomStyles
+  description?: string;
+  logo?: string;
+  customStyles?: {
+    accentColor?: string;
+  };
 }
 
-export interface OrganizationRole {
-  role: Role;
-}
-export interface Role {
-  id: number;
-  name: string;
-}
-
-export interface CustomStyles {
-  accentColor?: "blue" | "dark" | "light" | "green" | "red" | "gray";
-}
 export interface NewOrganizationPayload {
   name: string;
-}
-export interface UpdateOrganizationPayload {
-  organizationId: number;
-  name: string;
-  logo?: string;
-  customStyles?: CustomStyles;
+  description?: string;
 }
 
-export interface GetOrganizationPayload {
-  id: number;
+export interface UpdateOrganizationPayload {
+  organizationId: string;
+  name?: string;
+  description?: string;
+  logo?: string;
+  customStyles?: {
+    accentColor?: string;
+  };
 }

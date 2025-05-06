@@ -4,6 +4,10 @@ import { Input } from "@/components/ui/Input";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useEffect } from "react";
 import apiClient from "@/api/apiClient";
+import DynamicForm, { FieldConfig } from "@/components/forms/DynamicForm";
+import { t } from "i18next";
+import { z } from "zod";
+import { array } from "zod";
 
 
 function CreateForm() {
@@ -22,21 +26,19 @@ function CreateForm() {
     console.log("Organization data:", organization);
   }, [organization]);;
 
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
-    console.log("title:", title);
+  const handleSubmit = async (data: any) => {
+    
+    console.log("data from form:", data);
     console.log("organizationId:", organizationId);
     console.log("organizationName:", organization?.name);
-    if (!title || !organizationId ) {
+    if (!data.title || !organizationId) {
       alert(" חובה למלא את שם הארגון!");
       return;
     }
 
     const formPayload = {
-      title,
-      description,
+      ...data,
       organizationId,
-      fields,
       isActive,
     };
 
@@ -55,23 +57,27 @@ function CreateForm() {
       alert("אירעה שגיאה, נסה שוב מאוחר יותר");
     }
   };
-
+  const FormFields: FieldConfig[] = [
+      { name: "title", label: t("form_title"), type: "text" },
+      { name: "description", label: t("form_description")+(" (אופציונלי)"), type: "text" },
+      { name: "fields", label: t("form_fields"), type: "array" }
+    ];
+    const formSchema = z.object({
+        title: z.string().min(1),
+        description: z.string(),
+        });
+        
   
   return (
     <div>
-      <h1 className="text-2xl font-semibold">יצירת טופס חדש</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>כותרת הטופס:</label>
-          <Input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
+      
+      <DynamicForm
+            mode="create"
+            headerKey="form"
+            fields={FormFields}
+            validationSchema={formSchema}
+            onSubmit= {handleSubmit}
           />
-        </div>
-   <Button type="submit">צור טופס</Button>
-      </form>
     </div>
   );
 };

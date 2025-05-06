@@ -253,8 +253,10 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
+    <form onSubmit={handleSubmit(async (data) => {
+      await onSubmit(data);
+      reset();
+          })}
       className="flex flex-col gap-4 bg-white px-8 py-6 rounded-lg"
     >
       <h2 className="text-base font-semibold text-accent rtl:text-right ltr:text-left">

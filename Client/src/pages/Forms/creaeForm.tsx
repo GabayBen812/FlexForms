@@ -19,7 +19,7 @@ function CreateForm() {
     if (organization?._id) {
       setOrganizationId(organization._id);
     }
-    console.log("🔍 Organization data:", organization);
+    console.log("Organization data:", organization);
   }, [organization]);;
 
   const handleSubmit = async (e: any) => {

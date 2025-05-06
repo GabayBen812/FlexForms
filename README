@@ -1,0 +1,81 @@
+# FlexForms
+
+FlexForms is a dynamic form management project built with modern technologies. The project includes an advanced user interface, a modular API, and full database support.
+
+## Table of Contents
+- [Installation](#installation)
+- [Running the Project](#running-the-project)
+- [Project Structure](#project-structure)
+- [Technologies Used](#technologies-used)
+- [Contributing](#contributing)
+- [Support](#support)
+
+## Installation
+
+1. **Pre-requisites:**
+    - Ensure that you have the latest versions of **Node.js**(At least 22.0.0) and **npm** installed on your machine.
+
+2. **Clone the repository:**
+    - Run the following command to clone the repository:
+      ```bash
+      git clone https://github.com/username/FlexForms.git
+      ```
+
+3. **Install dependencies:**
+    - After cloning the repository, navigate into the project folder and install the dependencies:
+      ```bash
+      cd FlexForms/Server
+      npm install
+      cd ../Client
+      npm install
+      ```
+
+4. **Run the server:**
+    - Start the server in your local environment:
+      ```bash
+      npm run start:nest
+      ```
+
+4. **Run the client:**
+    - Start the client and view the app in your local environment:
+      ```bash
+      npm run dev
+      ```
+
+5. **Access the application:**
+    - Open your browser and visit:
+      ```bash
+      http://localhost:5173
+      ```
+
+## Running in Development Environment
+
+1. **Environment Variables:**
+    - If you're working in a development environment, ensure to set up any necessary environment variables (such as database connection details or API keys). You can add these to a `.env` file.
+
+2. **Run with Docker:**
+    - You can also run the project using Docker:
+      ```bash
+      docker-compose up --build
+      ```
+
+## Project Structure
+
+- **/src**: The source code for the application.
+  - **/components**: Reusable React components.
+  - **/pages**: Core pages in the application.
+  - **/api**: Server-side code for API creation and services.
+  - **/hooks**: Custom React hooks.
+
+- **/public**: Static files (logos, images, etc.).
+- **/tests**: Test files.
+
+## Technologies Used
+
+- **React**: For building the user interface.
+- **Node.js**: Backend runtime environment.
+- **Express.js**: API framework.
+- **MongoDB**: NoSQL database.
+- **Docker**: To run the project in an isolated environment.
+- **Tailwind CSS**: For modern UI styling.
+

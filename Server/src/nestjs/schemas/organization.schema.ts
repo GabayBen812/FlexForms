@@ -16,3 +16,4 @@ export class Organization {
 }
 
 export const OrganizationSchema = SchemaFactory.createForClass(Organization);
+OrganizationSchema.set('collection', 'Organization');

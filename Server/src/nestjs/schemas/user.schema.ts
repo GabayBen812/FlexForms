@@ -16,6 +16,9 @@ export class User {
 
   @Prop({ default: 'viewer' })
   role!: 'admin' | 'editor' | 'viewer';
+
+  @Prop({ required: true })
+  name!: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

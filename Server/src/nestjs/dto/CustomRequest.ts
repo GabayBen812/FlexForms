@@ -4,6 +4,7 @@ export interface CustomRequest extends Request {
       email: string;
       organizationId?: string;
       role?: 'admin' | 'editor' | 'viewer';
+      name?: string;
     };
     secret?: string | undefined;
     cookies?: Record<string, any>;

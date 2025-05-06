@@ -19,13 +19,23 @@ export class OrganizationController {
   @Get('find')
   async findMyOrg(@Req() req: CustomRequest) {
     const orgId = req.user?.organizationId;
-  
-    if (!orgId || !Types.ObjectId.isValid(orgId)) {
+
+    if (!orgId || typeof orgId !== 'string' || !Types.ObjectId.isValid(orgId)) {
+      console.log("invalid orgId:", orgId, "typeof(orgId):", typeof orgId);
       throw new BadRequestException('Invalid organizationId');
     }
+
   
-    return this.organizationService.findById(orgId); 
+    const organization = await this.organizationService.findById(orgId);
+  
+    if (!organization) {
+      throw new BadRequestException('Organization not found');
+    }
+  
+    return organization;
   }
+  
+  
   
   @Get(':id')
   async findOne(@Param('id') id: string) {

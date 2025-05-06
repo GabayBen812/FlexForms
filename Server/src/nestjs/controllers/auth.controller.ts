@@ -21,6 +21,7 @@ export class AuthController {
           email: user.email,
           organizationId: user.organizationId,
           role: user.role,
+          name: user.name,
         },
       },
       process.env.ACCESS_TOKEN_SECRET!,

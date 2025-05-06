@@ -9,6 +9,7 @@ interface DecodedToken {
     email: string;
     organizationId?: string;
     role?: 'admin' | 'editor' | 'viewer';
+    name?: string;
   };
 }
 
@@ -26,13 +27,14 @@ export class JwtAuthGuard implements CanActivate {
 
     try {
       const decoded = jwt.verify(token, secret) as DecodedToken;
-      const { id, email, organizationId, role } = decoded.UserInfo;
+      const { id, email, organizationId, role, name } = decoded.UserInfo;
       
       req.user = {
         id,
         email,
         organizationId,
         role,
+        name
       };
       
 

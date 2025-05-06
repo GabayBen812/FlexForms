@@ -22,3 +22,4 @@ export class Form {
 }
 
 export const FormSchema = SchemaFactory.createForClass(Form);
+FormSchema.set('collection', 'Form');

@@ -14,6 +14,8 @@ export function useOrganization() {
     retry: false,
   });
 
+  
+
   return {
     organization: data?.data,
     isOrganizationFetching: isFetching,

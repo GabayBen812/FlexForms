@@ -31,10 +31,13 @@ export function useAuth() {
     onSuccess: () => queryClient.setQueryData(["user"], null),
   });
 
+  const isUserLoading = userQuery.isLoading || userQuery.isFetching;
+
   return {
     user: userQuery?.data || null,
     isAuthenticated: !!userQuery.data,
     isLoading: userQuery.isLoading,
+    isUserLoading,
     //@ts-ignore
     isLoginLoading: loginMutation.isLoading,
     login: loginMutation.mutateAsync,

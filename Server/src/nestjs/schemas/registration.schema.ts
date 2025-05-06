@@ -25,3 +25,4 @@ export class Registration {
 }
 
 export const RegistrationSchema = SchemaFactory.createForClass(Registration);
+RegistrationSchema.set('collection', 'Registration');

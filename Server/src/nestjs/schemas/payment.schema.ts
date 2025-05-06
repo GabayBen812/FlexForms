@@ -28,3 +28,4 @@ export class Payment {
 }
 
 export const PaymentSchema = SchemaFactory.createForClass(Payment);
+PaymentSchema.set('collection', 'Payment');

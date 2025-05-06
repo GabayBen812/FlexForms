@@ -20,6 +20,8 @@ export class OrganizationService {
   }
 
   async findById(id: string) {
+    console.log("trying to find by id", id);
+    
     return this.model.findById(id).exec();
   }
   

@@ -46,6 +46,9 @@ export function NavUser() {
     );
   }
 
+  console.log("user", user);
+  
+
   const name = user.name || "No Name";
   const email = user.email || "No Email";
   const initials = name.slice(0, 2).toUpperCase();

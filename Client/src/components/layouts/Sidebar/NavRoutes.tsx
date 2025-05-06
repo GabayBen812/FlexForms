@@ -21,6 +21,7 @@ import { useTranslation } from "react-i18next";
 import { isRouteActive } from "@/utils/routes/routesUtils";
 import { useOrganization } from "@/hooks/useOrganization";
 import { resolveTheme } from "@/lib/themeUtils";
+import { useNavigate } from "react-router-dom";
 
 export function NavRoutes() {
   return (
@@ -156,11 +157,18 @@ function NewCallButton() {
   const { organization } = useOrganization();
   const theme = organization?.customStyles?.accentColor;
   const fill = resolveTheme(theme).primary;
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate("/create-form"); // הנתיב של הקומפוננטה שלך
+  };
+
 
   return (
     <SidebarMenu>
       <SidebarMenuItem className="m-[2.5px] mt-5">
-        <Link to="/calls/new">
+        {/* <Link to="/calls/new"> */}
+        <Link to="/create-form">
           <SidebarMenuButton className="text-sidebar-primary-foreground active:bg-none group">
             <span className="flex items-center gap-2 font-bold whitespace-nowrap">
               <div className="rounded-full bg-sidebar-accent p-2 mx-1">
@@ -175,12 +183,14 @@ function NewCallButton() {
                   (e.currentTarget.style.color = "var(--accent)")
                 }
                 onMouseLeave={(e) => (e.currentTarget.style.color = fill || "")}
+                onClick={handleClick}
               >
                 {t("add_x", { x: t("call") })}
               </span>
             </span>
           </SidebarMenuButton>
-        </Link>
+          </Link>
+        {/* </Link> */}
       </SidebarMenuItem>
     </SidebarMenu>
   );

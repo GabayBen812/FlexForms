@@ -15,6 +15,7 @@ import Home from "@/pages/Home";
 import Forms from "@/pages/Forms";
 import Users from "@/pages/Users";
 import LandingPage from "@/pages/LandingPage";
+import CreateForm from "@/pages/Forms/creaeForm";
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -34,6 +35,11 @@ export const router = createBrowserRouter([
         path: "forms",
         element: <Forms />,
         handle: { title: "forms", icon: ReportsIcon, showInSidebar: true },
+      },
+      {
+        path: "create-form",
+        element: <CreateForm />,
+        handle: { title: "create_form", icon: ReportsIcon, showInSidebar: false }, // שימי לב - אפשר לקבוע showInSidebar לפי הצורך
       },
       {
         path: "payments",

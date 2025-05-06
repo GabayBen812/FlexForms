@@ -160,7 +160,7 @@ function NewCallButton() {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate("/create-form"); // הנתיב של הקומפוננטה שלך
+    navigate("/create-form");
   };
 
 

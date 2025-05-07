@@ -1,5 +1,5 @@
 export interface Organization {
-  id: string;
+  _id: string;
   owner: string;
   name: string;
   description?: string;

@@ -38,6 +38,7 @@
     "cmdk": "^1.0.0",
     "crypto-js": "^4.2.0",
     "date-fns": "^3.6.0",
+    "dayjs": "^1.11.13",
     "flag-icons": "^7.3.2",
     "framer-motion": "^12.5.0",
     "i18next": "^24.2.0",

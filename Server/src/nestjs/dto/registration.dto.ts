@@ -1,8 +1,25 @@
-import { Types } from 'mongoose';
+import { IsString, IsOptional, IsObject } from 'class-validator';
 
 export class CreateRegistrationDto {
-  formId!: Types.ObjectId;
-  fullName!: string;
+  @IsString()
+  formId!: string;
+
+  @IsString()
+  organizationId!: string;
+
+  @IsOptional()
+  @IsString()
+  fullName?: string;
+
+  @IsOptional()
+  @IsString()
   email?: string;
+
+  @IsOptional()
+  @IsString()
   phone?: string;
+
+  @IsOptional()
+  @IsObject()
+  additionalData?: Record<string, any>;
 }

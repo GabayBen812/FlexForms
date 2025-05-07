@@ -7,8 +7,8 @@ import { useTranslation } from "react-i18next";
 import { ZodObject } from "zod";
 import LanguageInput from "@/components/miscellaneous/LanguageInput";
 import { Input } from "@/components/ui/Input";
-import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import {
+  DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -18,7 +18,7 @@ import {
 
 type LanguageValue = { [lang: string]: string };
 
-type FieldType =
+export type FieldType =
   | "text"
   | "email"
   | "language"
@@ -32,7 +32,7 @@ export interface FieldConfig {
   name: string;
   label: string;
   type: FieldType;
-  options?: { label: string; value: string }[]; // for select
+  options?: { label: string; value: string }[];
   customRender?: (fieldProps: any) => React.ReactNode;
 }
 
@@ -57,6 +57,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
 }) => {
   const { t } = useTranslation();
   const [preview, setPreview] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -64,7 +65,6 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
     watch,
     control,
     reset,
-
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(validationSchema),
@@ -72,14 +72,13 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   });
 
   useEffect(() => {
-    if (defaultValues) {
-      reset(defaultValues);
-    }
+    if (defaultValues) reset(defaultValues);
   }, [defaultValues, reset]);
 
   const imageField = fields.find((f) => f.type === "image");
   const imageFieldName = imageField?.name;
   const watchedImageFile = watch(imageFieldName || "");
+
   useEffect(() => {
     if (watchedImageFile instanceof File) {
       setPreview(URL.createObjectURL(watchedImageFile));
@@ -95,12 +94,12 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       case "text":
       case "email":
         return (
-          <div key={field.name} className="flex flex-col gap-1 ">
+          <div key={field.name} className="flex flex-col gap-1">
             <label>{t(field.label)}</label>
             <Input
               type={field.type}
               {...register(field.name)}
-              defaultValue={defaultValues?.[field.name]}
+              autoComplete="off"
             />
             {error && (
               <span className="text-red-500 text-sm">
@@ -109,13 +108,13 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             )}
           </div>
         );
+
       case "checkbox":
         return (
           <div key={field.name} className="flex items-center gap-2">
             <input
               type="checkbox"
               {...register(field.name)}
-              defaultChecked={defaultValues?.[field.name]}
               className="w-4 h-4"
             />
             <label className="text-sm">{t(field.label)}</label>
@@ -129,13 +128,13 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
 
       case "language":
         return (
-          <div key={field.name} className="flex flex-col gap-1 ">
+          <div key={field.name} className="flex flex-col gap-1">
             <LanguageInput
               label={field.label}
-              defaultValue={defaultValues?.[field.name]} // pass initial value
-              onLanguageValuesChange={(val: LanguageValue) => {
-                setValue(field.name, val);
-              }}
+              defaultValue={defaultValues?.[field.name]}
+              onLanguageValuesChange={(val: LanguageValue) =>
+                setValue(field.name, val)
+              }
             />
             {error && (
               <span className="text-red-500 text-sm">
@@ -154,13 +153,13 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             <label>{t(field.label)}</label>
             <label
               htmlFor="picture-upload"
-              className="w-32 h-32 flex items-center justify-center border-2 border-dashed rounded-lg cursor-pointer relative overflow-hidden bg-white"
+              className="w-32 h-32 flex items-center justify-center border-2 border-dashed rounded-lg cursor-pointer bg-white"
             >
               {preview ? (
                 <img
                   src={preview}
                   alt="Preview"
-                  className=" h-full object-cover rounded-lg"
+                  className="h-full object-cover rounded-lg"
                 />
               ) : (
                 <UploadCloud className="w-10 h-10 text-gray-500" />
@@ -193,24 +192,17 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
             <Controller
               name={field.name}
               control={control}
-              defaultValue=""
               render={({ field: controllerField }) => {
-                const selectedOption = field.options?.find(
+                const selected = field.options?.find(
                   (opt) => opt.value === controllerField.value
                 );
-
                 return (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Input
                         className="cursor-pointer"
-                        value={
-                          selectedOption
-                            ? selectedOption.label
-                            : t("select_option")
-                        }
+                        value={selected ? selected.label : t("select_option")}
                         readOnly
-                        label={field.label}
                         iconEnd={<ChevronDown className="w-4 h-4" />}
                       />
                     </DropdownMenuTrigger>
@@ -242,7 +234,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
 
       case "custom":
         return field.customRender ? (
-          <div key={field.name} className="">
+          <div key={field.name}>
             {field.customRender({ register, setValue, error })}
           </div>
         ) : null;
@@ -253,10 +245,11 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit(async (data) => {
-      await onSubmit(data);
-      reset();
-          })}
+    <form
+      onSubmit={handleSubmit(async (data) => {
+        await onSubmit(data);
+        reset();
+      })}
       className="flex flex-col gap-4 bg-white px-8 py-6 rounded-lg"
     >
       <h2 className="text-base font-semibold text-accent rtl:text-right ltr:text-left">
@@ -266,21 +259,20 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
       </h2>
 
       <div className="flex gap-6 flex-wrap">
-        {/* Image Section */}
-        <div className="h-full">
-          {fields.find((f) => f.type === "image") &&
-            renderField(fields.find((f) => f.type === "image")!)}
-        </div>
-        <div className="h-full">
-          {fields.find((f) => f.type === "language") &&
-            renderField(fields.find((f) => f.type === "language")!)}
-        </div>
-        {/* Other Fields */}
-        <div className="flex gap-6 flex-wrap flex-1">
-          {fields
-            .filter((f) => f.type !== "image" && f.type !== "language")
-            .map((field) => renderField(field))}
-        </div>
+        {fields.map((field) => (
+          <div key={field.name} className="flex flex-col gap-1">
+            <label>{t(field.label)}</label>
+            <Input
+              type={field.type === "email" ? "email" : "text"}
+              {...register(field.name)}
+            />
+            {errors[field.name] && (
+              <span className="text-red-500 text-sm">
+                {errors[field.name]?.message as string}
+              </span>
+            )}
+          </div>
+        ))}
       </div>
 
       <div className="flex gap-4 justify-end mt-4">

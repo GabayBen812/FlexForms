@@ -1,12 +1,7 @@
-import { Controller, Post, Body, Get, Query } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, UseGuards } from '@nestjs/common';
 import { RegistrationService } from '../services/registration.service';
 import { CreateRegistrationDto } from '../dto/registration.dto';
-import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../middlewares/jwt-auth.guard';
-
-
-
-@UseGuards(JwtAuthGuard)
 
 @Controller('registrations')
 export class RegistrationController {
@@ -14,11 +9,10 @@ export class RegistrationController {
 
   @Post()
   async create(@Body() dto: CreateRegistrationDto) {
-    return this.service.create({
-      ...dto
-    });
+    return this.service.create(dto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get()
   async getByForm(@Query('formId') formId: string) {
     return this.service.findByFormId(formId);

@@ -19,7 +19,13 @@ export class Form {
 
   @Prop({ default: true })
   isActive!: boolean;
+
+  @Prop()
+  createdAt!: Date;
+
+  @Prop()
+  code!: number;
 }
 
 export const FormSchema = SchemaFactory.createForClass(Form);
-FormSchema.set('collection', 'Form');
+FormSchema.set('collection', 'Forms');

@@ -10,7 +10,9 @@ export class FormService {
   create(data: Partial<Form>) {
     return this.model.create(data);
   }
-
+  update(id: string, data: Partial<Form>) {
+    return this.model.findByIdAndUpdate(id, data, { new: true }).exec();
+  }
   findAll() {
     return this.model.find().exec();
   }

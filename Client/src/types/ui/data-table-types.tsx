@@ -7,6 +7,7 @@ export interface ApiQueryParams {
   sortField?: string;
   sortDirection?: "asc" | "desc";
   search?: string;
+  [key: string]: any;
 }
 
 export interface ApiResponse<TData> {

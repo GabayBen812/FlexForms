@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, Param, Put } from '@nestjs/common';
 import { FormService } from '../services/form.service';
 import { CreateFormDto } from '../dto/form.dto';
 import { Types } from 'mongoose';
@@ -10,6 +10,15 @@ export class FormController {
   @Post()
   async create(@Body() dto: CreateFormDto) {
     return this.service.create({
+      ...dto,
+      organizationId: new Types.ObjectId(dto.organizationId),
+    });
+  }
+  
+  @Put(':id')
+  update(@Param('id') id: string, @Body() dto: CreateFormDto) {
+    console.log("im hereee")
+    return this.service.update(id, {
       ...dto,
       organizationId: new Types.ObjectId(dto.organizationId),
     });

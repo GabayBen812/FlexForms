@@ -8,6 +8,8 @@
   "form_title": "כותרת הטופס",
   "form_description": "תיאור הטופס",
   "form_fields": "שדות הטופס",
+  "is_active": "האם פעיל",
+  "created_at": "נוצר בתאריך",
   "add_field": "הוסף שדה",
   "field_label": "תווית שדה",
   "field_type": "סוג שדה",

@@ -44,23 +44,25 @@ export const createApiService = <T>(
   return {
     fetchAll: async (
       params?: ApiQueryParams,
-      rawDataOnly = false
+      rawDataOnly = false,
+      organizationId?: string
     ): Promise<MutationResponse<T[]> | ApiResponse<T>> => {
       try {
-        const queryParams = buildQueryParams(params || {}, getUserOrganizationId());
+        const finalOrgId = organizationId ?? getUserOrganizationId();
+        const queryParams = buildQueryParams(params || {}, finalOrgId);
         const { url, config } = resolveRoute(customRoutes.fetchAll, baseUrl);
-
+    
         const response = await apiClient.get<ApiResponse<T> | T[]>(url, {
           ...config,
           params: {
             ...config.params,
             ...queryParams,
-            ...(includeOrgId ? { organizationId: getUserOrganizationId() } : {}),
+            ...(includeOrgId ? { organizationId: finalOrgId } : {}),
           },
         });
-
+    
         if (rawDataOnly) return response.data as ApiResponse<T>;
-
+    
         return {
           status: response.status,
           data: response.data as T[],
@@ -69,7 +71,6 @@ export const createApiService = <T>(
         return handleApiError(error);
       }
     },
-
     fetch: async (...args: any[]): Promise<MutationResponse<T>> => {
       try {
         const fallbackUrl = `${baseUrl}/find`;

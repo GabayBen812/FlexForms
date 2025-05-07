@@ -12,11 +12,9 @@ import { array } from "zod";
 
 function CreateForm() {
  const { organization, isOrganizationFetching } = useOrganization();
-
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [organizationId, setOrganizationId] = useState<string>();
-  const [fields, setFields] = useState([{ label: "", type: "text" }]);
   const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {

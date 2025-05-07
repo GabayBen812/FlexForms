@@ -78,7 +78,7 @@ export default function Payments() {
             onSubmit={async (data) => {
               const newPayment = {
                 ...data,
-                organizationId: organization?.id,
+                organizationId: organization?._id,
               };
               const res = await paymentsApi.create(newPayment);
               if (res.status === 200 && res.data) {

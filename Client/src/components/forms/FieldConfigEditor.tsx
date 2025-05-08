@@ -64,5 +64,20 @@ export default function FieldConfigEditor({ field, onChange }: Props) {
     );
   }
 
-  return null;
+  return (
+    <div>
+      {/* Existing config editors */}
+      {/* ... existing code ... */}
+      <div className="mt-2">
+        <label className="font-semibold flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={!!field.isRequired}
+            onChange={e => onChange({ ...field, isRequired: e.target.checked })}
+          />
+          {t("required_field")}
+        </label>
+      </div>
+    </div>
+  );
 }

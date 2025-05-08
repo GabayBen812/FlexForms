@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
 import { useTranslation } from "react-i18next";
 import { Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import FieldConfigEditor from "./FieldConfigEditor";
 
 interface Props {
   initialFields: FieldConfig[];
@@ -85,6 +86,8 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
               <Input value={field.type} disabled className="opacity-70" />
             </div>
           </div>
+
+          <FieldConfigEditor field={field} onChange={updated => handleUpdateField(index, "isRequired", updated.isRequired)} />
         </div>
       ))}
 

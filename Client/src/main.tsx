@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/Providers/AuthProvider.tsx";
 import { OrganizationsProvider } from "./Providers/OrganizationsProvider";
+import { Toaster } from "@/components/ui/toaster";
 import Router from "@/Router";
 import "@/i18n";
 import "@/assets/styles/index.css";
@@ -15,6 +16,7 @@ createRoot(document.getElementById("root")!).render(
       <OrganizationsProvider>
         <AuthProvider>
           <Router />
+          <Toaster />
         </AuthProvider>
       </OrganizationsProvider>
     </QueryClientProvider>

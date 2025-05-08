@@ -14,7 +14,23 @@ export class RegistrationController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  async getByForm(@Query('formId') formId: string) {
-    return this.service.findByFormId(formId);
+  async getByForm(
+    @Query('formId') formId: string,
+    @Query('page') page = '1',
+    @Query('pageSize') pageSize = '10'
+  ) {
+    const pageNumber = parseInt(page, 10);
+    const limit = parseInt(pageSize, 10);
+    const skip = (pageNumber - 1) * limit;
+  
+    const [data, total] = await this.service.findByFormIdPaginated(formId, skip, limit);
+  
+    return {
+      status: 200,
+      data,
+      total,
+    };
   }
+  
+  
 }

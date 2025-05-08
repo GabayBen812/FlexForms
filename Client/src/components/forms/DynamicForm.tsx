@@ -1,288 +1,234 @@
-import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
-import { ChevronDown, UploadCloud } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ZodObject } from "zod";
-import LanguageInput from "@/components/miscellaneous/LanguageInput";
 import { Input } from "@/components/ui/Input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-type LanguageValue = { [lang: string]: string };
-
-export type FieldType =
-  | "text"
-  | "email"
-  | "language"
-  | "image"
-  | "select"
-  | "autocomplete"
-  | "checkbox"
-  | "custom";
+import FieldConfigEditor from "./FieldConfigEditor";
+import SignatureCanvas from "react-signature-canvas";
+import { useRef } from "react";
+import { Button } from "@/components/ui/button";
 
 export interface FieldConfig {
   name: string;
   label: string;
-  type: FieldType;
-  options?: { label: string; value: string }[];
-  customRender?: (fieldProps: any) => React.ReactNode;
+  type: string;
+  config?: any;
 }
 
-interface DynamicFormProps {
-  mode: "create" | "edit";
-  fields: FieldConfig[];
-  defaultValues?: any;
-  validationSchema: ZodObject<any>;
-  onSubmit: (data: any) => void;
+interface Props {
+  mode: "create" | "edit" | "registration";
   headerKey?: string;
+  fields: FieldConfig[];
+  setFields: (fields: FieldConfig[]) => void;
+  validationSchema: ZodObject<any>;
+  defaultValues?: any;
+  onSubmit: (data: any) => void;
   extraButtons?: React.ReactNode;
 }
 
-const DynamicForm: React.FC<DynamicFormProps> = ({
+export default function DynamicForm({
   mode,
-  fields,
-  defaultValues,
-  validationSchema,
-  onSubmit,
   headerKey = "",
+  fields,
+  setFields,
+  validationSchema,
+  defaultValues,
+  onSubmit,
   extraButtons,
-}) => {
+}: Props) {
   const { t } = useTranslation();
-  const [preview, setPreview] = useState<string | null>(null);
+  const sigCanvasRef = useRef<SignatureCanvas | null>(null);
 
   const {
     register,
     handleSubmit,
     setValue,
-    watch,
-    control,
-    reset,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(validationSchema),
     defaultValues,
   });
 
-  useEffect(() => {
-    if (defaultValues) reset(defaultValues);
-  }, [defaultValues, reset]);
-
-  const imageField = fields.find((f) => f.type === "image");
-  const imageFieldName = imageField?.name;
-  const watchedImageFile = watch(imageFieldName || "");
-
-  useEffect(() => {
-    if (watchedImageFile instanceof File) {
-      setPreview(URL.createObjectURL(watchedImageFile));
-    } else if (typeof watchedImageFile === "string") {
-      setPreview(watchedImageFile);
-    }
-  }, [watchedImageFile]);
-
   const renderField = (field: FieldConfig) => {
-    const error = errors[field.name];
-
     switch (field.type) {
       case "text":
+      case "date":
       case "email":
+        return <Input type={field.type} {...register(field.name)} disabled={mode !== "registration"} />;
+      case "select":
         return (
-          <div key={field.name} className="flex flex-col gap-1">
-            <label>{t(field.label)}</label>
-            <Input
-              type={field.type}
-              {...register(field.name)}
-              autoComplete="off"
-            />
-            {error && (
-              <span className="text-red-500 text-sm">
-                {error.message as string}
-              </span>
-            )}
-          </div>
+          <select
+            {...register(field.name)}
+            className="border px-2 py-1 rounded"
+            disabled={mode !== "registration"}
+          >
+            <option value="">{t("select_option")}</option>
+            {field.config?.options?.map((opt: any, i: number) => (
+              <option key={i} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
         );
-
       case "checkbox":
         return (
-          <div key={field.name} className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              {...register(field.name)}
-              className="w-4 h-4"
-            />
-            <label className="text-sm">{t(field.label)}</label>
-            {error && (
-              <span className="text-red-500 text-sm">
-                {error.message as string}
-              </span>
-            )}
-          </div>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" disabled={mode !== "registration"} {...register(field.name)} />
+            {t(field.label)}
+          </label>
         );
-
-      case "language":
+      case "signature":
         return (
-          <div key={field.name} className="flex flex-col gap-1">
-            <LanguageInput
-              label={field.label}
-              defaultValue={defaultValues?.[field.name]}
-              onLanguageValuesChange={(val: LanguageValue) =>
-                setValue(field.name, val)
-              }
-            />
-            {error && (
-              <span className="text-red-500 text-sm">
-                {error.message as string}
-              </span>
-            )}
-          </div>
-        );
-
-      case "image":
-        return (
-          <div
-            key={field.name}
-            className="flex flex-col items-start gap-2 h-full"
-          >
-            <label>{t(field.label)}</label>
-            <label
-              htmlFor="picture-upload"
-              className="w-32 h-32 flex items-center justify-center border-2 border-dashed rounded-lg cursor-pointer bg-white"
-            >
-              {preview ? (
-                <img
-                  src={preview}
-                  alt="Preview"
-                  className="h-full object-cover rounded-lg"
+          <div>
+            {mode === "create" ? (
+              <img
+                alt="signature"
+                className="border rounded bg-white w-[300px] h-[150px] object-contain"
+              />
+            ) : (
+              <>
+                <SignatureCanvas
+                  penColor="black"
+                  canvasProps={{
+                    width: 300,
+                    height: 150,
+                    className: "border rounded bg-white",
+                  }}
+                  ref={(ref) => {
+                    sigCanvasRef.current = ref;
+                    setValue(field.name, ref?.toDataURL() || "");
+                  }}
+                  onEnd={() => {
+                    if (sigCanvasRef.current) {
+                      setValue(field.name, sigCanvasRef.current.toDataURL());
+                    }
+                  }}
                 />
-              ) : (
-                <UploadCloud className="w-10 h-10 text-gray-500" />
-              )}
-            </label>
-            <input
-              id="picture-upload"
-              type="file"
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.[0]) {
-                  setValue(field.name, e.target.files[0]);
-                }
-              }}
-            />
-            {error && (
-              <span className="text-red-500 text-sm">
-                {error.message as string}
-              </span>
+
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => {
+                    sigCanvasRef.current?.clear();
+                    setValue(field.name, "");
+                  }}
+                  className="mt-2"
+                >
+                  {t("clear_signature")}
+                </Button>
+              </>
             )}
           </div>
         );
-
-      case "autocomplete":
+      case "terms":
         return (
-          <div
-            key={field.name}
-            className="flex flex-col gap-1 min-w-[200px] relative"
-          >
-            <Controller
-              name={field.name}
-              control={control}
-              render={({ field: controllerField }) => {
-                const selected = field.options?.find(
-                  (opt) => opt.value === controllerField.value
-                );
-                return (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Input
-                        className="cursor-pointer"
-                        value={selected ? selected.label : t("select_option")}
-                        readOnly
-                        iconEnd={<ChevronDown className="w-4 h-4" />}
-                      />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                      <DropdownMenuLabel>
-                        {t("select_option")}
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {field.options?.map((opt) => (
-                        <DropdownMenuItem
-                          key={opt.value}
-                          onSelect={() => controllerField.onChange(opt.value)}
-                        >
-                          {opt.label}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                );
-              }}
-            />
-            {error && (
-              <span className="text-red-500 text-sm">
-                {error.message as string}
-              </span>
-            )}
+          <div>
+            <div className="text-sm bg-gray-100 p-2 rounded whitespace-pre-line">
+              {field.config?.text || ""}
+            </div>
+            <label className="flex items-center gap-2 mt-2">
+              <input type="checkbox" {...register(field.name)} />
+              {t("i_agree")}
+            </label>
           </div>
         );
-
-      case "custom":
-        return field.customRender ? (
-          <div key={field.name}>
-            {field.customRender({ register, setValue, error })}
-          </div>
-        ) : null;
-
       default:
-        return null;
+        return <Input {...register(field.name)} />;
     }
   };
 
+  const handleLabelChange = (index: number, value: string) => {
+    setFields((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], label: value };
+      return copy;
+    });
+  };
+
+  const handleFieldConfigChange = (
+    index: number,
+    updatedField: FieldConfig
+  ) => {
+    setFields((prev) => {
+      const copy = [...prev];
+      copy[index] = updatedField;
+      return copy;
+    });
+  };
+
   return (
-    <form
-      onSubmit={handleSubmit(async (data) => {
-        await onSubmit(data);
-        reset();
-      })}
-      className="flex flex-col gap-4 bg-white px-8 py-6 rounded-lg"
-    >
-      <h2 className="text-base font-semibold text-accent rtl:text-right ltr:text-left">
-        {mode === "edit"
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+      <h2 className="text-lg font-bold">
+        {mode === "registration"
+          ? t("form_registration")
+          : mode === "edit"
           ? t("editing_x", { x: t(headerKey) })
           : t("add_x", { x: t(headerKey) })}
       </h2>
 
-      <div className="flex gap-6 flex-wrap">
-        {fields.map((field) => (
-          <div key={field.name} className="flex flex-col gap-1">
-            <label>{t(field.label)}</label>
-            <Input
-              type={field.type === "email" ? "email" : "text"}
-              {...register(field.name)}
-            />
-            {errors[field.name] && (
-              <span className="text-red-500 text-sm">
-                {errors[field.name]?.message as string}
-              </span>
-            )}
-          </div>
-        ))}
+      <div className="grid grid-cols-2 gap-4 border-b pb-4">
+        {fields
+          .filter((f) => f.name === "title" || f.name === "description")
+          .map((field) => (
+            <div key={field.name} className="flex flex-col">
+              <label className="text-sm font-medium">{t(field.label)}</label>
+              <Input type="text" {...register(field.name)} />
+            </div>
+          ))}
       </div>
 
-      <div className="flex gap-4 justify-end mt-4">
+      {fields.map((field, i) => {
+        if (field.name === "title" || field.name === "description") return null;
+
+        return (
+          <div key={field.name} className="border p-4 rounded bg-gray-50">
+            {mode !== "registration" ? (
+              <div>
+                <label className="text-sm font-medium">
+                  {t("field_label")}
+                </label>
+                <Input
+                  value={field.label}
+                  placeholder={`${t("field_label_placeholder")}`}
+                  onChange={(e) => handleLabelChange(i, e.target.value)}
+                />
+              </div>
+            ) : (
+              <div>
+              <label className="text-sm font-medium">
+                {field.label}
+              </label>
+              </div>
+            )}
+
+            <div className="mt-3">{renderField(field)}</div>
+
+            {mode === "create" &&
+            (field.type === "checkbox" ||
+              field.type === "terms" ||
+              field.type === "select") ? (
+              <details className="mt-3">
+                <summary className="text-blue-600 cursor-pointer text-sm">
+                  {t("field_settings")}
+                </summary>
+                <FieldConfigEditor
+                  field={field}
+                  onChange={(updatedField) =>
+                    handleFieldConfigChange(i, updatedField)
+                  }
+                />
+              </details>
+            ) : null}
+          </div>
+        );
+      })}
+
+      <div className="flex justify-end mt-4 gap-2">
         {extraButtons}
         <Button loading={isSubmitting} type="submit">
-          {mode === "edit" ? t("save_changes") : t("create")}
+          {mode === "registration" ? t("submit_registration") : t("create")}
         </Button>
       </div>
     </form>
   );
-};
-
-export default DynamicForm;
+}

@@ -1,73 +1,103 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useOrganization } from "@/hooks/useOrganization";
-import { useEffect } from "react";
 import apiClient from "@/api/apiClient";
-import DynamicForm, { FieldConfig } from "@/components/forms/DynamicForm";
 import { z } from "zod";
 import { useTranslation } from "react-i18next";
+import FieldPalette from "@/components/forms/FieldPalette";
+import DynamicForm, { FieldConfig } from "@/components/forms/DynamicForm";
 
-function CreateForm() {
-  const { organization } = useOrganization();
+export default function CreateForm() {
   const { t } = useTranslation();
-  const [organizationId, setOrganizationId] = useState<string>();
+  const { organization } = useOrganization();
+  const [formFields, setFormFields] = useState<FieldConfig[]>([
+    { name: "title", label: t("form_title"), type: "text" },
+    { name: "description", label: t("form_description"), type: "text" },
+  ]);
 
   useEffect(() => {
     if (organization?._id) {
-      setOrganizationId(organization._id);
+      // ניתן לשמור כאן את ה־ID אם אתה רוצה להוסיף אותו ל־payload
     }
   }, [organization]);
 
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const dropped = JSON.parse(e.dataTransfer.getData("field")) as {
+      type: string;
+    };
+
+    const uniqueName = `field_${Date.now()}`;
+    setFormFields((prev) => [
+      ...prev,
+      {
+        name: uniqueName,
+        label: "",
+        type: dropped.type,
+        config: {},
+      },
+    ]);
+  };
+
+  const validationSchema = useMemo(() => {
+    const dynamicFields = formFields.reduce((acc, field) => {
+      if (field.name === "title") {
+        acc[field.name] = z.string().min(1, t("required"));
+      } else {
+        acc[field.name] = z.any();
+      }
+      return acc;
+    }, {} as Record<string, any>);
+
+    return z.object(dynamicFields);
+  }, [formFields, t]);
+
   const handleSubmit = async (data: any) => {
-    console.log("Submitted data:", data);
+    const { title, description, ...rest } = data;
 
-    if (!data.title || !organizationId) {
-      alert(`{t("alert_organization_name")}`);
-      return;
-    }
-
-    const formPayload = {
-      ...data,
-      organizationId,
+    const payload = {
+      title,
+      description,
       isActive: true,
+      organizationId: organization?._id,
+      fields: formFields
+        .filter((f) => f.name !== "title" && f.name !== "description")
+        .map((f) => ({
+          name: f.name,
+          label: f.label,
+          type: f.type,
+          config: f.config,
+        })),
     };
 
     try {
-      const response = await apiClient.post("/forms", formPayload);
-
-      if (response.status === 200 || response.status === 201) {
-        alert(`${t("form_created_success")}`);
+      const res = await apiClient.post("/forms", payload);
+      if (res.status === 200 || res.status === 201) {
+        alert(t("form_created_success"));
       } else {
-        alert(`${t("form_created_fail")}`);
+        alert(t("form_created_fail"));
       }
-    } catch (error) {
-      alert(`${t("error")}`);
+    } catch (err) {
+      console.error(err);
+      alert(t("error"));
     }
   };
-  const FormFields: FieldConfig[] = [
-    { name: "title", label: t("form_title"), type: "text" },
-    {
-      name: "description",
-      label: t("form_description") + " (אופציונלי)",
-      type: "text",
-    },
-    { name: "fields", label: t("form_fields"), type: "custom" },
-  ];
-  const formSchema = z.object({
-    title: z.string().min(1),
-    description: z.string(),
-  });
 
   return (
-    <div>
-      <DynamicForm
-        mode="create"
-        headerKey="form"
-        fields={FormFields}
-        validationSchema={formSchema}
-        onSubmit={handleSubmit}
-      />
+    <div className="grid grid-cols-3 gap-6 p-6">
+      <FieldPalette />
+      <div
+        className="col-span-2 border-dashed border-2 rounded-lg p-4"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={handleDrop}
+      >
+        <DynamicForm
+          mode="create"
+          fields={formFields}
+          setFields={setFormFields}
+          validationSchema={validationSchema}
+          onSubmit={handleSubmit}
+        />
+      </div>
     </div>
   );
 }
-
-export default CreateForm;

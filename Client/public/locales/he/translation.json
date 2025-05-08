@@ -92,5 +92,13 @@
   "registration_fail": "הרשמה נכשלה",
   "registration_success": "הרשמה הצליחה",
   "more_fields": "שדות נוספים",
-  "no_fields": "אין שדות להצגה"
+  "no_fields": "אין שדות להצגה",
+  "form_registration": "הרשמה לטופס",
+  "submit_registration": "שלח הרשמה",
+  "field_label_placeholder": "הכנס שם לשדה",
+  "field_settings": "הגדרות שדה",
+  "fields_palette": "מאגר שדות",
+  "select_options": "אפשרויות בחירה",
+  "Label": "תווית",
+  "Value": "ערך"
 }

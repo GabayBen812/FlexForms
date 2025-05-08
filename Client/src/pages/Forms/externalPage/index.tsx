@@ -74,11 +74,10 @@ export default function FormRegistration() {
       <p className="text-gray-600">{form.description || t("no_description")}</p>
 
       <DynamicForm
-        mode="create"
+        mode="registration"
         fields={dynamicFields}
         validationSchema={validationSchema}
         onSubmit={async (data) => {
-          console.log("📤 Data to send:", data);
           try {
             const { fullName, email, phone, ...rest } = data;
             await registrationApi.create({

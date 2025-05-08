@@ -124,6 +124,7 @@
   "form_saved_success": "הטופס נשמר בהצלחה",
   "form_saved_success_description": "השינויים בטופס נשמרו.",
   "form_save_error": "שגיאה בשמירת הטופס",
-  "form_save_error_description": "אירעה שגיאה בעדכון הטופס, אנא נסה שנית"
+  "form_save_error_description": "אירעה שגיאה בעדכון הטופס, אנא נסה שנית",
+  "clear_signature": "נקה חתימה"
 
 }

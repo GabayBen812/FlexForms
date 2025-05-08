@@ -10,7 +10,6 @@ export class RegistrationService {
   constructor(@InjectModel(Registration.name) private model: Model<RegistrationDocument>) {}
 
   async create(data: CreateRegistrationDto) {
-    console.log("1111", data);
     try {
       const formId = new Types.ObjectId(data.formId);
       const organizationId = new Types.ObjectId(data.organizationId);
@@ -24,10 +23,7 @@ export class RegistrationService {
         additionalData: data.additionalData || {},
       };
 
-      console.log("Saving with:", registration);
-
       const result = await this.model.create(registration);
-      console.log("Saved:", result);
       return result;
     } catch (err) {
       console.error("Error while saving registration:", err);
@@ -52,4 +48,19 @@ export class RegistrationService {
 
     return this.model.find(filter).exec();
   }
+
+
+  async findByFormIdPaginated(formId: string, skip: number, limit: number) {
+    const [data, total] = await Promise.all([
+      this.model
+        .find({ formId: new Types.ObjectId(formId) })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+        this.model.countDocuments({ formId: new Types.ObjectId(formId) }),
+    ]);
+  
+    return [data, total];
+  }
 }
+

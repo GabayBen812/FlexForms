@@ -107,5 +107,23 @@
   "fields_palette": "מאגר שדות",
   "select_options": "אפשרויות בחירה",
   "Label": "תווית",
-  "Value": "ערך"
+  "Value": "ערך",
+  "add_text_field": "הוסף שדה טקסט",
+  "add_date_field": "הוסף שדה תאריך",
+  "add_email_field": "הוסף שדה דוא\"ל",
+  "add_checkbox_field": "הוסף תיבת סימון",
+  "add_terms_field": "הוסף שדה תקנון",
+  "add_select_field": "הוסף תיבת בחירה",
+  "add_signature_field": "הוסף חתימה דיגיטלית",
+  "move_up": "העבר למעלה",
+  "move_down": "העבר למטה",
+  "save_changes": "שמור שינויים",
+  "new_field": "שדה חדש",
+  "i_agree": "אני מאשר/ת",
+  "select_option": "בחר אפשרות",
+  "form_saved_success": "הטופס נשמר בהצלחה",
+  "form_saved_success_description": "השינויים בטופס נשמרו.",
+  "form_save_error": "שגיאה בשמירת הטופס",
+  "form_save_error_description": "אירעה שגיאה בעדכון הטופס, אנא נסה שנית"
+
 }

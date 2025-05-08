@@ -5,6 +5,7 @@ import { createApiService } from "@/api/utils/apiFactory";
 import DataTable from "@/components/ui/completed/data-table";
 import { Form } from "@/types/forms/Form";
 import dayjs from "dayjs";
+import { TableAction } from "@/types/ui/data-table-types";
 
 const registrationsApi = createApiService<UserRegistration>("/registrations");
 
@@ -15,29 +16,50 @@ interface Props {
 export default function FormRegistrationsTable({ form }: Props) {
   const { t } = useTranslation();
 
+  const actions: TableAction<UserRegistration>[] = [
+    { label: t("delete"), type: "delete" },
+  ];
+
   return (
     <div className="col-span-2">
       <h2 className="text-xl font-semibold mb-4">{t("registrations_list")}</h2>
+
       <DataTable<UserRegistration>
-        fetchData={() =>
-          registrationsApi.customRequest("get", "/registrations", {
-            params: { formId: form._id },
-          }) as Promise<{
+        fetchData={({ page = 1, pageSize = 10 }) => {
+          console.log("Sending params:", {
+            formId: form._id,
+            page,
+            pageSize,
+          });
+
+          return registrationsApi
+            .customRequest("get", "/registrations", {
+              params: {
+                formId: form._id,
+                page: String(page ?? 1),
+                pageSize: String(pageSize ?? 10),
+              },
+            })
+            .then((res) => {
+              console.log("Response from /registrations:", res);
+              return res;
+            }) as Promise<{
             status: number;
             data: UserRegistration[];
-            total?: number;
-          }>
-        }
+            total: number;
+          }>;
+        }}
         columns={getColumns(t, form.fields || [])}
         idField="_id"
         isPagination
         defaultPageSize={10}
+        pageSizeOptions={[5, 10, 20, 50]}
         searchable
+        actions={actions}
       />
     </div>
   );
 }
-
 
 function getColumns(
   t: ReturnType<typeof useTranslation>["t"],

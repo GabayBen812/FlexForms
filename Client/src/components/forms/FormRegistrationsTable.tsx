@@ -40,32 +40,42 @@ export default function FormRegistrationsTable({ form }: Props) {
 
 
 function getColumns(
-    t: ReturnType<typeof useTranslation>["t"],
-    fields: { name: string; label: string }[]
-  ): ColumnDef<UserRegistration>[] {
-    const baseColumns: ColumnDef<UserRegistration>[] = [
-      { accessorKey: "fullName", header: t("full_name") },
-      { accessorKey: "email", header: t("email") },
-      { accessorKey: "phone", header: t("phone") },
-      {
-        accessorKey: "createdAt",
-        header: t("registered_at"),
-        cell: ({ row }) =>
-          dayjs(row.original.createdAt).format("DD/MM/YYYY HH:mm"),
+  t: ReturnType<typeof useTranslation>["t"],
+  fields: { name: string; label: string; type?: string }[]
+): ColumnDef<UserRegistration>[] {
+  const baseColumns: ColumnDef<UserRegistration>[] = [
+    { accessorKey: "fullName", header: t("full_name") },
+    { accessorKey: "email", header: t("email") },
+    { accessorKey: "phone", header: t("phone") },
+    {
+      accessorKey: "createdAt",
+      header: t("registered_at"),
+      cell: ({ row }) =>
+        dayjs(row.original.createdAt).format("DD/MM/YYYY HH:mm"),
+    },
+  ];
+
+  const additionalColumns: ColumnDef<UserRegistration>[] = fields
+    .filter((f) => !!f.name)
+    .map((field) => ({
+      accessorKey: `additionalData.${field.name}`,
+      header: field.label,
+      cell: ({ row }) => {
+        const val = row.original.additionalData?.[field.name];
+
+        if (field.type === "signature" && typeof val === "string") {
+          return (
+            <img
+              src={val}
+              alt="signature"
+              style={{ width: "120px", height: "60px", objectFit: "contain" }}
+            />
+          );
+        }
+
+        return val !== undefined && val !== "" ? val : "-";
       },
-    ];
-  
-    const additionalColumns: ColumnDef<UserRegistration>[] = fields
-      .filter((f) => !!f.name)
-      .map((field) => ({
-        accessorKey: `additionalData.${field.name}`,
-        header: field.label,
-        cell: ({ row }) => {
-          const val = row.original.additionalData?.[field.name];
-          return val !== undefined && val !== "" ? val : "-";
-        },
-      }));
-  
-    return [...baseColumns, ...additionalColumns];
-  }
-  
+    }));
+
+  return [...baseColumns, ...additionalColumns];
+}

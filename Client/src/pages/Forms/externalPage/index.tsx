@@ -35,9 +35,9 @@ export default function FormRegistration() {
   if (!form) return <div className="p-6">{t("loading_form")}</div>;
 
   const dynamicFields: FieldConfig[] = [
-    { name: "fullName", label: t("full_name"), type: "text" },
-    { name: "email", label: t("email"), type: "email" },
-    { name: "phone", label: t("phone"), type: "text" },
+    { name: "fullName", label: t("full_name"), type: "text", isRequired: true },
+    { name: "email", label: t("email"), type: "email", isRequired: true },
+    { name: "phone", label: t("phone"), type: "text", isRequired: true },
     ...(form.fields || [])
       .filter((f): f is FieldConfig => !!f.name && !!f.label)
       .map((f) => ({
@@ -45,19 +45,25 @@ export default function FormRegistration() {
         label: f.label,
         type: f.type || "text",
         config: f.config,
+        isRequired: f.isRequired ?? false,
       })),
   ];
   
   const getFieldValidation = (field: FieldConfig) => {
-    switch (field.type) {
-      case "email":
-        return z.string().email({ message: t("invalid_email") });
-      case "text":
-        return z.string().min(1, { message: t("required_field") });
-      case "checkbox":
-        return z.boolean().optional();
-      default:
-        return z.any();
+    if (field.isRequired) {
+      switch (field.type) {
+        case "email":
+          return z.string().email({ message: t("invalid_email") });
+        case "text":
+        case "date":
+          return z.string().min(1, { message: t("required_field") });
+        case "checkbox":
+          return z.boolean().refine(val => val === true, { message: t("required_field") });
+        default:
+          return z.any();
+      }
+    } else {
+      return z.any().optional();
     }
   };
 

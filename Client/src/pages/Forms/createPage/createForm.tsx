@@ -10,8 +10,8 @@ export default function CreateForm() {
   const { t } = useTranslation();
   const { organization } = useOrganization();
   const [formFields, setFormFields] = useState<FieldConfig[]>([
-    { name: "title", label: t("form_title"), type: "text" },
-    { name: "description", label: t("form_description"), type: "text" },
+    { name: "title", label: t("form_title"), type: "text", isRequired: true },
+    { name: "description", label: t("form_description"), type: "text", isRequired: false },
   ]);
 
   useEffect(() => {
@@ -34,20 +34,28 @@ export default function CreateForm() {
         label: "",
         type: dropped.type,
         config: {},
+        isRequired: false,
       },
     ]);
   };
 
   const validationSchema = useMemo(() => {
     const dynamicFields = formFields.reduce((acc, field) => {
-      if (field.name === "title") {
-        acc[field.name] = z.string().min(1, t("required"));
+      if (field.isRequired) {
+        if (field.type === "email") {
+          acc[field.name] = z.string().email(t("invalid_email"));
+        } else if (field.type === "text" || field.type === "date") {
+          acc[field.name] = z.string().min(1, t("required_field"));
+        } else if (field.type === "checkbox") {
+          acc[field.name] = z.boolean().refine(val => val === true, t("required_field"));
+        } else {
+          acc[field.name] = z.any();
+        }
       } else {
-        acc[field.name] = z.any();
+        acc[field.name] = z.any().optional();
       }
       return acc;
     }, {} as Record<string, any>);
-
     return z.object(dynamicFields);
   }, [formFields, t]);
 
@@ -66,6 +74,7 @@ export default function CreateForm() {
           label: f.label,
           type: f.type,
           config: f.config,
+          isRequired: f.isRequired,
         })),
     };
 

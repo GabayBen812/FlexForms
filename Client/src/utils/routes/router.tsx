@@ -10,6 +10,7 @@ import PeopleIcon from "@/assets/icons/PeopleIcon";
 import Settings from "@/pages/Settings/Settings";
 import OrganizationSettings from "@/pages/OrganizationSettings";
 import SettingsIcon from "@/assets/icons/SettingsIcon";
+import ClubsIcon from "@/assets/icons/ClubsIcon";
 import Payments from "@/pages/Payments";
 import Home from "@/pages/Home";
 import Forms from "@/pages/Forms";
@@ -18,6 +19,7 @@ import LandingPage from "@/pages/LandingPage";
 import CreateForm from "@/pages/Forms/createPage/createForm";
 import FormDetails from "@/pages/Forms/dashboardPage";
 import FormRegistration from "@/pages/Forms/externalPage";
+import Clubs from "@/pages/Clubs";
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -61,6 +63,11 @@ export const router = createBrowserRouter([
         path: "users",
         element: <Users />,
         handle: { title: "users", icon: PeopleIcon, showInSidebar: true },
+      },
+      {
+        path: "clubs",
+        element: <Clubs />,
+        handle: { title: "clubs", icon: ClubsIcon, showInSidebar: true },
       },
       {
         path: "organization-settings",

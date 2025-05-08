@@ -13,6 +13,7 @@ import { FormController } from './controllers/form.controller';
 import { OrganizationController } from './controllers/organization.controller';
 import { PaymentController } from './controllers/payment.controller';
 import { RegistrationModule } from './modules/registration.module';
+import { clubModule } from './modules/club.moudle';
 dotenv.config();
 @Module({
   imports: [
@@ -22,7 +23,8 @@ dotenv.config();
     UserModule,
     OrganizationModule,
     PaymentModule,
-    RegistrationModule
+    RegistrationModule,
+    clubModule
   ],
   controllers: [],
   providers: [AuthService],

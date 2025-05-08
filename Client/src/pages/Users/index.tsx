@@ -1,113 +1,47 @@
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
-// import { z } from "zod";
+import { useNavigate } from "react-router-dom";
 import DataTable from "@/components/ui/completed/data-table";
-import { TableAction } from "@/types/ui/data-table-types";
-import { Button } from "@/components/ui/button";
-// import { MutationResponse } from "@/types/api/auth";
-// import { ApiResponse } from "@/types/ui/data-table-types";
+import { useOrganization } from "@/hooks/useOrganization";
+import { createApiService } from "@/api/utils/apiFactory";
+import { User } from "@/types/users/user";
 
-type User = {
-  id: string;
-  name: string;
-  email: string;
-};
+const usersApi = createApiService<User>("/users");
 
-const columns: ColumnDef<User>[] = [
-  {
-    accessorKey: "name",
-    header: "שם",
-    cell: ({ row }) => <div>{row.original.name}</div>,
-  },
-  {
-    accessorKey: "email",
-    header: "מייל",
-    cell: ({ row }) => <div>{row.original.email}</div>,
-  },
-];
-
-const actions: TableAction<User>[] = [
-  { label: "ערוך", type: "edit" },
-  { label: "מחק", type: "delete" },
-];
-
-// const userSchema = z.object({
-//   name: z.string().min(2, "הכנס שם תקין"),
-//   email: z.string().email("הכנס מייל תקין"),
-// });
-
-
-
-const Users = () => {
+export default function Users() {
   const { t } = useTranslation();
+  const { organization } = useOrganization();
+  const navigate = useNavigate();
+
+  const columns: ColumnDef<User>[] = [
+    { accessorKey: "name", header: t("user_name") },
+    { accessorKey: "email", header: t("user_email") },
+    {accessorKey: "role", header: t("user_role"),},
+    {accessorKey: "organizationId", header: "", meta: { hidden: true },},
+  ];
+  const visibleColumns = columns.filter(
+    (col) => !(col.meta?.hidden)
+  );
 
   return (
-    <div className="mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold text-primary mb-4">משתמשים</h1>
-
+    <div className="mx-auto">
+      <h1 className="text-2xl font-semibold text-primary mb-6">{t("users")}</h1>
       <DataTable<User>
-        // fetchData={async () => {}
-        columns={columns}
-        actions={actions}
+        fetchData={(params) => {
+          if (!organization?._id)
+            return Promise.resolve({ status: 200, data: [] });
+          return usersApi.fetchAll(params, false, organization._id);
+        }}
+        columns={visibleColumns}
         searchable
         showAddButton
         isPagination
         defaultPageSize={10}
-        idField="id"
-        renderExpandedContent={({ handleSave, rowData, handleEdit }) => {
-          const defaultValues = {
-            name: rowData?.name || "",
-            email: rowData?.email || "",
-          };
-
-          return (
-            <div className="p-4 border rounded-md bg-muted/50">
-              <form
-                className="space-y-4"
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  const formData = new FormData(e.currentTarget);
-                  const name = formData.get("name") as string;
-                  const email = formData.get("email") as string;
-
-                  const userData = {
-                    id: rowData?.id ?? crypto.randomUUID(),
-                    name,
-                    email,
-                  };
-
-                  try {
-                    if (rowData?.id && handleEdit) await handleEdit(userData);
-                    else if (handleSave) await handleSave(userData);
-                  } catch (err) {
-                    console.error("Error saving user:", err);
-                  }
-                }}
-              >
-                <div>
-                  <label className="block mb-1">שם</label>
-                  <input
-                    name="name"
-                    defaultValue={defaultValues.name}
-                    className="border p-2 rounded w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1">אימייל</label>
-                  <input
-                    name="email"
-                    defaultValue={defaultValues.email}
-                    className="border p-2 rounded w-full"
-                  />
-                </div>
-                <Button type="submit">שמור</Button>
-              </form>
-            </div>
-          );
+        idField="_id"
+        onRowClick={(user) => {
+          
         }}
       />
     </div>
   );
-};
-
-export default Users;
+}

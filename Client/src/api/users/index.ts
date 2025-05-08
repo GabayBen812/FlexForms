@@ -2,7 +2,7 @@ import { ApiQueryParams, ApiResponse } from "@/types/ui/data-table-types";
 import { createApiService } from "../utils/apiFactory";
 import { MutationResponse } from "@/types/api/auth";
 import apiClient from "../apiClient";
-import { User } from "@/types/api/user";
+import { User } from "@/types/users/user";
 const usersApi = createApiService<User>("/users", {
   includeOrgId: true,
   customRoutes: {

@@ -1,6 +1,6 @@
 import apiClient from "@/api/apiClient";
 import { MutationResponse } from "@/types/api/auth";
-import { UpdateUserPayload, User } from "@/types/api/user";
+import { UpdateUserPayload, User } from "@/types/users/user";
 import { handleApiError } from "../configs";
 export const updateUser = async (
   data: UpdateUserPayload

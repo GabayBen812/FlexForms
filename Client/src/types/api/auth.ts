@@ -1,5 +1,5 @@
 import { Organization } from "./organization";
-import { User } from "./user";
+import { User } from "../users/user";
 
 export interface LoginCredentials {
   email: string;

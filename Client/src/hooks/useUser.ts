@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { UpdateUserPayload, User } from "@/types/api/user";
+import { UpdateUserPayload, User } from "@/types/users/user";
 import { fetchUsers, updateUser } from "@/api/users/index";
 import { MutationResponse } from "@/types/api/auth";
 

@@ -1,5 +1,5 @@
 import apiClient from "@/api/apiClient";
-import { User } from "@/types/api/user";
+import { User } from "@/types/users/user";
 
 export const fetchUser = async (): Promise<User | null> => {
   try {

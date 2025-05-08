@@ -44,6 +44,7 @@ export default function FormRegistration() {
         name: f.name,
         label: f.label,
         type: f.type || "text",
+        config: f.config,
       })),
   ];
   

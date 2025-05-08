@@ -49,11 +49,12 @@ export default function FormRegistrationsTable({ form }: Props) {
             total: number;
           }>;
         }}
+        addData={(data) => registrationsApi.create(data)}
+        updateData={(data) => registrationsApi.update({ ...data, id: data._id })}
         columns={getColumns(t, form.fields || [])}
         idField="_id"
         isPagination
         defaultPageSize={10}
-        pageSizeOptions={[5, 10, 20, 50]}
         searchable
         actions={actions}
       />

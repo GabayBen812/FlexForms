@@ -19,7 +19,7 @@ interface Props {
   mode: "create" | "edit" | "registration";
   headerKey?: string;
   fields: FieldConfig[];
-  setFields: (fields: FieldConfig[]) => void;
+  setFields?: React.Dispatch<React.SetStateAction<FieldConfig[]>>;
   validationSchema: ZodObject<any>;
   defaultValues?: any;
   onSubmit: (data: any) => void;
@@ -138,7 +138,8 @@ export default function DynamicForm({
   };
 
   const handleLabelChange = (index: number, value: string) => {
-    setFields((prev) => {
+    if (!setFields) return;
+    setFields((prev: FieldConfig[]) => {
       const copy = [...prev];
       copy[index] = { ...copy[index], label: value };
       return copy;
@@ -149,7 +150,8 @@ export default function DynamicForm({
     index: number,
     updatedField: FieldConfig
   ) => {
-    setFields((prev) => {
+    if (!setFields) return;
+    setFields((prev: FieldConfig[]) => {
       const copy = [...prev];
       copy[index] = updatedField;
       return copy;

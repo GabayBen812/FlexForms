@@ -5,6 +5,8 @@ import DataTable from "@/components/ui/completed/data-table";
 import { useOrganization } from "@/hooks/useOrganization";
 import { createApiService } from "@/api/utils/apiFactory";
 import { Form } from "@/types/forms/Form";
+import { Action } from "sonner";
+import { TableAction } from "@/types/ui/data-table-types";
 
 const formsApi = createApiService<Form>("/forms");
 
@@ -43,7 +45,10 @@ export default function Forms() {
       meta: { hidden: true },
     },
   ];
-  
+
+  const actions: TableAction<Form>[] = [
+    { label: t("delete"), type: "delete" },
+  ];
 
   return (
     <div className="mx-auto">
@@ -54,10 +59,13 @@ export default function Forms() {
             return Promise.resolve({ status: 200, data: [] });
           return formsApi.fetchAll(params, false, organization._id);
         }}
+        addData={(data) => formsApi.create(data)}
+        updateData={(data) => formsApi.update({ ...data, id: data._id })}
         columns={columns}
         searchable
         showAddButton
         isPagination
+        actions={actions}
         defaultPageSize={10}
         idField="_id"
         onRowClick={(formRow) => {

@@ -22,6 +22,7 @@ import FormDetails from "@/pages/Forms/dashboardPage";
 import FormRegistration from "@/pages/Forms/externalPage";
 import Clubs from "@/pages/Clubs";
 import { Navigate } from "react-router-dom";
+import AdminDashboard from '@/pages/Admin';
 
 export const router = createBrowserRouter([
   {
@@ -107,6 +108,16 @@ export const router = createBrowserRouter([
       {
         path: "settings",
         element: <Settings />,
+      },
+      {
+        path: "admin",
+        element: <AdminDashboard />,
+        handle: {
+          title: "admin_interface",
+          icon: SettingsIcon,
+          showInSidebar: true,
+          adminOnly: true,
+        },
       },
     ],
   },

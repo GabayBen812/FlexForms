@@ -11,3 +11,11 @@ export const fetchOrganization = async (): Promise<MutationResponse<Organization
     data: res.data,
   };
 };
+
+export const fetchAllOrganizations = async (): Promise<MutationResponse<Organization[]>> => {
+  const res = await apiClient.get("/organizations");
+  return {
+    status: res.status,
+    data: res.data,
+  };
+};

@@ -46,7 +46,7 @@ function SideBarMenuRoute({ route }: { route: RouteObject }) {
   const { t } = useTranslation();
   // const location = useLocation();
   // const currentPath = location.pathname;
-  // const { organization } = useOrganization();
+  const { organization } = useOrganization();
   // const theme = organization?.customStyles?.accentColor;
   // const fill = resolveTheme(theme).primary;
 
@@ -54,6 +54,13 @@ function SideBarMenuRoute({ route }: { route: RouteObject }) {
     <SidebarMenu className="gap-5">
       {route.children?.map((childRoute) => {
         if (!childRoute.handle?.showInSidebar) return null;
+        
+        if (
+          childRoute.handle?.isMaccabi &&
+          organization?.name !== "מרכז מכבי ישראל"
+        ) {
+          return null;
+        }
 
         // const isActive = currentPath.startsWith(childRoute.path || "");
         return (

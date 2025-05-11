@@ -15,11 +15,15 @@ import Payments from "@/pages/Payments";
 import Home from "@/pages/Home";
 import Forms from "@/pages/Forms";
 import Users from "@/pages/Users";
+import MacabiTable from "@/pages/MacabiTable";
 import LandingPage from "@/pages/LandingPage";
 import CreateForm from "@/pages/Forms/createPage/createForm";
 import FormDetails from "@/pages/Forms/dashboardPage";
 import FormRegistration from "@/pages/Forms/externalPage";
 import Clubs from "@/pages/Clubs";
+import { useOrganization } from "@/hooks/useOrganization";
+import { useState } from "react";
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -68,6 +72,11 @@ export const router = createBrowserRouter([
         path: "clubs",
         element: <Clubs />,
         handle: { title: "clubs", icon: ClubsIcon, showInSidebar: true },
+      },
+      {
+        path: "macabi-table",
+        element: <MacabiTable />,
+        handle: { title: "macabi_table", icon: ClubsIcon, showInSidebar: true, isMaccabi: true },
       },
       {
         path: "organization-settings",

@@ -4,14 +4,15 @@
 
 @font-face {
   font-family: "Noto Sans Hebrew";
-  src: url("../src/assets/fonts/NotoSansHebrew/NotoSansHebrew-VariableFont_wdth,wght.ttf")
+  /* src: url("../src/assets/fonts/NotoSansHebrew/NotoSansHebrew-VariableFont_wdth,wght.ttf") */
+  src: url("../fonts//NotoSansHebrew/NotoSansHebrew-VariableFont_wdth\,wght.ttf")
     format("truetype");
   font-weight: 100 200 300 400 500 600 700 800 900;
   font-size: normal;
 }
 
 * {
-  font-family: "Noto Sans Hebrew", Arial, Helvetica, sans-serif;
+  /* font-family: "Noto Sans Hebrew", Arial, Helvetica, sans-serif; */
 }
 @layer base {
   :root {

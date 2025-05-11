@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { createApiService } from "@/api/utils/apiFactory";
 import { Form } from "@/types/forms/Form";
@@ -29,9 +29,14 @@ export default function FormDetails() {
   const direction = i18n.dir();
   const isRTL = direction === "rtl";
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const { code } = useParams<{ code: string }>();
   const [form, setForm] = useState<Form | null>(null);
+
+  // Get the current tab from the URL path
+  const currentTab = location.pathname.split('/').pop() || 'dashboard';
 
   useEffect(() => {
     if (!code) return;
@@ -45,18 +50,23 @@ export default function FormDetails() {
 
   if (!form) return <div className="p-6">{t("loading_form")}...</div>;
 
+  const handleTabChange = (value: string) => {
+    navigate(`/forms/${code}/${value}`);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <FormHeader form={form} />
 
       <Tabs
-        defaultValue="table"
+        value={currentTab}
+        onValueChange={handleTabChange}
         className={`w-full space-y-4 ${isRTL ? "text-right" : "text-left"}`}
         dir={direction}
       >
         <TabsList className="bg-muted rounded-lg p-1 shadow border w-fit mx-auto sm:mx-0">
           <TabsTrigger
-            value="table"
+            value="dashboard"
             className="text-base px-5 py-2 font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
           >
             {t("registrations_list")}
@@ -75,7 +85,7 @@ export default function FormDetails() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="table">
+        <TabsContent value="dashboard">
           <FormRegistrationsTable form={form} />
         </TabsContent>
 

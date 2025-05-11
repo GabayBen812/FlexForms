@@ -126,6 +126,10 @@
   "form_saved_success_description": "השינויים בטופס נשמרו.",
   "form_save_error": "שגיאה בשמירת הטופס",
   "form_save_error_description": "אירעה שגיאה בעדכון הטופס, אנא נסה שנית",
-  "clear_signature": "נקה חתימה"
-
+  "clear_signature": "נקה חתימה",
+  "signature":"חתימה",
+  "select":"בחירה",
+  "terms":"תקנון",
+  "terms_text": "הכנס תקנון כאן",
+  "click_to_open_registration": "לחצו כדי לפתוח את ההרשמה"
 }

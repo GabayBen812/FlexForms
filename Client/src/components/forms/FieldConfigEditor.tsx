@@ -10,6 +10,19 @@ interface Props {
 export default function FieldConfigEditor({ field, onChange }: Props) {
   const { t } = useTranslation();
 
+  const slugify = (str: string) =>
+    str
+      .toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z0-9_]/g, '');
+
+  const handleOptionLabelChange = (i: number, value: string) => {
+    const newOptions = [...(field.config?.options || [])];
+    newOptions[i].label = value;
+    newOptions[i].value = slugify(value);
+    onChange({ ...field, config: { ...field.config, options: newOptions } });
+  };
+
   const handleOptionChange = (i: number, key: "label" | "value", value: string) => {
     const newOptions = [...(field.config?.options || [])];
     newOptions[i][key] = value;
@@ -30,12 +43,7 @@ export default function FieldConfigEditor({ field, onChange }: Props) {
             <Input
               placeholder="Label"
               value={opt.label}
-              onChange={(e) => handleOptionChange(i, "label", e.target.value)}
-            />
-            <Input
-              placeholder="Value"
-              value={opt.value}
-              onChange={(e) => handleOptionChange(i, "value", e.target.value)}
+              onChange={(e) => handleOptionLabelChange(i, e.target.value)}
             />
           </div>
         ))}

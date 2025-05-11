@@ -1,19 +1,46 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { FieldConfig } from "@/components/forms/DynamicForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
 import { useTranslation } from "react-i18next";
-import { Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { 
+  Trash2, 
+  ArrowUp, 
+  ArrowDown, 
+  Type, 
+  Calendar, 
+  Mail, 
+  CheckSquare, 
+  FileText, 
+  ListFilter, 
+  PenLine,
+  LayoutGrid, 
+  List 
+} from "lucide-react";
 import FieldConfigEditor from "./FieldConfigEditor";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props {
   initialFields: FieldConfig[];
   onUpdate: (updatedFields: FieldConfig[]) => void;
 }
 
+const fieldTypeIcons = {
+  text: Type,
+  date: Calendar,
+  email: Mail,
+  checkbox: CheckSquare,
+  terms: FileText,
+  select: ListFilter,
+  signature: PenLine,
+};
+
 export default function FormEditor({ initialFields, onUpdate }: Props) {
   const { t } = useTranslation();
   const [fields, setFields] = useState<FieldConfig[]>(initialFields);
+  const [layoutMode, setLayoutMode] = useState<"grid" | "list">("list");
 
   const handleAddField = (type: string) => {
     const newField: FieldConfig = {
@@ -46,53 +73,167 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap gap-2">
-        {["text", "date", "email", "checkbox", "terms", "select", "signature"].map((type) => (
-          <Button key={type} variant="outline" onClick={() => handleAddField(type)}>
-            {t(`add_${type}_field`)}
-          </Button>
-        ))}
+    <div className="space-y-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(fieldTypeIcons).map(([type, Icon]) => (
+            <TooltipProvider key={type}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleAddField(type)}
+                    className="flex items-center gap-2 hover:bg-primary/10 transition-colors"
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="hidden sm:inline">{t(`add_${type}_field`)}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{t(`add_${type}_field`)}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ))}
+        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setLayoutMode(layoutMode === "grid" ? "list" : "grid")}
+          className="hover:bg-primary/10"
+        >
+          {layoutMode === "grid" ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
+        </Button>
       </div>
 
-      {fields.map((field, index) => (
-        <div
-          key={field.name}
-          className="relative border p-4 rounded-md bg-muted space-y-3"
+      <div className={cn(
+        "space-y-4",
+        layoutMode === "grid" && "grid grid-cols-1 md:grid-cols-2 gap-4"
+      )}>
+        <AnimatePresence>
+          {fields.map((field, index) => (
+            <motion.div
+              key={field.name}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+              className="relative border rounded-lg bg-white shadow-sm hover:shadow-md transition-all group p-6"
+            >
+              <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleMoveField(index, "up")}
+                        className="hover:bg-primary/10"
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{t("move_up")}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleMoveField(index, "down")}
+                        className="hover:bg-primary/10"
+                      >
+                        <ArrowDown className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{t("move_down")}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleDeleteField(field.name)}
+                        className="hover:bg-destructive/10 text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{t("delete_field")}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    {t("field_label")}
+                  </label>
+                  <Input
+                    value={field.label}
+                    onChange={(e) => handleUpdateField(index, "label", e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    {t("field_type")}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {React.createElement(fieldTypeIcons[field.type as keyof typeof fieldTypeIcons], {
+                      className: "w-4 h-4"
+                    })}
+                    <Input
+                      value={field.type}
+                      disabled
+                      className="opacity-70"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <FieldConfigEditor
+                  field={field}
+                  onChange={updated => setFields(prev => { const copy = [...prev]; copy[index] = updated; return copy; })}
+                />
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        {fields.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-12 border-2 border-dashed rounded-lg bg-gray-50"
+          >
+            <Type className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+            <p className="text-gray-500 text-lg">{t("no_fields_added")}</p>
+            <p className="text-sm text-gray-400 mt-2">{t("add_fields_instructions")}</p>
+          </motion.div>
+        )}
+      </div>
+
+      <div className="sticky bottom-4 right-0 z-50 bg-transparent px-0 py-0 flex justify-end w-full">
+        <Button
+          onClick={() => onUpdate(fields)}
+          className="bg-primary hover:bg-primary/90 shadow-lg"
+          style={{ alignSelf: 'flex-end' }}
         >
-          <div className="absolute top-2 left-2 flex gap-1">
-            <Button size="icon" variant="outline" onClick={() => handleMoveField(index, "up")}>
-              <ArrowUp className="w-4 h-4" />
-            </Button>
-            <Button size="icon" variant="outline" onClick={() => handleMoveField(index, "down")}>
-              <ArrowDown className="w-4 h-4" />
-            </Button>
-            <Button size="icon" variant="destructive" onClick={() => handleDeleteField(field.name)}>
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium">{t("field_label")}</label>
-              <Input
-                value={field.label}
-                onChange={(e) => handleUpdateField(index, "label", e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">{t("field_type")}</label>
-              <Input value={field.type} disabled className="opacity-70" />
-            </div>
-          </div>
-
-          <FieldConfigEditor field={field} onChange={updated => handleUpdateField(index, "isRequired", updated.isRequired)} />
-        </div>
-      ))}
-
-      <div className="flex justify-end">
-        <Button onClick={() => onUpdate(fields)}>{t("save_changes")}</Button>
+          {t("save_changes")}
+        </Button>
       </div>
     </div>
   );

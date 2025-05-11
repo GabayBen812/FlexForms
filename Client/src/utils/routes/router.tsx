@@ -21,8 +21,7 @@ import CreateForm from "@/pages/Forms/createPage/createForm";
 import FormDetails from "@/pages/Forms/dashboardPage";
 import FormRegistration from "@/pages/Forms/externalPage";
 import Clubs from "@/pages/Clubs";
-import { useOrganization } from "@/hooks/useOrganization";
-import { useState } from "react";
+import { Navigate } from "react-router-dom";
 
 export const router = createBrowserRouter([
   {
@@ -52,6 +51,24 @@ export const router = createBrowserRouter([
         path: "forms/:code",
         element: <FormDetails />,
         handle: { showInSidebar: false },
+        children: [
+          {
+            index: true,
+            element: <Navigate to="dashboard" replace />,
+          },
+          {
+            path: "dashboard",
+            element: <FormDetails />,
+          },
+          {
+            path: "preview",
+            element: <FormDetails />,
+          },
+          {
+            path: "edit",
+            element: <FormDetails />,
+          },
+        ],
       },          
       {
         path: "create-form",

@@ -71,7 +71,7 @@ export default function Forms() {
         onRowClick={(formRow) => {
           const form = formRow.original;
           if (form.code && form._id) {
-            navigate(`/forms/${form.code}`);
+            navigate(`/forms/${form.code}/dashboard`);
           }
         }}
       />

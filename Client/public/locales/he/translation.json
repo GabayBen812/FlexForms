@@ -131,5 +131,11 @@
   "select":"בחירה",
   "terms":"תקנון",
   "terms_text": "הכנס תקנון כאן",
-  "click_to_open_registration": "לחצו כדי לפתוח את ההרשמה"
+  "click_to_open_registration": "לחצו כדי לפתוח את ההרשמה",
+  "organization_owner": "מנהל הארגון",
+  "organization_description": "תיאור הארגון",
+  "organizations": "ארגונים",
+  "admin_dashboard": "לוח בקרה של מנהל הארגון",
+  "admin_welcome": "ברוכים הבאים, {{name}}! כאן אתה יכול לנהל משתמשים, ארגונים, תשלומים ועוד.",
+  "admin_interface": "ממשק מנהל"
 }

@@ -14,8 +14,8 @@ export class User {
   @Prop({ type: Types.ObjectId, ref: 'Organization', required: true })
   organizationId!: Types.ObjectId;  
 
-  @Prop({ default: 'viewer' })
-  role!: 'admin' | 'editor' | 'viewer';
+  @Prop({ default: 'viewer', enum: ['system_admin', 'admin', 'editor', 'viewer'] })
+  role!: 'system_admin' | 'admin' | 'editor' | 'viewer';
 
   @Prop({ required: true })
   name!: string;

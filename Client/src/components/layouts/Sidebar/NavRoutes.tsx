@@ -22,19 +22,22 @@ import { isRouteActive } from "@/utils/routes/routesUtils";
 import { useOrganization } from "@/hooks/useOrganization";
 import { resolveTheme } from "@/lib/themeUtils";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from '@/hooks/useAuth';
 
 export function NavRoutes() {
+  const { user } = useAuth();
   return (
     <SidebarGroup className="gap-4">
       <NewCallButton />
       {router.routes.map((route) => {
         if (!route.handle?.showInSidebar) return null;
+        if (route.handle?.adminOnly && user?.role !== 'system_admin') return null;
         return (
           <div key={route.id}>
             {route.handle?.groupLabel && (
               <SidebarGroupLabel>{route.handle?.groupLabel}</SidebarGroupLabel>
             )}
-            <SideBarMenuRoute route={route} />
+            <SideBarMenuRoute route={route} user={user} />
           </div>
         );
       })}
@@ -42,27 +45,21 @@ export function NavRoutes() {
   );
 }
 
-function SideBarMenuRoute({ route }: { route: RouteObject }) {
+function SideBarMenuRoute({ route, user }: { route: RouteObject, user: any }) {
   const { t } = useTranslation();
-  // const location = useLocation();
-  // const currentPath = location.pathname;
   const { organization } = useOrganization();
-  // const theme = organization?.customStyles?.accentColor;
-  // const fill = resolveTheme(theme).primary;
 
   return (
     <SidebarMenu className="gap-5">
       {route.children?.map((childRoute) => {
         if (!childRoute.handle?.showInSidebar) return null;
-        
+        if (childRoute.handle?.adminOnly && user?.role !== 'system_admin') return null;
         if (
           childRoute.handle?.isMaccabi &&
           organization?.name !== "מרכז מכבי ישראל"
         ) {
           return null;
         }
-
-        // const isActive = currentPath.startsWith(childRoute.path || "");
         return (
           <Collapsible
             key={childRoute.id}
@@ -174,7 +171,6 @@ function NewCallButton() {
   return (
     <SidebarMenu>
       <SidebarMenuItem className="m-[2.5px] mt-5">
-        {/* <Link to="/calls/new"> */}
         <Link to="/create-form">
           <SidebarMenuButton className="text-sidebar-primary-foreground active:bg-none group">
             <span className="flex items-center gap-2 font-bold whitespace-nowrap">
@@ -196,8 +192,7 @@ function NewCallButton() {
               </span>
             </span>
           </SidebarMenuButton>
-          </Link>
-        {/* </Link> */}
+        </Link>
       </SidebarMenuItem>
     </SidebarMenu>
   );

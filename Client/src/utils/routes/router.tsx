@@ -23,6 +23,7 @@ import FormRegistration from "@/pages/Forms/externalPage";
 import Clubs from "@/pages/Clubs";
 import { Navigate } from "react-router-dom";
 import AdminDashboard from '@/pages/Admin';
+import RegistrationSuccess from '@/pages/Forms/externalPage/RegistrationSuccess';
 
 export const router = createBrowserRouter([
   {
@@ -131,6 +132,11 @@ export const router = createBrowserRouter([
   {
     path: "/forms/:code/registration",
     element: <FormRegistration />,
+    handle: { showInSidebar: false },
+  },
+  {
+    path: "/forms/:code/registration/success",
+    element: <RegistrationSuccess />,
     handle: { showInSidebar: false },
   },
 ]);

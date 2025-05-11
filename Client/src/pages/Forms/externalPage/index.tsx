@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { createApiService } from "@/api/utils/apiFactory";
 import { Form } from "@/types/forms/Form";
@@ -21,6 +21,7 @@ const registrationApi = createApiService<UserRegistration>("/registrations");
 export default function FormRegistration() {
   const { t } = useTranslation();
   const { code } = useParams<{ code: string }>();
+  const navigate = useNavigate();
   const [form, setForm] = useState<Form | null>(null);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
@@ -95,7 +96,7 @@ export default function FormRegistration() {
               phone,
               additionalData: rest,
             });
-            setStatus("success");
+            navigate(`/forms/${code}/registration/success`);
           } catch (err) {
             console.error("❌ Error submitting form:", err);
             setStatus("error");

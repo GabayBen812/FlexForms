@@ -96,14 +96,14 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
             </TooltipProvider>
           ))}
         </div>
-        <Button
+        {/* <Button
           variant="outline"
           size="icon"
           onClick={() => setLayoutMode(layoutMode === "grid" ? "list" : "grid")}
           className="hover:bg-primary/10"
         >
           {layoutMode === "grid" ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
-        </Button>
+        </Button> */}
       </div>
 
       <div className={cn(

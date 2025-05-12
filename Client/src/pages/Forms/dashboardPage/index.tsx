@@ -56,14 +56,13 @@ export default function FormDetails() {
 
   return (
     <div className="p-6 space-y-6">
-      <FormHeader form={form} />
-
       <Tabs
         value={currentTab}
         onValueChange={handleTabChange}
         className={`w-full space-y-4 ${isRTL ? "text-right" : "text-left"}`}
         dir={direction}
       >
+        <div className="flex justify-center">
         <TabsList className="bg-muted rounded-lg p-1 shadow border w-fit mx-auto sm:mx-0">
           <TabsTrigger
             value="dashboard"
@@ -84,7 +83,7 @@ export default function FormDetails() {
             {t("edit_form")}
           </TabsTrigger>
         </TabsList>
-
+  </div>
         <TabsContent value="dashboard">
           <FormRegistrationsTable form={form} />
         </TabsContent>
@@ -127,6 +126,6 @@ export default function FormDetails() {
           />
         </TabsContent>
       </Tabs>
-    </div>
-  );
+      </div>
+    );
 }

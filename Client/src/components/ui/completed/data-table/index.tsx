@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   getCoreRowModel,
   getPaginationRowModel,
@@ -31,7 +31,8 @@ export function DataTable<TData>({
   idField,
   onRowClick,
   initialData,
-}: DataTableProps<TData>) {
+  extraFilters = {},
+}: DataTableProps<TData> & { extraFilters?: Record<string, any> }) {
   const [tableData, setTableData] = useState<TData[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -144,6 +145,7 @@ export function DataTable<TData>({
         page: pagination.pageIndex + 1,
         pageSize: pagination.pageSize,
         search: globalFilter || undefined,
+        ...extraFilters,
       };
 
       if (sorting.length > 0) {
@@ -170,9 +172,12 @@ export function DataTable<TData>({
     }
   };
 
+  const memoizedExtraFilters = useMemo(() => extraFilters, [JSON.stringify(extraFilters)]);
+
   useEffect(() => {
     loadData();
-  }, [pagination.pageIndex, pagination.pageSize, sorting, globalFilter]);
+  }, [pagination.pageIndex, pagination.pageSize, sorting, globalFilter, memoizedExtraFilters]);
+  
 
   const toggleAddRow = () => {
     setSpecialRow((prev) => (prev === "add" ? null : "add"));

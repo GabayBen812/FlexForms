@@ -26,8 +26,9 @@ export class FormController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  async getAll() {
-    return this.service.findAll();
+  async getAll(@Query() query: any) {
+    console.log('Test query:', query);
+    return this.service.findAll(query);
   }
 
   @Get('find-by-code')

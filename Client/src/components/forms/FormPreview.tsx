@@ -87,7 +87,7 @@ export default function FormPreview({ form }: Props) {
         </div>
         {form.fields.length > 0 ? (
           <div className="space-y-6">
-            {form.fields.slice(0, 5).map((field, idx) => {
+            {form.fields.map((field, idx) => {
               const Icon = fieldTypeIcons[field.type as keyof typeof fieldTypeIcons] || Type;
               return (
                 <div
@@ -100,11 +100,6 @@ export default function FormPreview({ form }: Props) {
                 </div>
               );
             })}
-            {form.fields.length > 5 && (
-              <p className="text-xs text-gray-400 text-center">
-                + {form.fields.length - 5} {t("more_fields")}
-              </p>
-            )}
           </div>
         ) : (
           <p className="text-base text-gray-400 text-center">{t("no_fields")}</p>

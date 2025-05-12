@@ -140,5 +140,7 @@
   "organizations": "ארגונים",
   "admin_dashboard": "לוח בקרה של מנהל הארגון",
   "admin_welcome": "ברוכים הבאים, {{name}}! כאן אתה יכול לנהל משתמשים, ארגונים, תשלומים ועוד.",
-  "admin_interface": "ממשק מנהל"
+  "admin_interface": "ממשק מנהל",
+  "advanced_search": "חיפוש מתקדם",
+  "search_by_x": "חפש על פי {{x}}"
 }

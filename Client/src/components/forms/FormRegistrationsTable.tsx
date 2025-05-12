@@ -6,6 +6,9 @@ import DataTable from "@/components/ui/completed/data-table";
 import { Form } from "@/types/forms/Form";
 import dayjs from "dayjs";
 import { TableAction } from "@/types/ui/data-table-types";
+import { useState } from "react";
+import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
+import { Button } from "@/components/ui/button";
 
 const registrationsApi = createApiService<UserRegistration>("/registrations");
 
@@ -15,6 +18,8 @@ interface Props {
 
 export default function FormRegistrationsTable({ form }: Props) {
   const { t } = useTranslation();
+  const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>({});
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   const actions: TableAction<UserRegistration>[] = [
     { label: t("delete"), type: "delete" },
@@ -23,27 +28,32 @@ export default function FormRegistrationsTable({ form }: Props) {
   return (
     <div className="col-span-2">
       <h2 className="text-xl font-semibold mb-4">{t("registrations_list")}</h2>
-
+      <div className="flex gap-2 mb-2">
+        <Button variant="outline" onClick={() => setIsAdvancedOpen(true)}>
+          {t('advanced_search', 'חיפוש מתקדם')}
+        </Button>
+      </div>
+      <AdvancedSearchModal
+        open={isAdvancedOpen}
+        onClose={() => setIsAdvancedOpen(false)}
+        columns={getColumns(t, form.fields || [])}
+        onApply={setAdvancedFilters}
+        initialFilters={advancedFilters}
+      />
       <DataTable<UserRegistration>
-        fetchData={({ page = 1, pageSize = 10 }) => {
-          console.log("Sending params:", {
+        fetchData={({ page = 1, pageSize = 10, ...params }) => {
+          const allParams = {
+            ...params,
+            ...advancedFilters,
             formId: form._id,
-            page,
-            pageSize,
-          });
-
+            page: String(page ?? 1),
+            pageSize: String(pageSize ?? 10),
+          };
           return registrationsApi
             .customRequest("get", "/registrations", {
-              params: {
-                formId: form._id,
-                page: String(page ?? 1),
-                pageSize: String(pageSize ?? 10),
-              },
+              params: allParams,
             })
-            .then((res) => {
-              console.log("Response from /registrations:", res);
-              return res;
-            }) as Promise<{
+            .then((res) => res) as Promise<{
             status: number;
             data: UserRegistration[];
             total: number;
@@ -57,6 +67,7 @@ export default function FormRegistrationsTable({ form }: Props) {
         defaultPageSize={10}
         searchable
         actions={actions}
+        extraFilters={advancedFilters}
       />
     </div>
   );

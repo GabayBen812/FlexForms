@@ -48,6 +48,7 @@ export const createApiService = <T>(
       organizationId?: string
     ): Promise<MutationResponse<T[]> | ApiResponse<T>> => {
       try {
+        console.log('API call params:', params);
         const finalOrgId = organizationId ?? getUserOrganizationId();
         const queryParams = buildQueryParams(params || {}, finalOrgId);
         const { url, config } = resolveRoute(customRoutes.fetchAll, baseUrl);

@@ -3,6 +3,7 @@ import { FieldConfig } from "@/components/forms/DynamicForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { 
   Trash2, 
   ArrowUp, 
@@ -14,6 +15,7 @@ import {
   FileText, 
   ListFilter, 
   PenLine,
+  Save,
   LayoutGrid, 
   List 
 } from "lucide-react";
@@ -70,6 +72,11 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
     if (targetIndex < 0 || targetIndex >= newFields.length) return;
     [newFields[index], newFields[targetIndex]] = [newFields[targetIndex], newFields[index]];
     setFields(newFields);
+    toast.success(t("field_moved"), {
+    description: t(`field_moved_${direction}`),
+    duration: 2000,
+    className: "bg-blue-100 text-blue-800 text-base",
+  });
   };
 
   return (
@@ -130,7 +137,7 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
                         onClick={() => handleMoveField(index, "up")}
                         className="hover:bg-primary/10"
                       >
-                        <ArrowUp className="w-4 h-4" />
+                        <ArrowUp className="!w-6 !h-6" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -147,7 +154,7 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
                         onClick={() => handleMoveField(index, "down")}
                         className="hover:bg-primary/10"
                       >
-                        <ArrowDown className="w-4 h-4" />
+                        <ArrowDown className="!w-6 !h-6" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -164,7 +171,7 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
                         onClick={() => handleDeleteField(field.name)}
                         className="hover:bg-destructive/10 text-destructive"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="!w-6 !h-6" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -229,10 +236,13 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
       <div className="sticky bottom-4 right-0 z-50 bg-transparent px-0 py-0 flex justify-end w-full">
         <Button
           onClick={() => onUpdate(fields)}
-          className="bg-primary hover:bg-primary/90 shadow-lg"
+          className="bg-primary hover:bg-primary/90 shadow-lg text-lg px-8 py-7"
           style={{ alignSelf: 'flex-end' }}
         >
+         <div className="flex items-center gap-2">
           {t("save_changes")}
+          <Save className="!w-6 !h-6 shrink-0" />
+         </div>
         </Button>
       </div>
     </div>

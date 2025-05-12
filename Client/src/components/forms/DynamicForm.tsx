@@ -7,6 +7,7 @@ import FieldConfigEditor from "./FieldConfigEditor";
 import SignatureCanvas from "react-signature-canvas";
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Send, Eraser, Save } from 'lucide-react';
 
 export interface FieldConfig {
   name: string;
@@ -324,7 +325,10 @@ export default function DynamicForm({
                         className="mt-2"
                         data-cy={`field-signature-clear-${field.name}`}
                       >
-                        {t("clear_signature")}
+                        <div className="flex items-center gap-2">
+                          {t("clear_signature")}
+                          <Eraser className="w-4 h-4" />
+                        </div>
                       </Button>
                     </>
                   )}
@@ -371,13 +375,13 @@ export default function DynamicForm({
 
       <div className="flex justify-end mt-4 gap-2" data-cy="form-actions">
         {extraButtons}
-        <Button 
-          loading={isSubmitting} 
-          type="submit" 
-          data-cy="submit-button"
-        >
-          {mode === "registration" ? t("submit_registration") : t("create")}
-        </Button>
+       
+       <Button loading={isSubmitting} type="submit" data-cy="submit-button"
+       className="bg-primary hover:bg-primary/90 shadow-lg text-lg px-6 py-6"
+       >
+        {mode === "registration" && <Send className="!w-5 !h-5 mr-2" />}
+        {mode === "registration" ? t("submit_registration") : t("create")}
+      </Button>
       </div>
     </form>
   );

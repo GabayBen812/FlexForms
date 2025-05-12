@@ -38,7 +38,7 @@ export default function DynamicForm({
   extraButtons,
 }: Props) {
   const { t } = useTranslation();
-  const sigCanvasRef = useRef<SignatureCanvas | null>(null);
+  const sigCanvasRefs = useRef<Record<string, SignatureCanvas | null>>({});
 
   const {
     register,
@@ -303,12 +303,12 @@ export default function DynamicForm({
                           className: "border rounded bg-white",
                         }}
                         ref={(ref) => {
-                          sigCanvasRef.current = ref;
+                          sigCanvasRefs.current[field.name] = ref;
                           setValue(field.name, ref?.toDataURL() || "");
                         }}
                         onEnd={() => {
-                          if (sigCanvasRef.current) {
-                            setValue(field.name, sigCanvasRef.current.toDataURL());
+                          if (sigCanvasRefs.current) {
+                            setValue(field.name, sigCanvasRefs.current[field.name]?.toDataURL());
                           }
                         }}
                         data-cy={`field-signature-canvas-${field.name}`}
@@ -318,7 +318,7 @@ export default function DynamicForm({
                         variant="outline"
                         type="button"
                         onClick={() => {
-                          sigCanvasRef.current?.clear();
+                          sigCanvasRefs.current[field.name]?.clear();
                           setValue(field.name, "");
                         }}
                         className="mt-2"

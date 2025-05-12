@@ -5,13 +5,17 @@ import DataTable from "@/components/ui/completed/data-table";
 import { useOrganization } from "@/hooks/useOrganization";
 import { createApiService } from "@/api/utils/apiFactory";
 import { Club } from "@/types/clubs/club";
+import { useState } from "react";
+import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
+import { Button } from "@/components/ui/button";
 
 const usersApi = createApiService<Club>("/clubs");
 
 export default function clubs() {
   const { t } = useTranslation();
   const { organization } = useOrganization();
-  const navigate = useNavigate();
+  const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>({});
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   const columns: ColumnDef<Club>[] = [
     { accessorKey: "name", header: t("club_name") },
@@ -26,6 +30,18 @@ export default function clubs() {
   return (
     <div className="mx-auto">
       <h1 className="text-2xl font-semibold text-primary mb-6">{t("clubs")}</h1>
+      <div className="flex gap-2 mb-2">
+        <Button variant="outline" onClick={() => setIsAdvancedOpen(true)}>
+          {t('advanced_search', 'חיפוש מתקדם')}
+        </Button>
+      </div>
+      <AdvancedSearchModal
+        open={isAdvancedOpen}
+        onClose={() => setIsAdvancedOpen(false)}
+        columns={visibleColumns}
+        onApply={setAdvancedFilters}
+        initialFilters={advancedFilters}
+      />
       <DataTable<Club>
         fetchData={(params) => {
           if (!organization?._id)
@@ -38,6 +54,7 @@ export default function clubs() {
         isPagination
         defaultPageSize={10}
         idField="_id"
+        extraFilters={advancedFilters}
         onRowClick={(user) => {
           
         }}

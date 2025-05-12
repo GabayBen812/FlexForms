@@ -15,22 +15,18 @@ export class RegistrationController {
   @UseGuards(JwtAuthGuard)
   @Get()
   async getByForm(
-    @Query('formId') formId: string,
-    @Query('page') page = '1',
-    @Query('pageSize') pageSize = '10'
+    @Query() query: any
   ) {
-    const pageNumber = parseInt(page, 10);
-    const limit = parseInt(pageSize, 10);
+    const pageNumber = parseInt(query.page ?? '1', 10);
+    const limit = parseInt(query.pageSize ?? '10', 10);
     const skip = (pageNumber - 1) * limit;
-  
-    const [data, total] = await this.service.findByFormIdPaginated(formId, skip, limit);
-  
+    // Remove page and pageSize from query before passing to service
+    const { page, pageSize, ...filters } = query;
+    const [data, total] = await this.service.findPaginatedWithFilters(filters, skip, limit);
     return {
       status: 200,
       data,
       total,
     };
   }
-  
-  
 }

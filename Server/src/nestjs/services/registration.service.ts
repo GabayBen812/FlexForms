@@ -36,30 +36,80 @@ export class RegistrationService {
   }
 
   async findAll(query: any = {}) {
-    const filter = { ...query.filter };
-
-    if (filter.formId && Types.ObjectId.isValid(filter.formId)) {
-      filter.formId = new Types.ObjectId(filter.formId);
+    const filter: any = {};
+    // Global search (search input)
+    if (query.search) {
+      filter.fullName = { $regex: query.search, $options: 'i' };
     }
-
-    if (filter.organizationId && Types.ObjectId.isValid(filter.organizationId)) {
-      filter.organizationId = new Types.ObjectId(filter.organizationId);
+    // Advanced search (field-specific)
+    if (query.fullName) {
+      filter.fullName = { $regex: query.fullName, $options: 'i' };
     }
-
+    if (query.email) {
+      filter.email = { $regex: query.email, $options: 'i' };
+    }
+    if (query.phone) {
+      filter.phone = { $regex: query.phone, $options: 'i' };
+    }
+    if (query.formId && Types.ObjectId.isValid(query.formId)) {
+      filter.formId = new Types.ObjectId(query.formId);
+    }
+    if (query.organizationId && Types.ObjectId.isValid(query.organizationId)) {
+      filter.organizationId = new Types.ObjectId(query.organizationId);
+    }
+    // Support filtering on additionalData fields (dot notation)
+    Object.keys(query).forEach(key => {
+      if (key.startsWith('additionalData.') && query[key]) {
+        filter[key] = { $regex: query[key], $options: 'i' };
+      }
+    });
+    // Remove empty filters
+    Object.keys(filter).forEach(key => {
+      if (filter[key] === undefined || filter[key] === "") {
+        delete filter[key];
+      }
+    });
     return this.model.find(filter).exec();
   }
 
-
-  async findByFormIdPaginated(formId: string, skip: number, limit: number) {
+  async findPaginatedWithFilters(query: any, skip: number, limit: number) {
+    const filter: any = {};
+    // Global search (search input)
+    if (query.search) {
+      filter.fullName = { $regex: query.search, $options: 'i' };
+    }
+    // Advanced search (field-specific)
+    if (query.fullName) {
+      filter.fullName = { $regex: query.fullName, $options: 'i' };
+    }
+    if (query.email) {
+      filter.email = { $regex: query.email, $options: 'i' };
+    }
+    if (query.phone) {
+      filter.phone = { $regex: query.phone, $options: 'i' };
+    }
+    if (query.formId && Types.ObjectId.isValid(query.formId)) {
+      filter.formId = new Types.ObjectId(query.formId);
+    }
+    if (query.organizationId && Types.ObjectId.isValid(query.organizationId)) {
+      filter.organizationId = new Types.ObjectId(query.organizationId);
+    }
+    // Support filtering on additionalData fields (dot notation)
+    Object.keys(query).forEach(key => {
+      if (key.startsWith('additionalData.') && query[key]) {
+        filter[key] = { $regex: query[key], $options: 'i' };
+      }
+    });
+    // Remove empty filters
+    Object.keys(filter).forEach(key => {
+      if (filter[key] === undefined || filter[key] === "") {
+        delete filter[key];
+      }
+    });
     const [data, total] = await Promise.all([
-      this.model
-        .find({ formId: new Types.ObjectId(formId) })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-        this.model.countDocuments({ formId: new Types.ObjectId(formId) }),
+      this.model.find(filter).skip(skip).limit(limit).lean(),
+      this.model.countDocuments(filter),
     ]);
-  
     return [data, total];
   }
 }

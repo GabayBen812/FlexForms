@@ -1,22 +1,18 @@
+import { handleImageUpload } from "./imageUtils";
+
 // import { deleteImage, getImage, uploadImage } from "./supabase";
 
 export const handleLogoUpload = async (
   logo: File,
   path: string
 ): Promise<string> => {
-  const uuid = crypto.randomUUID();
-  const fullPath = `${path}/${uuid}.png`;
-
-  // const uploadedPath = await uploadImage(logo, fullPath);
-  const uploadedPath = ""
-
-
-  if (!uploadedPath) {
-    console.log("Failed to upload image");
+  try {
+    const uploadedPath = await handleImageUpload(logo, path);
+    return uploadedPath;
+  } catch (error) {
+    console.error("Failed to upload image:", error);
     return "";
   }
-
-  return uploadedPath;
 };
 
 type ImageHandlerOptions = {

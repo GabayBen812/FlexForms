@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Req, UseGuards, Param, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, Get, Req, UseGuards, Param, BadRequestException, Query } from '@nestjs/common';
 import { OrganizationService } from '../services/organization.service';
 import { CreateOrganizationDto } from '../dto/organization.dto';
 import { JwtAuthGuard } from '../middlewares/jwt-auth.guard';
@@ -43,7 +43,7 @@ export class OrganizationController {
   }
   
   @Get()
-  findAll() {
-    return this.organizationService.findAll();
+  async findAll(@Query() query: any) {
+    return this.organizationService.findAll(query);
   }
 }

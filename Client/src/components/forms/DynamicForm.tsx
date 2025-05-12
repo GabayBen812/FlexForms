@@ -7,6 +7,7 @@ import FieldConfigEditor from "./FieldConfigEditor";
 import SignatureCanvas from "react-signature-canvas";
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { handleImageUpload } from "@/lib/imageUtils";
 
 export interface FieldConfig {
   name: string;
@@ -49,6 +50,64 @@ export default function DynamicForm({
     resolver: zodResolver(validationSchema),
     defaultValues,
   });
+
+  const handleSignatureSave = async (fieldName: string) => {
+    if (!sigCanvasRef.current) return;
+
+    try {
+      // Convert canvas to blob
+      const dataURL = sigCanvasRef.current.toDataURL();
+      // Upload to Firebase Storage - Return later after paying for firebase
+
+
+
+      // const response = await fetch(dataURL);
+      // const blob = await response.blob();
+      
+      // Create a File object from the blob
+      // const file = new File([blob], "signature.png", { type: "image/png" });
+      
+
+      // const signatureUrl = await handleImageUpload(file, `signatures/${fieldName}`);
+      // setValue(fieldName, dataURL);
+      // Set the URL in the form
+      setValue(fieldName, dataURL);
+    } catch (error) {
+      console.error("Error saving signature:", error);
+    }
+  };
+
+  const processSignatureFields = async (data: any) => {
+    return { ...data };
+    /*
+    // --- Enable this block when Firebase Storage is available ---
+    const newData = { ...data };
+    const signatureFields = fields.filter(f => f.type === 'signature');
+    console.log('[processSignatureFields] signatureFields:', signatureFields);
+    for (const field of signatureFields) {
+      const value = newData[field.name];
+      console.log(`[processSignatureFields] Checking field '${field.name}':`, value);
+      if (value && typeof value === 'string' && value.startsWith('data:image/')) {
+        console.log(`[processSignatureFields] Uploading signature for field '${field.name}'`);
+        const response = await fetch(value);
+        const blob = await response.blob();
+        const file = new File([blob], 'signature.png', { type: 'image/png' });
+        const url = await handleImageUpload(file, `signatures/${field.name}`);
+        console.log(`[processSignatureFields] Uploaded signature URL for field '${field.name}':`, url);
+        newData[field.name] = url;
+      }
+    }
+    console.log('[processSignatureFields] Final processed data:', newData);
+    return newData;
+    */
+  };
+
+  const handleFormSubmit = async (data: any) => {
+    console.log('[handleFormSubmit] Raw form data:', data);
+    const processedData = await processSignatureFields(data);
+    console.log('[handleFormSubmit] Processed form data:', processedData);
+    onSubmit(processedData);
+  };
 
   const renderField = (field: FieldConfig) => {
     switch (field.type) {
@@ -113,12 +172,9 @@ export default function DynamicForm({
                   }}
                   ref={(ref) => {
                     sigCanvasRef.current = ref;
-                    setValue(field.name, ref?.toDataURL() || "");
                   }}
                   onEnd={() => {
-                    if (sigCanvasRef.current) {
-                      setValue(field.name, sigCanvasRef.current.toDataURL());
-                    }
+                    handleSignatureSave(field.name);
                   }}
                   data-cy={`field-signature-canvas-${field.name}`}
                 />
@@ -191,7 +247,7 @@ export default function DynamicForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6" data-cy="registration-form">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="flex flex-col gap-6" data-cy="registration-form">
       <h2 className="text-lg font-bold" data-cy="form-title">
         {mode === "registration"
           ? t("form_registration")
@@ -304,12 +360,9 @@ export default function DynamicForm({
                         }}
                         ref={(ref) => {
                           sigCanvasRef.current = ref;
-                          setValue(field.name, ref?.toDataURL() || "");
                         }}
                         onEnd={() => {
-                          if (sigCanvasRef.current) {
-                            setValue(field.name, sigCanvasRef.current.toDataURL());
-                          }
+                          handleSignatureSave(field.name);
                         }}
                         data-cy={`field-signature-canvas-${field.name}`}
                       />

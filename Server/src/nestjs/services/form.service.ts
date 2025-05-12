@@ -38,8 +38,45 @@ export class FormService {
     return this.model.findByIdAndUpdate(id, data, { new: true }).exec();
   }
 
-  findAll() {
-    return this.model.find().exec();
+  async findAll(query: any = {}) {
+    const sample = await this.model.findOne();
+    console.log('Sample form document:', sample);
+    console.log('Incoming query (forms):', query);
+    const filter: any = {};
+
+    // Global search (search input)
+    if (query.search) {
+      filter.title = { $regex: query.search, $options: 'i' };
+    }
+
+    // Advanced search (field-specific)
+    if (query.title) {
+      filter.title = { $regex: query.title, $options: 'i' };
+    }
+    if (query.description) {
+      filter.description = { $regex: query.description, $options: 'i' };
+    }
+    if (query.isActive !== undefined && query.isActive !== "") {
+      filter.isActive = query.isActive;
+    }
+    if (query.createdAt) {
+      filter.createdAt = { $regex: query.createdAt, $options: 'i' };
+    }
+    if (query.organizationId && query.organizationId !== "") {
+      filter.organizationId = new Types.ObjectId(query.organizationId);
+    }
+
+    // Only add filters if value is not undefined or empty string
+    Object.keys(filter).forEach(key => {
+      if (filter[key] === undefined || filter[key] === "") {
+        delete filter[key];
+      }
+    });
+
+    console.log('Constructed filter (forms):', filter);
+    const results = await this.model.find(filter).exec();
+    console.log('Results count (forms):', results.length);
+    return results;
   }
 
   findById(id: string) {

@@ -8,6 +8,8 @@ import SignatureCanvas from "react-signature-canvas";
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { handleImageUpload } from "@/lib/imageUtils";
+import { Send, Eraser, Save } from 'lucide-react';
+
 
 export interface FieldConfig {
   name: string;
@@ -39,7 +41,7 @@ export default function DynamicForm({
   extraButtons,
 }: Props) {
   const { t } = useTranslation();
-  const sigCanvasRef = useRef<SignatureCanvas | null>(null);
+  const sigCanvasRefs = useRef<Record<string, SignatureCanvas | null>>({});
 
   const {
     register,
@@ -359,10 +361,13 @@ export default function DynamicForm({
                           className: "border rounded bg-white",
                         }}
                         ref={(ref) => {
-                          sigCanvasRef.current = ref;
+                          sigCanvasRefs.current[field.name] = ref;
+                          setValue(field.name, ref?.toDataURL() || "");
                         }}
                         onEnd={() => {
-                          handleSignatureSave(field.name);
+                          if (sigCanvasRefs.current) {
+                            setValue(field.name, sigCanvasRefs.current[field.name]?.toDataURL());
+                          }
                         }}
                         data-cy={`field-signature-canvas-${field.name}`}
                       />
@@ -371,13 +376,16 @@ export default function DynamicForm({
                         variant="outline"
                         type="button"
                         onClick={() => {
-                          sigCanvasRef.current?.clear();
+                          sigCanvasRefs.current[field.name]?.clear();
                           setValue(field.name, "");
                         }}
                         className="mt-2"
                         data-cy={`field-signature-clear-${field.name}`}
                       >
-                        {t("clear_signature")}
+                        <div className="flex items-center gap-2">
+                          {t("clear_signature")}
+                          <Eraser className="w-4 h-4" />
+                        </div>
                       </Button>
                     </>
                   )}
@@ -424,13 +432,13 @@ export default function DynamicForm({
 
       <div className="flex justify-end mt-4 gap-2" data-cy="form-actions">
         {extraButtons}
-        <Button 
-          loading={isSubmitting} 
-          type="submit" 
-          data-cy="submit-button"
-        >
-          {mode === "registration" ? t("submit_registration") : t("create")}
-        </Button>
+       
+       <Button loading={isSubmitting} type="submit" data-cy="submit-button"
+       className="bg-primary hover:bg-primary/90 shadow-lg text-lg px-6 py-6"
+       >
+        {mode === "registration" && <Send className="!w-5 !h-5 mr-2" />}
+        {mode === "registration" ? t("submit_registration") : t("create")}
+      </Button>
       </div>
     </form>
   );

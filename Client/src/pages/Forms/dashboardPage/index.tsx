@@ -9,6 +9,7 @@ import FormPreview from "@/components/forms/FormPreview";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FormEditor from "@/components/forms/FormEditor";
 import { useToast } from "@/hooks/use-toast";
+import { List, ScanEye, Pencil } from "lucide-react";
 
 const formsApi = createApiService<Form>("/forms", {
   customRoutes: {
@@ -56,35 +57,43 @@ export default function FormDetails() {
 
   return (
     <div className="p-6 space-y-6">
-      <FormHeader form={form} />
-
       <Tabs
         value={currentTab}
         onValueChange={handleTabChange}
         className={`w-full space-y-4 ${isRTL ? "text-right" : "text-left"}`}
         dir={direction}
       >
+        <div className="flex justify-center">
         <TabsList className="bg-muted rounded-lg p-1 shadow border w-fit mx-auto sm:mx-0">
           <TabsTrigger
             value="dashboard"
             className="text-base px-5 py-2 font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
           >
+             <div className="flex items-center gap-2">
             {t("registrations_list")}
+            <List className="w-5 h-5" />
+            </div>
           </TabsTrigger>
           <TabsTrigger
             value="preview"
             className="text-base px-5 py-2 font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
           >
-            {t("form_preview")}
+          <div className="flex items-center gap-2">
+          {t("form_preview")}
+          <ScanEye className="w-5 h-5"/>
+          </div>
           </TabsTrigger>
           <TabsTrigger
             value="edit"
             className="text-base px-5 py-2 font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
           >
+            <div className="flex items-center gap-2">
             {t("edit_form")}
+            <Pencil className="w-5 h-5"/>
+            </div>
           </TabsTrigger>
         </TabsList>
-
+  </div>
         <TabsContent value="dashboard">
           <FormRegistrationsTable form={form} />
         </TabsContent>
@@ -127,6 +136,6 @@ export default function FormDetails() {
           />
         </TabsContent>
       </Tabs>
-    </div>
-  );
+      </div>
+    );
 }

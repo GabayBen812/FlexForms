@@ -19,11 +19,13 @@ import MacabiTable from "@/pages/MacabiTable";
 import LandingPage from "@/pages/LandingPage";
 import CreateForm from "@/pages/Forms/createPage/createForm";
 import FormDetails from "@/pages/Forms/dashboardPage";
+
 import FormRegistration from "@/pages/Forms/externalPage";
 import Clubs from "@/pages/Clubs";
 import { Navigate } from "react-router-dom";
 import AdminDashboard from '@/pages/Admin';
 import RegistrationSuccess from '@/pages/Forms/externalPage/RegistrationSuccess';
+import FormSettings from "@/components/forms/FormSettings";
 
 export const router = createBrowserRouter([
   {
@@ -68,6 +70,10 @@ export const router = createBrowserRouter([
           },
           {
             path: "edit",
+            element: <FormDetails />,
+          },
+          {
+            path: "settings",
             element: <FormDetails />,
           },
         ],

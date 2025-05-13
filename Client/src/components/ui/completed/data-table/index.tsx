@@ -215,9 +215,7 @@ export function DataTable<TData>({
   return (
     <div className="space-y-4">
       <div
-        className={`${
-          searchable ? "justify-between" : "justify-end"
-        } flex items-center gap-2`}
+        className={`flex items-center ${searchable ? "justify-between" : "justify-end"}`}
       >
         {searchable && (
           <div className="flex items-center gap-2">

@@ -101,7 +101,12 @@ export default function Forms() {
         initialFilters={advancedFilters}
       />
       <DataTable<Form>
-        fetchData={fetchData}
+        // fetchData={fetchData}
+        fetchData={(params) => {
+          if (!organization?._id)
+            return Promise.resolve({ status: 200, data: [] });
+          return formsApi.fetchAll(params, false, organization._id);}
+         }
         addData={(data) => formsApi.create(data)}
         updateData={(data) => formsApi.update({ ...data, id: data._id })}
         columns={columns}

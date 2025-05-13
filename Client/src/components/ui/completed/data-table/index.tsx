@@ -214,9 +214,7 @@ export function DataTable<TData>({
   return (
     <div className="space-y-4">
       <div
-        className={`${
-          searchable ? "justify-between" : "justify-end"
-        } flex items-center`}
+        className={`flex items-center ${searchable ? "justify-between" : "justify-end"}`}
       >
         {searchable && (
           <DataTableSearch
@@ -224,10 +222,12 @@ export function DataTable<TData>({
             setGlobalFilter={setGlobalFilter}
           />
         )}
+         <div className="flex justify-center w-full">
         <DataTableAddButton
           showAddButton={showAddButton}
           onToggleAddRow={toggleAddRow}
         />
+        </div>
       </div>
 
       <div className="rounded-lg">

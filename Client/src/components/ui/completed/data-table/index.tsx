@@ -228,10 +228,12 @@ export function DataTable<TData>({
             <DataTableDownloadButton table={table} />
           </div>
         )}
+         <div className="flex justify-center w-full">
         <DataTableAddButton
           showAddButton={showAddButton}
           onToggleAddRow={toggleAddRow}
         />
+        </div>
       </div>
 
       <div className="rounded-lg">

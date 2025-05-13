@@ -14,9 +14,15 @@ export const DataTableAddButton = ({
 }: DataTableAddButtonProps) => {
   const { t } = useTranslation();
   return showAddButton ? (
-    <Button variant={"accentGhost"} onClick={onToggleAddRow}>
+    <div className="flex justify-center mt-4">
+    <Button
+     variant={"accentGhost"} 
+     onClick={onToggleAddRow}
+     className="text-xl px-10 py-6 gap-3"
+     >
       <PlusCircle />
       {t("add")}
     </Button>
+    </div>
   ) : null;
 };

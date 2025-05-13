@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useOrganization } from "@/hooks/useOrganization";
 import apiClient from "@/api/apiClient";
-import { z } from "zod";
+import { string, z } from "zod";
 import { useTranslation } from "react-i18next";
 import FieldPalette from "@/components/forms/FieldPalette";
 import DynamicForm, { FieldConfig } from "@/components/forms/DynamicForm";
@@ -9,16 +10,19 @@ import DynamicForm, { FieldConfig } from "@/components/forms/DynamicForm";
 export default function CreateForm() {
   const { t } = useTranslation();
   const { organization } = useOrganization();
+  const navigate = useNavigate();
+  const [organization_id, setOrganizationId] = useState<string | null>(null);
   const [formFields, setFormFields] = useState<FieldConfig[]>([
     { name: "title", label: t("form_title"), type: "text", isRequired: true },
     { name: "description", label: t("form_description"), type: "text", isRequired: false },
   ]);
 
-  useEffect(() => {
+   useEffect(() => {
     if (organization?._id) {
-      // ניתן לשמור כאן את ה־ID אם אתה רוצה להוסיף אותו ל־payload
+      setOrganizationId(organization._id);
     }
   }, [organization]);
+
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -66,7 +70,7 @@ export default function CreateForm() {
       title,
       description,
       isActive: true,
-      organizationId: organization?._id,
+      organizationId: organization_id,
       fields: formFields
         .filter((f) => f.name !== "title" && f.name !== "description")
         .map((f) => ({
@@ -81,7 +85,7 @@ export default function CreateForm() {
     try {
       const res = await apiClient.post("/forms", payload);
       if (res.status === 200 || res.status === 201) {
-        alert(t("form_created_success"));
+        navigate(`/forms/${res.data.code}/edit`);
       } else {
         alert(t("form_created_fail"));
       }

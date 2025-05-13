@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { createApiService } from "@/api/utils/apiFactory";
 import { Form } from "@/types/forms/Form";
 import { useTranslation } from "react-i18next";
-import FormHeader from "@/components/forms/FormHeader";
 import FormRegistrationsTable from "@/components/forms/FormRegistrationsTable";
 import FormPreview from "@/components/forms/FormPreview";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

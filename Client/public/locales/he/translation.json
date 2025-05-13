@@ -142,5 +142,16 @@
   "admin_welcome": "ברוכים הבאים, {{name}}! כאן אתה יכול לנהל משתמשים, ארגונים, תשלומים ועוד.",
   "admin_interface": "ממשק מנהל",
   "advanced_search": "חיפוש מתקדם",
-  "search_by_x": "חפש על פי {{x}}"
+  "search_by_x": "חפש על פי {{x}}",
+  "edit_feature_flag": "ערוך דגל פיצ'ר",
+  "delete_feature_flag": "מחק דגל פיצ'ר",
+  "delete_confirm": "האם אתה בטוח שברצונך למחוק דגל פיצ'ר זה?",
+  "cancel": "ביטול",
+  "on": "פועל",
+  "off": "כבוי",
+  "tags": "תגיות",
+  "enabled": "פעיל",
+  "description": "תיאור",
+  "name": "שם",
+  "key": "מפתח"
 }

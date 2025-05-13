@@ -109,3 +109,25 @@ export default function Payments() {
     </div>
   );
 }
+
+export async function fetchAllFeatureFlags(params: ApiQueryParams) {
+  const res = await apiClient.get("/feature-flags", { params });
+  if (Array.isArray(res.data)) {
+    return {
+      data: res.data,
+      totalCount: res.data.length,
+      totalPages: 1,
+    };
+  }
+  return res.data;
+}
+
+export async function updateFeatureFlag(id: string, data: Partial<FeatureFlag>) {
+  const res = await apiClient.put(`/feature-flags/${id}`, data);
+  return res.data;
+}
+
+export async function deleteFeatureFlag(id: string) {
+  const res = await apiClient.delete(`/feature-flags/${id}`);
+  return res.data;
+}

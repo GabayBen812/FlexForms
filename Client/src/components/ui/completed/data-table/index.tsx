@@ -13,6 +13,7 @@ import DataTableBody from "./data-table-body";
 import DataTableHeader from "./data-table-header";
 import { DataTableSearch } from "./data-table-search";
 import { DataTableAddButton } from "./data-table-add-button";
+import { DataTableDownloadButton } from "./data-table-download-button";
 import { ApiQueryParams, DataTableProps } from "@/types/ui/data-table-types";
 import { toast } from "sonner";
 
@@ -216,13 +217,16 @@ export function DataTable<TData>({
       <div
         className={`${
           searchable ? "justify-between" : "justify-end"
-        } flex items-center`}
+        } flex items-center gap-2`}
       >
         {searchable && (
-          <DataTableSearch
-            globalFilter={globalFilter}
-            setGlobalFilter={setGlobalFilter}
-          />
+          <div className="flex items-center gap-2">
+            <DataTableSearch
+              globalFilter={globalFilter}
+              setGlobalFilter={setGlobalFilter}
+            />
+            <DataTableDownloadButton table={table} />
+          </div>
         )}
         <DataTableAddButton
           showAddButton={showAddButton}

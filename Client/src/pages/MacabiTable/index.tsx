@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
-import { useNavigate } from "react-router-dom";
 import DataTable from "@/components/ui/completed/data-table";
 import { useOrganization } from "@/hooks/useOrganization";
 import { createApiService } from "@/api/utils/apiFactory";
@@ -8,6 +7,7 @@ import { MacabiClub } from "@/types/macabiClub/macabiClub";
 import { useState } from "react";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/components/ui/sidebar";
 
 const usersApi = createApiService<MacabiClub>("/clubs");
 
@@ -16,6 +16,8 @@ export default function clubs() {
   const { organization } = useOrganization();
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>({});
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const { state } = useSidebar();
+  const sidebarIsCollapsed = state === "collapsed";
 
   const columns: ColumnDef<MacabiClub>[] = [
     { accessorKey: "name", header: t("club_name") },
@@ -63,23 +65,30 @@ export default function clubs() {
           onApply={setAdvancedFilters}
           initialFilters={advancedFilters}
         />
-        <DataTable<MacabiClub>
-          fetchData={(params) => {
-            if (!organization?._id)
-              return Promise.resolve({ status: 200, data: [] });
-            return usersApi.fetchAll(params, false, organization._id);
+        <div
+          className="overflow-x-auto w-full"
+          style={{
+            maxWidth: `calc(100vw - ${sidebarIsCollapsed ? "100px" : "18rem"})`
           }}
-          columns={visibleColumns}
-          searchable
-          showAddButton
-          isPagination
-          defaultPageSize={10}
-          idField="id"
-          extraFilters={advancedFilters}
-          onRowClick={() => {
-            
-          }}
-        />
+        >
+          <DataTable<MacabiClub>
+            fetchData={(params) => {
+              if (!organization?._id)
+                return Promise.resolve({ status: 200, data: [] });
+              return usersApi.fetchAll(params, false, organization._id);
+            }}
+            columns={visibleColumns}
+            searchable
+            showAddButton
+            isPagination
+            defaultPageSize={10}
+            idField="id"
+            extraFilters={advancedFilters}
+            onRowClick={() => {
+              
+            }}
+          />
+        </div>
       </div>
     </div>
   );

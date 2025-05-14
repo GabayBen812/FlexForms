@@ -33,6 +33,8 @@ export function DataTable<TData>({
   onRowClick,
   initialData,
   extraFilters = {},
+  onRowSelectionChange,
+  rowSelection,
 }: DataTableProps<TData> & { extraFilters?: Record<string, any> }) {
   const [tableData, setTableData] = useState<TData[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -44,7 +46,7 @@ export function DataTable<TData>({
     pageSize: defaultPageSize,
   });
   const [specialRow, setSpecialRow] = useState<"add" | null>(null);
-
+  
   const handleAdd = async (newData: Partial<TData>) => {
     if (!addData || !idField) return;
     const tempId = `temp-${Date.now()}`;
@@ -120,7 +122,10 @@ export function DataTable<TData>({
       sorting,
       globalFilter,
       pagination,
+      rowSelection,
     },
+    enableRowSelection: true,
+    onRowSelectionChange: onRowSelectionChange, 
     pageCount: Math.ceil(totalCount / pagination.pageSize),
     manualPagination: true,
     manualSorting: true,

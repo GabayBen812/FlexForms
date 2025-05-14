@@ -1,4 +1,4 @@
-import { ColumnDef, Row } from "@tanstack/react-table";
+import { ColumnDef, Row, RowSelectionState  } from "@tanstack/react-table";
 import { MutationResponse } from "@/types/api/auth";
 
 export interface ApiQueryParams {
@@ -41,6 +41,8 @@ export interface DataTableProps<TData> {
   showAddButton?: boolean;
   idField?: keyof TData;
   onRowClick?: (row: Row<TData>) => void;
+  rowSelection?: RowSelectionState;
+  onRowSelectionChange?: (selection: RowSelectionState) => void;
 }
 
 export interface TableAction<TData> {

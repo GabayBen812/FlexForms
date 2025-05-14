@@ -1,14 +1,34 @@
 import { Button } from "@/components/ui/button";
 import { FileDown } from "lucide-react";
 import { Table } from "@tanstack/react-table";
+import { withFeatureFlag } from "@/components/withFeatureFlag";
+import { useContext } from "react";
+import { OrganizationsContext } from "@/contexts/OrganizationsContext";
+import { Organization } from "@/types/api/organization";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
 interface DataTableDownloadButtonProps<TData> {
   table: Table<TData>;
 }
 
-export function DataTableDownloadButton<TData>({
+type OrganizationWithFlags = Organization & { featureFlagIds?: string[] };
+
+
+function DataTableDownloadButtonBase<TData>({
   table,
 }: DataTableDownloadButtonProps<TData>) {
+  const { organization } = useContext(OrganizationsContext) as { organization?: OrganizationWithFlags };
+  
+  console.log("organization", organization);
+  
+  const { isEnabled, isLoading } = useFeatureFlag("ff_is_show_download_csv");
+
+  console.log("isEnabled", isEnabled);
+  console.log("isLoading", isLoading);
+  
+
+  if (isLoading || !isEnabled) return null;
+
   const handleDownload = () => {
     const headers = table.getAllColumns()
       .filter(column => column.getCanHide() && column.getIsVisible())
@@ -57,4 +77,9 @@ export function DataTableDownloadButton<TData>({
       <FileDown className="h-4 w-4 text-white" strokeWidth={2.5} />
     </Button>
   );
-} 
+}
+
+export const DataTableDownloadButton = withFeatureFlag(DataTableDownloadButtonBase, {
+  featureFlag: 'ff_is_show_download_csv',
+  fallback: null
+}); 

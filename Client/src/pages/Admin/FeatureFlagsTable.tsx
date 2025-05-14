@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useTranslation } from 'react-i18next';
 import { fetchAllFeatureFlags, updateFeatureFlag, deleteFeatureFlag } from '@/api/feature-flags';
-import DynamicForm, { FieldConfig } from '@/components/forms/DynamicForm';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import FeatureFlagEditForm from '@/components/forms/FeatureFlagEditForm';
+import FeatureFlagOrganizationsModal from '@/components/forms/FeatureFlagOrganizationsModal';
+import { fetchAllOrganizations } from '@/api/organizations';
 
 
 export default function FeatureFlagsTable() {
@@ -16,15 +17,25 @@ export default function FeatureFlagsTable() {
   const [editingFlag, setEditingFlag] = useState<FeatureFlag | null>(null);
   const [deletingFlag, setDeletingFlag] = useState<FeatureFlag | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [orgs, setOrgs] = useState<{ _id: string; name: string }[]>([]);
+  const [orgsModalFlag, setOrgsModalFlag] = useState<FeatureFlag | null>(null);
+  const [allOrganizations, setAllOrganizations] = useState<{ _id: string; name: string; featureFlagIds: string[] }[]>([]);
+  const [orgsLoading, setOrgsLoading] = useState(true);
 
-  // Fetch organizations for assignment (on mount)
   useEffect(() => {
-    // Replace with your real API call
-    fetch('/api/organizations')
-      .then(res => res.json())
-      .then(data => setOrgs(data.data || data));
-  }, []);
+    async function loadOrgs() {
+      setOrgsLoading(true);
+      const res = await fetchAllOrganizations();
+      // Defensive: support both _id and id, and include featureFlagIds
+      const orgs = (res.data || []).map((org: any) => ({
+        _id: org._id || org.id,
+        name: org.name,
+        featureFlagIds: org.featureFlagIds || [],
+      }));
+      setAllOrganizations(orgs);
+      setOrgsLoading(false);
+    }
+    loadOrgs();
+  }, [refreshKey]);
 
   const columns: ColumnDef<FeatureFlag>[] = [
     { accessorKey: 'key', header: t('key', 'Key') },
@@ -59,24 +70,15 @@ export default function FeatureFlagsTable() {
       header: t('actions', 'Actions'),
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => setEditingFlag(row.original)}>
+          <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); setEditingFlag(row.original); }}>
             {t('edit', 'Edit')}
           </Button>
-          <Button size="sm" variant="destructive" onClick={() => setDeletingFlag(row.original)}>
+          <Button size="sm" variant="destructive" onClick={e => { e.stopPropagation(); setDeletingFlag(row.original); }}>
             {t('delete', 'Delete')}
           </Button>
         </div>
       ),
     },
-  ];
-
-  // Define fields for DynamicForm
-  const flagFormFields: FieldConfig[] = [
-    { name: "key", label: t("key", "Key"), type: "text", disabled: true },
-    { name: "name", label: t("name", "Name"), type: "text" },
-    { name: "description", label: t("description", "Description"), type: "text" },
-    { name: "isEnabled", label: t("enabled", "Enabled"), type: "checkbox" },
-    { name: "tags", label: t("tags", "Tags"), type: "text" },
   ];
 
   return (
@@ -86,17 +88,30 @@ export default function FeatureFlagsTable() {
         key={refreshKey}
         columns={columns}
         fetchData={fetchAllFeatureFlags}
+        addData={async () => { return { data: {} as FeatureFlag, status: 200 }; }}
+        updateData={async () => { return { data: {} as FeatureFlag, status: 200 }; }}
         searchable
         isPagination={true}
+        onRowClick={row => setOrgsModalFlag(row.original)}
       />
 
       {/* Edit Dialog */}
       {editingFlag && (
         <FeatureFlagEditForm
           flag={editingFlag}
-          organizations={orgs}
           onClose={() => setEditingFlag(null)}
           onUpdated={() => setRefreshKey(k => k + 1)}
+        />
+      )}
+
+      {/* Organization Assignment Modal */}
+      {orgsModalFlag && (
+        <FeatureFlagOrganizationsModal
+          flag={orgsModalFlag}
+          organizations={allOrganizations}
+          onClose={() => setOrgsModalFlag(null)}
+          onUpdated={() => setRefreshKey(k => k + 1)}
+          isLoading={orgsLoading}
         />
       )}
 

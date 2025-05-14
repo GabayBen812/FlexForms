@@ -19,13 +19,14 @@ import MacabiTable from "@/pages/MacabiTable";
 import LandingPage from "@/pages/LandingPage";
 import CreateForm from "@/pages/Forms/createPage/createForm";
 import FormDetails from "@/pages/Forms/dashboardPage";
-
 import FormRegistration from "@/pages/Forms/externalPage";
 import Clubs from "@/pages/Clubs";
 import { Navigate } from "react-router-dom";
 import AdminDashboard from '@/pages/Admin';
 import RegistrationSuccess from '@/pages/Forms/externalPage/RegistrationSuccess';
 import FormSettings from "@/components/forms/FormSettings";
+import Rooms from "@/pages/Rooms";
+import { DoorOpen } from "lucide-react";
 
 export const router = createBrowserRouter([
   {
@@ -49,6 +50,16 @@ export const router = createBrowserRouter([
           title: "forms",
           icon: ReportsIcon,
           showInSidebar: true,
+        },
+      },
+      {
+        path: "rooms",
+        element: <Rooms />,
+        handle: {
+          title: "rooms",
+          icon: DoorOpen,
+          showInSidebar: true,
+          featureFlag: "ff_is_show_rooms"
         },
       },
       {

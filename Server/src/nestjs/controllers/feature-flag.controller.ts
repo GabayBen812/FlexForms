@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Delete, Put, Query, UseGuards, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { FeatureFlagService } from '../services/feature-flag.service';
-import { CreateFeatureFlagDto, UpdateFeatureFlagDto, AssignFeatureFlagDto } from '../dto/feature-flag.dto';
+import { CreateFeatureFlagDto, UpdateFeatureFlagDto } from '../dto/feature-flag.dto';
 import { JwtAuthGuard } from '../middlewares/jwt-auth.guard';
 import { RolesGuard } from '../middlewares/roles.guard';
 import { Roles } from '../middlewares/roles.decorator';
@@ -63,29 +63,5 @@ export class FeatureFlagController {
   @Roles('system_admin')
   delete(@Param('id') id: string) {
     return this.featureFlagService.delete(id);
-  }
-
-  @Post(':id/assign')
-  @Roles('system_admin')
-  assignToOrganizations(
-    @Param('id') id: string,
-    @Body() dto: AssignFeatureFlagDto,
-    @Req() req: Request
-  ) {
-    const userId = req.user?.id;
-    if (!userId) throw new Error('User not found in request');
-    return this.featureFlagService.assignToOrganizations(id, dto, userId);
-  }
-
-  @Post(':id/remove')
-  @Roles('system_admin')
-  removeFromOrganizations(
-    @Param('id') id: string,
-    @Body() dto: AssignFeatureFlagDto,
-    @Req() req: Request
-  ) {
-    const userId = req.user?.id;
-    if (!userId) throw new Error('User not found in request');
-    return this.featureFlagService.removeFromOrganizations(id, dto, userId);
   }
 } 

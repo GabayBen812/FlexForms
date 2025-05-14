@@ -3,3 +3,11 @@ export class CreateOrganizationDto {
     description?: string;
   }
   
+export class AssignFeatureFlagsDto {
+  featureFlagIds!: string[];
+}
+
+export class RemoveFeatureFlagDto {
+  featureFlagId!: string;
+}
+  

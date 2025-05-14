@@ -13,6 +13,9 @@ export class Organization {
 
   @Prop()
   description?: string;
+
+  @Prop({ type: [Types.ObjectId], ref: 'FeatureFlag', default: [] })
+  featureFlagIds!: Types.ObjectId[];
 }
 
 export const OrganizationSchema = SchemaFactory.createForClass(Organization);

@@ -1,6 +1,5 @@
 import { IsString, IsOptional, IsBoolean, IsArray, IsObject, Matches } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Types } from 'mongoose';
 
 export class CreateFeatureFlagDto {
   @IsString()
@@ -28,11 +27,6 @@ export class CreateFeatureFlagDto {
   @IsObject()
   @IsOptional()
   metadata?: Record<string, any>;
-
-  @IsArray()
-  @Type(() => Types.ObjectId)
-  @IsOptional()
-  organizationIds?: Types.ObjectId[];
 }
 
 export class UpdateFeatureFlagDto {
@@ -63,15 +57,4 @@ export class UpdateFeatureFlagDto {
   @IsObject()
   @IsOptional()
   metadata?: Record<string, any>;
-
-  @IsArray()
-  @Type(() => Types.ObjectId)
-  @IsOptional()
-  organizationIds?: Types.ObjectId[];
-}
-
-export class AssignFeatureFlagDto {
-  @IsArray()
-  @Type(() => Types.ObjectId)
-  organizationIds!: Types.ObjectId[];
 } 

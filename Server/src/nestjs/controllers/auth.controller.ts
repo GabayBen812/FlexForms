@@ -45,5 +45,15 @@ export class AuthController {
   getUser(@Req() req: ExpressRequest) {
     return req.user;
   }
-  
+
+  @Post('logout')
+  logout(@Res() res: Response) {
+    res.clearCookie('jwt', {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+    });
+    
+    return res.status(200).json({ message: 'התנתקת בהצלחה' });
+  }
 }

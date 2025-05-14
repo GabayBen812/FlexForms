@@ -23,9 +23,6 @@ export class FeatureFlag {
   @Prop({ type: Object })
   metadata?: Record<string, any>;
 
-  @Prop({ type: [Types.ObjectId], ref: 'Organization', default: [], index: true })
-  organizationIds!: Types.ObjectId[];
-
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   createdBy!: Types.ObjectId;
 
@@ -38,5 +35,4 @@ FeatureFlagSchema.set('collection', 'FeatureFlags');
 
 // Add compound indexes for common queries
 FeatureFlagSchema.index({ key: 1, isEnabled: 1 });
-FeatureFlagSchema.index({ organizationIds: 1, isEnabled: 1 });
 FeatureFlagSchema.index({ tags: 1, isEnabled: 1 }); 

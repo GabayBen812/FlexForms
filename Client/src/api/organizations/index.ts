@@ -19,3 +19,11 @@ export const fetchAllOrganizations = async (params: Record<string, any> = {}): P
     data: res.data,
   };
 };
+
+export const assignFeatureFlagsToOrganization = async (orgId: string, featureFlagIds: string[]) => {
+  return apiClient.put(`/organizations/${orgId}/feature-flags`, { featureFlagIds });
+};
+
+export const removeFeatureFlagFromOrganization = async (orgId: string, featureFlagId: string) => {
+  return apiClient.put(`/organizations/${orgId}/feature-flags/remove`, { featureFlagId });
+};

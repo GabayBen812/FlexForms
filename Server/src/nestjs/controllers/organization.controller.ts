@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Req, UseGuards, Param, BadRequestException, Query } from '@nestjs/common';
+import { Controller, Post, Body, Get, Req, UseGuards, Param, BadRequestException, Query, Put } from '@nestjs/common';
 import { OrganizationService } from '../services/organization.service';
 import { CreateOrganizationDto } from '../dto/organization.dto';
 import { JwtAuthGuard } from '../middlewares/jwt-auth.guard';
@@ -45,5 +45,23 @@ export class OrganizationController {
   @Get()
   async findAll(@Query() query: any) {
     return this.organizationService.findAll(query);
+  }
+
+  // Assign feature flags to an organization
+  @Put(':id/feature-flags')
+  async assignFeatureFlags(
+    @Param('id') id: string,
+    @Body() body: { featureFlagIds: string[] }
+  ) {
+    return this.organizationService.assignFeatureFlags(id, body.featureFlagIds);
+  }
+
+  // Remove a feature flag from an organization
+  @Put(':id/feature-flags/remove')
+  async removeFeatureFlag(
+    @Param('id') id: string,
+    @Body() body: { featureFlagId: string }
+  ) {
+    return this.organizationService.removeFeatureFlag(id, body.featureFlagId);
   }
 }

@@ -2,12 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { FeatureFlag, FeatureFlagDocument } from '../schemas/feature-flag.schema';
-import { CreateFeatureFlagDto, UpdateFeatureFlagDto, AssignFeatureFlagDto } from '../dto/feature-flag.dto';
+import { CreateFeatureFlagDto, UpdateFeatureFlagDto } from '../dto/feature-flag.dto';
+import { Organization, OrganizationDocument } from '../schemas/organization.schema';
 
 @Injectable()
 export class FeatureFlagService {
   constructor(
-    @InjectModel(FeatureFlag.name) private model: Model<FeatureFlagDocument>
+    @InjectModel(FeatureFlag.name) private model: Model<FeatureFlagDocument>,
+    @InjectModel(Organization.name) private orgModel: Model<OrganizationDocument>
   ) {}
 
   async create(dto: CreateFeatureFlagDto, userId: string) {
@@ -71,28 +73,6 @@ export class FeatureFlagService {
     return this.model.findByIdAndDelete(id).exec();
   }
 
-  async assignToOrganizations(id: string, dto: AssignFeatureFlagDto, userId: string) {
-    return this.model.findByIdAndUpdate(
-      id,
-      { 
-        $addToSet: { organizationIds: { $each: dto.organizationIds } },
-        updatedBy: new Types.ObjectId(userId)
-      },
-      { new: true }
-    ).exec();
-  }
-
-  async removeFromOrganizations(id: string, dto: AssignFeatureFlagDto, userId: string) {
-    return this.model.findByIdAndUpdate(
-      id,
-      { 
-        $pullAll: { organizationIds: dto.organizationIds },
-        updatedBy: new Types.ObjectId(userId)
-      },
-      { new: true }
-    ).exec();
-  }
-
   async getOrganizationFeatureFlags(organizationId: string) {
     return this.model.find({
       $or: [
@@ -106,14 +86,10 @@ export class FeatureFlagService {
   }
 
   async isFeatureEnabled(key: string, organizationId: string) {
-    const feature = await this.model.findOne({
-      key,
-      $or: [
-        { organizationIds: new Types.ObjectId(organizationId) },
-        { isEnabled: true }
-      ]
-    }).exec();
-
-    return !!feature;
+    const feature = await this.model.findOne({ key, isEnabled: true }).exec();
+    if (!feature) return false;
+    const org = await this.orgModel.findById(organizationId).exec();
+    if (!org) return false;
+    return org.featureFlagIds.some(id => id.equals(feature._id));
   }
 } 

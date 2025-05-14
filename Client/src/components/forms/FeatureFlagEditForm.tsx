@@ -9,18 +9,14 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 type Props = {
   flag: FeatureFlag;
-  organizations: { _id: string; name: string }[];
   onClose: () => void;
   onUpdated: () => void;
 };
 
-export default function FeatureFlagEditForm({ flag, organizations, onClose, onUpdated }: Props) {
+export default function FeatureFlagEditForm({ flag, onClose, onUpdated }: Props) {
   const { t } = useTranslation();
   const [form, setForm] = useState({ ...flag });
   const [saving, setSaving] = useState(false);
-
-  // For org assignment
-  const [selectedOrgs, setSelectedOrgs] = useState<string[]>(flag.organizationIds);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -30,16 +26,10 @@ export default function FeatureFlagEditForm({ flag, organizations, onClose, onUp
     setForm({ ...form, isEnabled: checked });
   };
 
-  const handleOrgChange = (orgId: string) => {
-    setSelectedOrgs((prev) =>
-      prev.includes(orgId) ? prev.filter((id) => id !== orgId) : [...prev, orgId]
-    );
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    await updateFeatureFlag(flag._id, { ...form, organizationIds: selectedOrgs });
+    await updateFeatureFlag(flag._id, { ...form });
     setSaving(false);
     onUpdated();
     onClose();
@@ -73,21 +63,6 @@ export default function FeatureFlagEditForm({ flag, organizations, onClose, onUp
             <div>
               <label className="block font-medium mb-1">{t("tags", "Tags")}</label>
               <Input value={form.tags?.join(", ") || ""} name="tags" onChange={e => setForm({ ...form, tags: e.target.value.split(",").map(s => s.trim()) })} className="w-full" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block font-medium mb-1">{t("organizations", "Organizations")}</label>
-              <div className="flex flex-wrap gap-2">
-                {organizations.map(org => (
-                  <label key={org._id} className="flex items-center gap-1 border rounded px-2 py-1 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedOrgs.includes(org._id)}
-                      onChange={() => handleOrgChange(org._id)}
-                    />
-                    {org.name}
-                  </label>
-                ))}
-              </div>
             </div>
           </div>
           <div className="flex gap-2 justify-end mt-4">

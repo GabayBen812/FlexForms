@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   getCoreRowModel,
   getPaginationRowModel,
@@ -41,6 +42,7 @@ export function DataTable<TData>({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState<string>("");
+  const { t } = useTranslation();
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: defaultPageSize,
@@ -93,10 +95,16 @@ export function DataTable<TData>({
         if (row.getIsExpanded()) row.toggleExpanded();
       });
       await updateData(updatedData);
-      toast.success("Event has been Edited");
-    } catch (error) {
+      toast.success(t("changes_updated_successfully"), {
+          duration: 2000,
+          className: "bg-blue-100 text-blue-800 text-xl",
+        });
+      } catch (error) {
       console.error("Failed to update data:", error);
-      toast.error("Failed to create event");
+      toast.error(t("changes_updated_failed"), {
+          duration: 2000,
+          className: "bg-blue-100 text-blue-800 text-xl",
+        });
     }
   };
 

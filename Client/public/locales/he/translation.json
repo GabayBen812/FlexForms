@@ -104,6 +104,8 @@
   "field_moved": "השדה הועבר",
   "field_moved_down": "השדה הועבר למטה",
   "field_moved_up": "השדה הועבר למעלה",
+  "changes_updated_successfully": "השינויים עודכנו בהצלחה",
+  "changes_updated_failed": "עדכון השינויים נכשל",
   "no_fields": "אין שדות להצגה",
   "form_registration": "הרשמה לטופס",
   "submit_registration": "שלח הרשמה",

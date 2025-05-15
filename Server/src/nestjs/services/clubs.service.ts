@@ -46,4 +46,9 @@ export class ClubService {
   console.log('Clubs found:', result);
   return result;
   }
+
+ async updateClub(id: string, updateData: Partial<ClubDocument> & { id?: string }) {
+  const { id: _, ...fields } = updateData;
+  return this.model.findByIdAndUpdate(id, fields, { new: true }) .exec();
+}
 }

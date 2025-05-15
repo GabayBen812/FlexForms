@@ -51,3 +51,4 @@ export interface TableAction<TData> {
   type?: "edit" | "delete" | string;
   editData?: Partial<TData>;
 }
+export type FieldType = "TEXT" | "SELECT" | "DATE" | "FILE" | "CURRENCY";

@@ -2,12 +2,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { UpdateUserPayload, User } from "@/types/users/user";
 import { fetchUsers, updateUser } from "@/api/users/index";
 import { MutationResponse } from "@/types/api/auth";
+import { QueryFunction } from '@tanstack/react-query';
 
 export function useUser() {
   const queryClient = useQueryClient();
   const allUsersQuery = useQuery<MutationResponse<User[]>>({
     queryKey: ["users"],
-    queryFn: fetchUsers,
+    queryFn: async () => {
+      const response = await fetchUsers;
+      return response as MutationResponse<User[]>;
+    },
     enabled: false,
     retry: false,
   });

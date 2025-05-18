@@ -17,3 +17,8 @@ export type LoginResponse = {
   user: User;
   organization: Organization;
 };
+
+export interface MailCheck {
+  email: string;
+  status: string;
+}

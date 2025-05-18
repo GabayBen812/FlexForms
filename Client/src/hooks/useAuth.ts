@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/api/apiClient";
 import { User } from "@/types/users/user";
-import { LoginCredentials, MutationResponse } from "@/types/api/auth";
+import { LoginCredentials, MutationResponse, LoginResponse } from "@/types/api/auth";
 import { fetchUser } from "@/api/users/fetchUser";
 import { login } from "@/api/auth";
 import { toast } from "sonner";
+
 export function useAuth() {
   const queryClient = useQueryClient();
 
@@ -15,12 +16,21 @@ export function useAuth() {
     retry: false,
   });
 
-  const loginMutation = useMutation<MutationResponse, Error, LoginCredentials>({
+  const loginMutation = useMutation<MutationResponse<LoginResponse>, Error, LoginCredentials>({
     mutationFn: login,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["user"] }),
-    onError: () => {
-      toast.error("פרטי הזדהות שגויים", {
-        description: "השם משתמש או הסיסמה שגויים",
+    onSuccess: (data) => {
+      if (data.data) {
+        queryClient.invalidateQueries({ queryKey: ["user"] });
+      } else {
+        toast.error("פרטי הזדהות שגויים", {
+          description: data.error || "השם משתמש או הסיסמה שגויים",
+          richColors: true,
+        });
+      }
+    },
+    onError: (error) => {
+      toast.error("שגיאה בהתחברות", {
+        description: error.message || "אירעה שגיאה בעת ההתחברות",
         richColors: true,
       });
     },
@@ -38,10 +48,8 @@ export function useAuth() {
     isAuthenticated: !!userQuery.data,
     isLoading: userQuery.isLoading,
     isUserLoading,
-    //@ts-ignore
-    isLoginLoading: loginMutation.isLoading,
+    isLoginLoading: loginMutation.isPending,
     login: loginMutation.mutateAsync,
     logout: logout.mutateAsync,
   };
-  
 }

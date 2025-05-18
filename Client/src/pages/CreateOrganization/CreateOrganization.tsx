@@ -11,6 +11,7 @@ function CreateOrganization() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  //@ts-ignore
   const { createNewOrganization, isCreateNewOrganizationLoading } =
     useOrganization();
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {

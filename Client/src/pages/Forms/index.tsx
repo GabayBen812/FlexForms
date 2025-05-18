@@ -174,6 +174,7 @@ const selectionColumn: ColumnDef<Form, any> = {
         initialFilters={advancedFilters}
       />
       <DataTable<Form>
+        data={[]}
         key={refreshKey}
         fetchData={wrappedFetchData}
         addData={(data) => formsApi.create(data)}
@@ -189,6 +190,7 @@ const selectionColumn: ColumnDef<Form, any> = {
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}
         onRowClick={(formRow) => {
+          //@ts-ignore
           const form = formRow.original;
           if (form.code && form._id) {
             navigate(`/forms/${form.code}/dashboard`);

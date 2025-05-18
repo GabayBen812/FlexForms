@@ -57,6 +57,7 @@ function AccountPasswordForm() {
       if (!user) return;
       const { currentPassword, newPassword } = data;
       const response = await updateUser({
+        id: user.id,
         password: newPassword,
         oldPassword: currentPassword,
       });

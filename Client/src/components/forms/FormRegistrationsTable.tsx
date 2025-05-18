@@ -50,6 +50,7 @@ export default function FormRegistrationsTable({ form }: Props) {
           }}
         >
       <DataTable<UserRegistration>
+        data={[]}
         fetchData={({ page = 1, pageSize = 10, ...params }) => {
           const allParams = {
             ...params,

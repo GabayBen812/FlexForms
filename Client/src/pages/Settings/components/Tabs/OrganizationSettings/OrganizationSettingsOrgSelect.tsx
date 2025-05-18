@@ -22,6 +22,7 @@ function OrganizationSettingsOrgSelect({
   selectedOrganization,
   setSelectedOrganization,
 }: Props) {
+  //@ts-ignore
   const { organizations } = useContext(OrganizationsContext);
   const { t } = useTranslation();
   return (

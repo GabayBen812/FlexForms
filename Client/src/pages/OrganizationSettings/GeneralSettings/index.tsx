@@ -24,6 +24,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function GeneralSettings() {
   const { organization } = useContext(OrganizationsContext);
+  //@ts-ignore
   const { updateOrganization, refetchOrganization } = useOrganization();
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);

@@ -84,31 +84,14 @@ export function DataTable<TData>({
     }
   };
 
-  const handleUpdateData = async (updatedData: Partial<TData>) => {
-    if (!updateData || !idField) return;
-
-    try {
-      setTableData(
-        (prev) =>
-          prev.map((item) =>
-            item[idField] === updatedData[idField] ? updatedData : item
-          ) as TData[]
-      );
-      table.getRowModel().rows.map((row) => {
-        if (row.getIsExpanded()) row.toggleExpanded();
-      });
-      await updateData(updatedData);
-      toast.success(t("changes_updated_successfully"), {
-          duration: 2000,
-          className: "bg-blue-100 text-blue-800 text-xl",
-        });
-      } catch (error) {
-      console.error("Failed to update data:", error);
-      toast.error(t("changes_updated_failed"), {
-          duration: 2000,
-          className: "bg-blue-100 text-blue-800 text-xl",
-        });
-    }
+  const handleUpdate = async (row: Row<TData>, data: Partial<TData>) => {
+    const updatedData = {
+      ...row.original,
+      ...data,
+      id: row.original[idField as keyof TData] as string | number
+    };
+    await updateData(updatedData);
+    toast.success(t("changes_updated_successfully"));
   };
 
   const handleDeleteData = async (id: string | number) => {
@@ -134,7 +117,7 @@ export function DataTable<TData>({
       globalFilter,
       pagination,
       rowSelection,
-      columnOrder: columnOrder || columns.map(col => col.accessorKey as string),
+      columnOrder: columnOrder || columns.map(col => (col as any).accessorKey as string),
     },
     onColumnOrderChange: onColumnOrderChange,
     enableRowSelection: true,
@@ -152,7 +135,7 @@ export function DataTable<TData>({
 
     meta: {
       handleAdd,
-      handleEdit: handleUpdateData,
+      handleEdit: handleUpdate,
       handleDelete: handleDeleteData,
     },
   });
@@ -241,7 +224,7 @@ export function DataTable<TData>({
               globalFilter={globalFilter}
               setGlobalFilter={setGlobalFilter}
             />
-            <DataTableDownloadButton table={table} />
+            <DataTableDownloadButton table={table as any} />
           </div>
         )}
          <div className="flex justify-center w-full">
@@ -260,13 +243,13 @@ export function DataTable<TData>({
             columns={columns}
             table={table}
             actions={enhancedActions}
-            renderExpandedContent={renderExpandedContent}
+            renderExpandedContent={renderExpandedContent as any}
             specialRow={specialRow}
             setSpecialRow={setSpecialRow}
             handleSave={handleAdd}
-            handleEdit={handleUpdateData}
+            handleEdit={(row) => handleUpdate(row as any, row)}
             isLoading={isLoading}
-            onRowClick={onRowClick}
+            onRowClick={(row) => onRowClick?.(row.original)}
           />
         </Table>
       </div>

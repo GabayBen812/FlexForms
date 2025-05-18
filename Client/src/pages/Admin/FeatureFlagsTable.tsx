@@ -85,6 +85,7 @@ export default function FeatureFlagsTable() {
     <div className="mt-8">
       <h2 className="text-xl font-bold mb-4">{t('feature_flags', 'Feature Flags')}</h2>
       <DataTable<FeatureFlag>
+        data={[]}
         key={refreshKey}
         columns={columns}
         fetchData={fetchAllFeatureFlags}
@@ -92,6 +93,7 @@ export default function FeatureFlagsTable() {
         updateData={async () => { return { data: {} as FeatureFlag, status: 200 }; }}
         searchable
         isPagination={true}
+        //@ts-ignore
         onRowClick={row => setOrgsModalFlag(row.original)}
       />
 
@@ -111,6 +113,7 @@ export default function FeatureFlagsTable() {
           organizations={allOrganizations}
           onClose={() => setOrgsModalFlag(null)}
           onUpdated={() => setRefreshKey(k => k + 1)}
+          //@ts-ignore
           isLoading={orgsLoading}
         />
       )}

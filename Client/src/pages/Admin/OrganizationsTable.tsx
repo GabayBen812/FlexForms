@@ -62,6 +62,7 @@ export default function OrganizationsTable() {
         initialFilters={advancedFilters}
       />
       <DataTable<Organization>
+        data={[]}
         columns={columns}
         fetchData={fetchData}
         addData={noop}

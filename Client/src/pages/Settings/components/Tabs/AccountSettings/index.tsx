@@ -39,7 +39,7 @@ function AccountSettings() {
   } = useForm<AccountSettingsValues>({
     resolver: zodResolver(AccountSettingsSchema),
     defaultValues: {
-      logo: undefined,
+      logo: typeof user?.logo === "string" ? undefined : user?.logo,
       name: user?.name || "",
       email: user?.email || "",
     },
@@ -52,7 +52,7 @@ function AccountSettings() {
   };
   const onReset = () => {
     reset({
-      logo: user?.logo || undefined,
+      logo: typeof user?.logo === "string" ? undefined : user?.logo,
       name: user?.name || "",
       email: user?.email || "",
     });
@@ -61,7 +61,7 @@ function AccountSettings() {
   const onSubmit = async (data: AccountSettingsValues) => {
     try {
       if (!user) return;
-      await updateUser(data);
+      await updateUser({ ...data, id: user.id });
       toast({
         title: t("success"),
         description: "Your account has been updated.",
@@ -99,7 +99,13 @@ function AccountSettings() {
             onClick={triggerFileInput}
           >
             <AvatarImage
-              src={logo ? URL.createObjectURL(logo) : user?.logo}
+              src={
+                logo instanceof File
+                  ? URL.createObjectURL(logo)
+                  : typeof user?.logo === "string"
+                    ? user.logo
+                    : undefined
+              }
               alt={user?.name}
             />
             <AvatarFallback className="flex justify-center items-center rounded-2xl text-white bg-[var(--datatable-header)] size-16">

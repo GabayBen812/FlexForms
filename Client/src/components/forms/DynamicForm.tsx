@@ -54,11 +54,11 @@ export default function DynamicForm({
   });
 
   const handleSignatureSave = async (fieldName: string) => {
-    if (!sigCanvasRef.current) return;
+    if (!sigCanvasRefs.current[fieldName]) return;
 
     try {
       // Convert canvas to blob
-      const dataURL = sigCanvasRef.current.toDataURL();
+      const dataURL = sigCanvasRefs.current[fieldName]?.toDataURL();
       // Upload to Firebase Storage - Return later after paying for firebase
 
 
@@ -173,7 +173,7 @@ export default function DynamicForm({
                     className: "border rounded bg-white",
                   }}
                   ref={(ref) => {
-                    sigCanvasRef.current = ref;
+                    sigCanvasRefs.current[field.name] = ref;
                   }}
                   onEnd={() => {
                     handleSignatureSave(field.name);
@@ -185,7 +185,7 @@ export default function DynamicForm({
                   variant="outline"
                   type="button"
                   onClick={() => {
-                    sigCanvasRef.current?.clear();
+                    sigCanvasRefs.current[field.name]?.clear();
                     setValue(field.name, "");
                   }}
                   className="mt-2"
@@ -362,12 +362,9 @@ export default function DynamicForm({
                         }}
                         ref={(ref) => {
                           sigCanvasRefs.current[field.name] = ref;
-                          setValue(field.name, ref?.toDataURL() || "");
                         }}
                         onEnd={() => {
-                          if (sigCanvasRefs.current) {
-                            setValue(field.name, sigCanvasRefs.current[field.name]?.toDataURL());
-                          }
+                          handleSignatureSave(field.name);
                         }}
                         data-cy={`field-signature-canvas-${field.name}`}
                       />

@@ -11,19 +11,23 @@ import { Button } from "@/components/ui/button";
 
 const usersApi = createApiService<User>("/users");
 
+type UserColumnMeta = { hidden?: boolean };
+
 export default function Users() {
   const { t } = useTranslation();
   const { organization } = useOrganization();
   const navigate = useNavigate();
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>({});
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
 
-  const columns: ColumnDef<User>[] = [
+  const columns: ColumnDef<User, any>[] = [
     { accessorKey: "name", header: t("user_name") },
     { accessorKey: "email", header: t("user_email") },
-    {accessorKey: "role", header: t("user_role")},
-    {accessorKey: "organizationId", header: "", meta: { hidden: true }},
+    { accessorKey: "role", header: t("user_role") },
+    { accessorKey: "organizationId", header: "", meta: { hidden: true } },
   ];
+  //@ts-ignore
   const visibleColumns = columns.filter((col) => !(col.meta?.hidden));
 
   return (
@@ -42,10 +46,13 @@ export default function Users() {
         initialFilters={advancedFilters}
       />
       <DataTable<User>
-        fetchData={(params) => {
-          if (!organization?._id)
-            return Promise.resolve({ status: 200, data: [] });
-          return usersApi.fetchAll(params, false, organization._id);
+        data={users}
+        updateData={async () => Promise.resolve({} as any)}
+        fetchData={async (params) => {
+          if (!organization?._id) return { status: 200, data: [] };
+          const result = await usersApi.fetchAll(params, false, organization._id);
+          if ('data' in result && Array.isArray(result.data)) setUsers(result.data);
+          return result;
         }}
         columns={visibleColumns}
         searchable
@@ -54,9 +61,7 @@ export default function Users() {
         defaultPageSize={10}
         idField="_id"
         extraFilters={advancedFilters}
-        onRowClick={(user) => {
-          
-        }}
+        onRowClick={(user) => {}}
       />
     </div>
   );

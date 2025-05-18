@@ -3,7 +3,7 @@ export interface Organization {
   id?: string;
   name: string;
   description?: string;
-  owner: string;
+  owner?: string;
   logo?: string;
   createdAt?: string;
   updatedAt?: string;

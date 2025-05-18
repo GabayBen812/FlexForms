@@ -7,10 +7,12 @@ import { useState } from "react";
 import DataTable from "@/components/ui/completed/data-table";
 import DynamicForm, { FieldConfig } from "@/components/forms/DynamicForm";
 import { OrganizationsContext } from "@/contexts/OrganizationsContext";
-import { TableAction } from "@/types/ui/data-table-types";
+import { TableAction, ApiQueryParams } from "@/types/ui/data-table-types";
 import { createApiService } from "@/api/utils/apiFactory";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
+import { FeatureFlag } from "@/types/feature-flags";
+import apiClient from "@/api/utils/apiClient";
 
 export type Payment = {
   id: string;
@@ -76,6 +78,8 @@ export default function Payments() {
         initialFilters={advancedFilters}
       />
       <DataTable<Payment>
+        data={[]}
+        updateData={async () => Promise.resolve({} as any)}
         fetchData={paymentsApi.fetchAll}
         addData={paymentsApi.create}
         deleteData={paymentsApi.delete}

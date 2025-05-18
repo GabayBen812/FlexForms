@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-interface Room {
+export interface Room {
   _id: string;
   name: string;
   location: string;
@@ -26,8 +26,11 @@ export const columns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Room>[] =
     header: ({ table }) => (
       <Checkbox
         checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
+          table.getIsAllPageRowsSelected()
+            ? true
+            : table.getIsSomePageRowsSelected()
+              ? "indeterminate"
+              : false
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
@@ -35,7 +38,7 @@ export const columns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Room>[] =
     ),
     cell: ({ row }) => (
       <Checkbox
-        checked={row.getIsSelected()}
+        checked={row.getIsSelected() ? true : false}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"
       />

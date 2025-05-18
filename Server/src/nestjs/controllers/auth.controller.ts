@@ -32,8 +32,8 @@ export class AuthController {
   
     res.cookie('jwt', token, {
       httpOnly: true,
-      sameSite: 'strict',
-      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'none',
+      secure: true,
       maxAge: 1000 * 60 * 60 * 2,
     });
   
@@ -50,8 +50,8 @@ export class AuthController {
   logout(@Res() res: Response) {
     res.clearCookie('jwt', {
       httpOnly: true,
-      sameSite: 'strict',
-      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'none',
+      secure: true,
     });
     
     return res.status(200).json({ message: 'התנתקת בהצלחה' });

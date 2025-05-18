@@ -29,4 +29,14 @@ export class RegistrationController {
       total,
     };
   }
+ @Get('/count-by-form-ids')
+  async countByFormIds(@Query('formIds') formIds: string) {
+    console.log('Received formIds:', formIds);
+  const ids = formIds.split(',');
+  const result = await this.service.countNumOfRegisteringByFormIds(ids);
+  return {
+    status: 200,
+    data: result,
+  };
+}
 }

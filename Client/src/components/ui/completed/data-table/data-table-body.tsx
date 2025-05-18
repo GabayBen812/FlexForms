@@ -70,11 +70,10 @@ const RowComponent = React.memo(function RowComponent<T>({
           isExpanded ? "relative z-[51] pointer-events-none" : ""
         } border-b-4 border-background group cursor-pointer transition-colors h-[3.75rem]`}
         onClick={() => (onRowClick ? onRowClick(row) : row.toggleExpanded())}
-        data-state={row.getIsSelected() ? "selected" : undefined}
       >
         {row.getVisibleCells().map((cell, index) => (
           <TableCell
-            className={`bg-white text-primary text-base font-normal border-b-4 border-background w-auto whitespace-nowrap transition-colors group-hover:bg-muted ${
+            className={`bg-white text-primary text-base font-normal border-b-4 border-background w-auto whitespace-nowrap transition-colors ${
               index === 0 ? firstColumnRounding : "rounded-b-[1px]"
             }`}
             key={cell.id}

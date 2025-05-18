@@ -20,13 +20,14 @@ import { AuthContext } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "react-i18next";
 import { OrganizationsContext } from "@/contexts/OrganizationsContext";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export function NavUser() {
   const { t } = useTranslation();
   const { user, isUserLoading, logout } = useContext(AuthContext);
   const { isOrganizationFetching } = useContext(OrganizationsContext);
   const { isMobile } = useSidebar();
+  const navigate = useNavigate();
 
   if (isUserLoading || !user) {
     return (
@@ -52,6 +53,11 @@ export function NavUser() {
   const name = user.name || "No Name";
   const email = user.email || "No Email";
   const initials = name.slice(0, 2).toUpperCase();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   return (
     <SidebarMenu>
@@ -105,7 +111,7 @@ export function NavUser() {
               </Link>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => logout()}>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
               {t("logout")}
             </DropdownMenuItem>

@@ -40,8 +40,8 @@ export class FormService {
 
   async findAll(query: any = {}) {
     const sample = await this.model.findOne();
-    console.log('Sample form document:', sample);
-    console.log('Incoming query (forms):', query);
+    // console.log('Sample form document:', sample);
+    // console.log('Incoming query (forms):', query);
     const filter: any = {};
 
     // Global search (search input)

@@ -53,7 +53,7 @@ export default function FormPreview({ form }: Props) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] w-full px-2">
       {/* External Registration Link Section */}
-      <div className="w-full max-w-xl mb-8 flex flex-col sm:flex-row items-center gap-5">
+      {/* <div className="w-full max-w-xl mb-8 flex flex-col sm:flex-row items-center gap-5">
         <div
           className="flex-1 flex items-center bg-gray-50 border rounded-lg px-4 py-2 text-sm font-mono cursor-pointer hover:bg-gray-100 transition gap-4"
           onClick={openInNewTab}
@@ -71,7 +71,7 @@ export default function FormPreview({ form }: Props) {
         >
           <Copy className="w-4 h-4" />
         </Button>
-      </div>
+      </div> */}
 
       {/* Modern, Large Preview Card */}
       <div

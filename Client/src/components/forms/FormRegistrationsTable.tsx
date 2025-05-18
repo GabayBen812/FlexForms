@@ -9,6 +9,7 @@ import { TableAction } from "@/types/ui/data-table-types";
 import { useState } from "react";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/components/ui/sidebar";
 
 const registrationsApi = createApiService<UserRegistration>("/registrations");
 
@@ -20,6 +21,8 @@ export default function FormRegistrationsTable({ form }: Props) {
   const { t } = useTranslation();
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>({});
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const { state } = useSidebar();
+  const sidebarIsCollapsed = state === "collapsed";
 
   const actions: TableAction<UserRegistration>[] = [
     { label: t("delete"), type: "delete" },
@@ -27,7 +30,7 @@ export default function FormRegistrationsTable({ form }: Props) {
 
   return (
     <div className="col-span-2">
-      <h2 className="text-xl font-semibold mb-4">{t("registrations_list")}</h2>
+      <h2 className="text-xl font-semibold mb-4">{form.title} - {t("registrations_list")}</h2>
       <div className="flex gap-2 mb-2">
         <Button variant="outline" onClick={() => setIsAdvancedOpen(true)}>
           {t('advanced_search', 'חיפוש מתקדם')}
@@ -40,6 +43,12 @@ export default function FormRegistrationsTable({ form }: Props) {
         onApply={setAdvancedFilters}
         initialFilters={advancedFilters}
       />
+       <div
+          className="overflow-x-auto w-full"
+          style={{
+            maxWidth: `calc(100vw - ${sidebarIsCollapsed ? "100px" : "20rem"})`
+          }}
+        >
       <DataTable<UserRegistration>
         fetchData={({ page = 1, pageSize = 10, ...params }) => {
           const allParams = {
@@ -69,6 +78,7 @@ export default function FormRegistrationsTable({ form }: Props) {
         actions={actions}
         extraFilters={advancedFilters}
       />
+      </div>
     </div>
   );
 }

@@ -18,12 +18,9 @@ export class FormController {
   @UseGuards(JwtAuthGuard)
   @Put(':id')
   update(@Param('id') id: string, @Body() dto: CreateFormDto) {
-    return this.service.update(id, {
-      ...dto,
-      organizationId: new Types.ObjectId(dto.organizationId),
-    });
-  }
-
+  const { organizationId, ...rest } = dto;
+  return this.service.update(id, rest);
+}
   @UseGuards(JwtAuthGuard)
   @Get()
   async getAll(@Query() query: any) {

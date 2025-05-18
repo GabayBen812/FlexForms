@@ -169,5 +169,7 @@
   "registered_at": "Registered At",
   "unknown": "Unknown",
   "registration_fail": "Registration Failed",
-  "registration_success": "Registration Success"
+  "registration_success": "Registration Success",
+  "changes_updated_successfully": "Changes updated successfully",
+  "changes_updated_failed": "Changes updated failed"
 }

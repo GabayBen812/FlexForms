@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Get, Query, Param, Put, Req, UseGuards } from '@nestjs/common';
 import { ClubService } from '../services/clubs.service';
-import { CreateFormDto } from '../dto/form.dto';
+import { CreateClubDto , UpdateClubDto} from '../dto/club.dto';
 import { Types } from 'mongoose';
 import { UserFromRequest } from '../types/Requests/UserFromRequest';
 import { JwtAuthGuard } from '../middlewares/jwt-auth.guard';
@@ -37,4 +37,11 @@ export class ClubController {
   async getByOrganization(@Param('orgId') orgId: string) {
     return this.service.findByOrganization(orgId);
   }
+
+ @Put(':id')
+async updateClub(@Param('id') id: string, @Body() updateData: UpdateClubDto){
+  console.log('Update data:', id, updateData);
+  return this.service.updateClub(id, updateData);
+}
+
 }

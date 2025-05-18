@@ -1,4 +1,4 @@
-import { ColumnDef, Row } from "@tanstack/react-table";
+import { ColumnDef, Row, RowSelectionState  } from "@tanstack/react-table";
 import { MutationResponse } from "@/types/api/auth";
 
 export interface ApiQueryParams {
@@ -30,6 +30,9 @@ export interface DataTableProps<TData> {
   addData: (data: Partial<TData>) => Promise<MutationResponse<TData>>;
   updateData: (data: TData) => Promise<MutationResponse<TData>>;
   deleteData?: (id: number) => Promise<MutationResponse<null>>;
+  enableColumnReordering?: boolean;
+  columnOrder?: string[];
+  onColumnOrderChange?: (columnOrder: string[]) => void;
   columns: ColumnDef<TData>[];
   searchable?: boolean;
   isPagination?: boolean;
@@ -41,6 +44,8 @@ export interface DataTableProps<TData> {
   showAddButton?: boolean;
   idField?: keyof TData;
   onRowClick?: (row: Row<TData>) => void;
+  rowSelection?: RowSelectionState;
+  onRowSelectionChange?: (selection: RowSelectionState) => void;
 }
 
 export interface TableAction<TData> {
@@ -49,3 +54,4 @@ export interface TableAction<TData> {
   type?: "edit" | "delete" | string;
   editData?: Partial<TData>;
 }
+export type FieldType = "TEXT" | "SELECT" | "DATE" | "FILE" | "CURRENCY";

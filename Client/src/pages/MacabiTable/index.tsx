@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import DataTable from "@/components/ui/completed/data-table";
 import { useOrganization } from "@/hooks/useOrganization";
 import { createApiService } from "@/api/utils/apiFactory";
@@ -20,6 +20,7 @@ export default function clubs() {
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>({});
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const { state } = useSidebar();
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [editingCell, setEditingCell] = useState<{
   rowIndex: number;
   columnId: string;
@@ -32,40 +33,49 @@ export default function clubs() {
 } | null>(null);
 const sidebarIsCollapsed = state === "collapsed";
 const columns = getClubColumns(t);
-  const visibleColumns = columns
-  .filter((col) => !(col.meta?.hidden))
-  .map((column) => ({
-    ...column,
-    cell: (info: any) => {
-      const meta = column.meta;
-      const value = info.getValue();
-      if (meta?.editable) {
-        return (
-          <div
-            onClick={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              setEditingCell({
-                rowIndex: info.row.index,
-                columnId: info.column.id,
-                value,
-                fieldType: meta.fieldType,
-                options: meta.options,
-                rowData: info.row.original,
-                table: info.table,
-                position: { x: rect.left + rect.width / 2, y: rect.bottom },
-              });
-            }}
-          >
-            {value?.toString?.() || ""}
-          </div>
-        );
-      }
 
-      return <div className="px-2 py-1">{value?.toString?.() || ""}</div>;
-    },
-  }));
+ const visibleColumns = columns
+  .filter((col) => !(col.meta?.hidden))
+  .map((column) => {
+    if (column.id === "select") {
+  
+      return column;
+    }
+
+    return {
+      ...column,
+      cell: (info: any) => {
+        const meta = column.meta;
+        const value = info.getValue();
+
+        if (meta?.editable) {
+          return (
+            <div
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                setEditingCell({
+                  rowIndex: info.row.index,
+                  columnId: info.column.id,
+                  value,
+                  fieldType: meta.fieldType,
+                  options: meta.options,
+                  rowData: info.row.original,
+                  table: info.table,
+                  position: { x: rect.left + rect.width / 2, y: rect.bottom },
+                });
+              }}
+            >
+              {value?.toString?.() || ""}
+            </div>
+          );
+        }
+
+        return <div className="px-2 py-1">{value?.toString?.() || ""}</div>;
+      },
+    };
+  });
   const [columnOrder, setColumnOrder] = useState<string[]>(() => 
-  visibleColumns.map(col => col.accessorKey as string)
+  visibleColumns.map(col => col.id ?? col.accessorKey) as string[]
 );
 
   return (
@@ -106,6 +116,8 @@ const columns = getClubColumns(t);
             columnOrder={columnOrder}
             onColumnOrderChange={setColumnOrder}
             columns={visibleColumns}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
             searchable
             showAddButton
             isPagination

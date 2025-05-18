@@ -76,29 +76,57 @@ const RowComponent = React.memo(function RowComponent<T>({
         onClick={() => (onRowClick ? onRowClick(row) : row.toggleExpanded())}
       >
         {row.getVisibleCells().map((cell, index) => {
-          const accessorKey = cell.column.columnDef.accessorKey as string;
-          const isName = accessorKey === "clubName";
-          const isNumber = accessorKey === "clubNumber";
-          const stickyBg = "hsl(0, 0.00%, 100.00%)";
-          // חישוב רוחב name במידה וזה מספר
-         let rightOffset = 0;
-          if (isNumber) {
-            const nameCol = table.getVisibleFlatColumns().find(
-              (col) => col.columnDef.accessorKey === "clubName"
-            );
-            rightOffset = (nameCol?.getSize?.() ?? 0) + 26;
-          }
+  const columnId = cell.column.id;
+  const accessorKey = cell.column.columnDef.accessorKey as string | undefined;
 
-          const stickyStyles =
-            isName || isNumber
-              ? {
-                  position: "sticky",
-                  right: isName ? 0 : rightOffset,
-                  zIndex: isNumber ? 24 : 23,
-                  backgroundColor: stickyBg,
-                  
-                }
-              : {};
+  const isCheckbox = columnId === "select";
+  const isName = accessorKey === "clubName";
+  const isNumber = accessorKey === "clubNumber";
+  
+  const stickyBg = "hsl(0, 0.00%, 100.00%)";
+  let rightOffset = 0;
+  let stickyStyles: React.CSSProperties = {};
+
+  if (isCheckbox) {
+    stickyStyles = {
+      position: "sticky",
+      right: 0,
+      zIndex: 25,
+      backgroundColor: stickyBg,
+    };
+  }
+
+  if (isName) {
+    const checkboxCol = table.getVisibleFlatColumns().find(
+      (col) => col.id === "select"
+    );
+    const checkboxWidth = (checkboxCol?.getSize?.() ?? 0) + 26;
+    stickyStyles = {
+      position: "sticky",
+      right: checkboxWidth,
+      zIndex: 24,
+      backgroundColor: stickyBg,
+    };
+  }
+
+  if (isNumber) {
+    const checkboxCol = table.getVisibleFlatColumns().find(
+      (col) => col.id === "select"
+    );
+    const nameCol = table.getVisibleFlatColumns().find(
+      (col) => col.columnDef.accessorKey === "clubName"
+    );
+    const checkboxWidth = (checkboxCol?.getSize?.() ?? 0) + 26;
+    const nameWidth = (nameCol?.getSize?.() ?? 0) + 18;
+    rightOffset = checkboxWidth + nameWidth;
+    stickyStyles = {
+      position: "sticky",
+      right: rightOffset,
+      zIndex: 23,
+      backgroundColor: stickyBg,
+    };
+  }
+
 
           return (
             <TableCell

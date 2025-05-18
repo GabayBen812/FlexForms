@@ -36,39 +36,65 @@ function DataTableHeader<T>({
     }
   };
 
+  function getStickyStyle(columnId: string, headerGroup: any, backgroundColor: string) {
+  const isCheckbox = columnId === "select";
+  const isName = columnId === "clubName";
+  const isNumber = columnId === "clubNumber";
+
+  if (isCheckbox) {
+    return {
+      position: "sticky",
+      right: 0,
+      zIndex: 22,
+      backgroundColor,
+    };
+  }
+
+  if (isName) {
+    const cbHeader = headerGroup.headers.find(h => h.column.columnDef.id === "select");
+    const cbWidth = (cbHeader?.getSize() || 0) + 26;
+    return {
+      position: "sticky",
+      right: cbWidth,
+      zIndex: 21,
+      backgroundColor,
+    };
+  }
+
+  if (isNumber) {
+    const cbHeader = headerGroup.headers.find(h => h.column.columnDef.id === "select");
+    const nameHeader = headerGroup.headers.find(h => h.column.columnDef.accessorKey === "clubName");
+    const cbWidth = (cbHeader?.getSize() || 0) + 26;
+    const nameWidth = (nameHeader?.getSize() || 0) + 18;
+    return {
+      position: "sticky",
+      right: cbWidth + nameWidth,
+      zIndex: 20,
+      backgroundColor,
+    };
+  }
+
+  return {};
+}
+
+
   return (
   <TableHeader
     style={{
       position: 'sticky',
       top: 0,
       zIndex: 30,
-      backgroundColor: "var(--datatable-header)", // חשוב שיהיה רקע כדי שלא יראו מה שמאחור
+      backgroundColor: "var(--datatable-header)",
     }}>
-    {table.getHeaderGroups().map((headerGroup) => (
-      <TableRow key={headerGroup.id} className="border-none h-11">
-        {headerGroup.headers.map((header, index) => {
-          const isFirst = index === 0;
-          const accessorKey = header.column.columnDef.accessorKey as string;
-          const currentIndex = table.getState().columnOrder.indexOf(accessorKey);
-          const isName = accessorKey === 'clubName';
-          const isNumber = accessorKey === 'clubNumber';
-          let stickyStyles: { [key: string]: any } = {};
-          const stickyBg = "hsl(224, 29.60%, 27.80%)"; 
-          const stickyShadow = "2px 0 5px rgba(0, 0, 0, 0.2)"; 
-          if (isName) {
-            stickyStyles = { position: 'sticky', right: 0, zIndex: 21,
-              backgroundColor: stickyBg,
-             };
-             } else if (isNumber) {
-            const nameHeader = headerGroup.headers.find(
-              (h) => h.column.columnDef.accessorKey === 'clubName'
-            );
-            const nameWidth = (nameHeader?.getSize() || 0) + 26;
-            stickyStyles = { position: 'sticky', right: nameWidth, zIndex: 21,
-              backgroundColor: stickyBg,
-             };
-            }
 
+    {table.getHeaderGroups().map((headerGroup) => (
+    <TableRow key={headerGroup.id}>
+      {headerGroup.headers.map((header, index) => {
+        const accessorKey = header.column.columnDef.accessorKey as string | undefined;
+        const columnId = header.column.id;
+        const stickyStyles = getStickyStyle(accessorKey ?? columnId, headerGroup, "hsl(224, 29.60%, 27.80%)");
+        const currentIndex = table.getState().columnOrder.indexOf(columnId);
+        const isFirst = index === 0;
 
          return (
             <TableHead

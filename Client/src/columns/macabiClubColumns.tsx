@@ -1,9 +1,10 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { MacabiClub } from "@/types/macabiClub/macabiClub";
+import { selectionColumn } from "./selectionColumns"; 
 import { FieldType } from "@/types/ui/data-table-types";
 
 export function getClubColumns(t: (key: string) => string): ColumnDef<MacabiClub>[] {
-  return [
+  return [ selectionColumn,
     {
       accessorKey: "clubName",
       header: t("club_name"),

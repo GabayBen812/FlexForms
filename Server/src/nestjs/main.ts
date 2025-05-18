@@ -21,10 +21,16 @@ async function bootstrap() {
   );
   
   app.enableCors({
-    // TODO: Change to the production URL
-    origin: process.env.NODE_ENV === 'production'
-      ? "*"
-      : 'http://localhost:5173',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+      // Allow all Vercel preview and production URLs
+      if (origin.endsWith('.vercel.app')) return callback(null, true);
+      // Allow localhost for local dev
+      if (origin === 'http://localhost:5173') return callback(null, true);
+      // Otherwise, block
+      return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],

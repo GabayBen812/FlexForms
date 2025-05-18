@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   getCoreRowModel,
   getPaginationRowModel,
@@ -13,6 +14,7 @@ import DataTableBody from "./data-table-body";
 import DataTableHeader from "./data-table-header";
 import { DataTableSearch } from "./data-table-search";
 import { DataTableAddButton } from "./data-table-add-button";
+import { DataTableDownloadButton } from "./data-table-download-button";
 import { ApiQueryParams, DataTableProps } from "@/types/ui/data-table-types";
 import { toast } from "sonner";
 
@@ -32,18 +34,24 @@ export function DataTable<TData>({
   onRowClick,
   initialData,
   extraFilters = {},
+  onRowSelectionChange,
+  rowSelection,
+  enableColumnReordering,
+  columnOrder,
+  onColumnOrderChange,
 }: DataTableProps<TData> & { extraFilters?: Record<string, any> }) {
   const [tableData, setTableData] = useState<TData[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState<string>("");
+  const { t } = useTranslation();
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: defaultPageSize,
   });
   const [specialRow, setSpecialRow] = useState<"add" | null>(null);
-
+  
   const handleAdd = async (newData: Partial<TData>) => {
     if (!addData || !idField) return;
     const tempId = `temp-${Date.now()}`;
@@ -90,10 +98,16 @@ export function DataTable<TData>({
         if (row.getIsExpanded()) row.toggleExpanded();
       });
       await updateData(updatedData);
-      toast.success("Event has been Edited");
-    } catch (error) {
+      toast.success(t("changes_updated_successfully"), {
+          duration: 2000,
+          className: "bg-blue-100 text-blue-800 text-xl",
+        });
+      } catch (error) {
       console.error("Failed to update data:", error);
-      toast.error("Failed to create event");
+      toast.error(t("changes_updated_failed"), {
+          duration: 2000,
+          className: "bg-blue-100 text-blue-800 text-xl",
+        });
     }
   };
 
@@ -119,7 +133,12 @@ export function DataTable<TData>({
       sorting,
       globalFilter,
       pagination,
+      rowSelection,
+      columnOrder: columnOrder || columns.map(col => col.accessorKey as string),
     },
+    onColumnOrderChange: onColumnOrderChange,
+    enableRowSelection: true,
+    onRowSelectionChange: onRowSelectionChange, 
     pageCount: Math.ceil(totalCount / pagination.pageSize),
     manualPagination: true,
     manualSorting: true,
@@ -214,25 +233,29 @@ export function DataTable<TData>({
   return (
     <div className="space-y-4">
       <div
-        className={`${
-          searchable ? "justify-between" : "justify-end"
-        } flex items-center`}
+        className={`flex items-center ${searchable ? "justify-between" : "justify-end"}`}
       >
         {searchable && (
-          <DataTableSearch
-            globalFilter={globalFilter}
-            setGlobalFilter={setGlobalFilter}
-          />
+          <div className="flex items-center gap-2">
+            <DataTableSearch
+              globalFilter={globalFilter}
+              setGlobalFilter={setGlobalFilter}
+            />
+            <DataTableDownloadButton table={table} />
+          </div>
         )}
+         <div className="flex justify-center w-full">
         <DataTableAddButton
           showAddButton={showAddButton}
           onToggleAddRow={toggleAddRow}
         />
+        </div>
       </div>
 
       <div className="rounded-lg">
         <Table className="border-collapse border-spacing-2 text-right">
-          <DataTableHeader table={table} actions={enhancedActions} />
+          <DataTableHeader table={table} actions={enhancedActions} 
+          enableColumnReordering={enableColumnReordering} />
           <DataTableBody<TData>
             columns={columns}
             table={table}

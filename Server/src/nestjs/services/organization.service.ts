@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Organization, OrganizationDocument } from '../schemas/organization.schema';
 
 @Injectable()
@@ -52,4 +52,19 @@ export class OrganizationService {
     return this.model.findById(id).exec();
   }
   
+  async assignFeatureFlags(orgId: string, featureFlagIds: string[]) {
+    return this.model.findByIdAndUpdate(
+      orgId,
+      { $addToSet: { featureFlagIds: { $each: featureFlagIds.map(id => new Types.ObjectId(id)) } } },
+      { new: true }
+    ).exec();
+  }
+
+  async removeFeatureFlag(orgId: string, featureFlagId: string) {
+    return this.model.findByIdAndUpdate(
+      orgId,
+      { $pull: { featureFlagIds: new Types.ObjectId(featureFlagId) } },
+      { new: true }
+    ).exec();
+  }
 }

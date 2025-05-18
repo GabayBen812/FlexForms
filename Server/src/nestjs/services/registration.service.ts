@@ -94,13 +94,11 @@ export class RegistrationService {
     if (query.organizationId && Types.ObjectId.isValid(query.organizationId)) {
       filter.organizationId = new Types.ObjectId(query.organizationId);
     }
-    // Support filtering on additionalData fields (dot notation)
     Object.keys(query).forEach(key => {
       if (key.startsWith('additionalData.') && query[key]) {
         filter[key] = { $regex: query[key], $options: 'i' };
       }
     });
-    // Remove empty filters
     Object.keys(filter).forEach(key => {
       if (filter[key] === undefined || filter[key] === "") {
         delete filter[key];
@@ -112,5 +110,20 @@ export class RegistrationService {
     ]);
     return [data, total];
   }
+
+  async countNumOfRegisteringByFormIds(formIds: string[]) {
+    const objectIds = formIds.map(id => new Types.ObjectId(id));
+    const result = await this.model.aggregate([
+      { $match: { formId: { $in: objectIds } } },
+      { $group: { _id: '$formId', count: { $sum: 1 } } },
+    ]);
+
+    const counts: Record<string, number> = {};
+    result.forEach(entry => {
+      counts[entry._id.toString()] = entry.count;
+    });
+    return counts;
+  }
+
 }
 

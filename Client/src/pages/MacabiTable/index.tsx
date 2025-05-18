@@ -1,13 +1,16 @@
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
-import { useNavigate } from "react-router-dom";
 import DataTable from "@/components/ui/completed/data-table";
 import { useOrganization } from "@/hooks/useOrganization";
 import { createApiService } from "@/api/utils/apiFactory";
 import { MacabiClub } from "@/types/macabiClub/macabiClub";
+import { FieldType } from "@/types/ui/data-table-types";
 import { useState } from "react";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/components/ui/sidebar";
+import { InlineEditPopup } from "@/components/InlineEditPopup";
+import { getClubColumns } from "@/columns/macabiClubColumns";
 
 const usersApi = createApiService<MacabiClub>("/clubs");
 
@@ -16,36 +19,54 @@ export default function clubs() {
   const { organization } = useOrganization();
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>({});
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const { state } = useSidebar();
+  const [editingCell, setEditingCell] = useState<{
+  rowIndex: number;
+  columnId: string;
+  value: any;
+  fieldType: FieldType;
+  position: { x: number; y: number };
+   options?: any;
+  rowData: MacabiClub; 
+  table: any;
+} | null>(null);
+const sidebarIsCollapsed = state === "collapsed";
+const columns = getClubColumns(t);
+  const visibleColumns = columns
+  .filter((col) => !(col.meta?.hidden))
+  .map((column) => ({
+    ...column,
+    cell: (info: any) => {
+      const meta = column.meta;
+      const value = info.getValue();
+      if (meta?.editable) {
+        return (
+          <div
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              setEditingCell({
+                rowIndex: info.row.index,
+                columnId: info.column.id,
+                value,
+                fieldType: meta.fieldType,
+                options: meta.options,
+                rowData: info.row.original,
+                table: info.table,
+                position: { x: rect.left + rect.width / 2, y: rect.bottom },
+              });
+            }}
+          >
+            {value?.toString?.() || ""}
+          </div>
+        );
+      }
 
-  const columns: ColumnDef<MacabiClub>[] = [
-    { accessorKey: "name", header: t("club_name") },
-    { accessorKey: "number", header: t("club_number") },
-    { accessorKey: "serviceAgreementDate", header: t("תאריך הסכם שירותים") },
-    { accessorKey: "serviceDeclarationDate", header: t("תאריך הצהרה על קבלת שירותים") },
-    { accessorKey: "associationEstablished", header: t("הקמת עמותה") },
-    { accessorKey: "joinDate", header: t("תאריך הצטרפות למכבי") },
-    { accessorKey: "supportDeclaration", header: t("תצהיר לתמיכה ממכבי") },
-    { accessorKey: "representative", header: t("נציג גוף") },
-    { accessorKey: "supplier", header: t("ספק") },
-    { accessorKey: "activeStatus", header: t("פעיל/לא פעיל") },
-    { accessorKey: "management2025", header: t("ניהול תקין 2025") },
-    { accessorKey: "managementStatus", header: t("סטטוס ניהול תקין") },
-    { accessorKey: "israeliPlayerRequest", header: t("הגשת בקשה שחקן ישראלי") },
-    { accessorKey: "budget2024", header: t("תקצוב 2024") },
-    { accessorKey: "budget2025", header: t("תקצוב 2025") },
-    { accessorKey: "manager", header: t("מנהל") },
-    { accessorKey: "generalNotes", header: t("הערות כלליות") },
-    { accessorKey: "supportRequest", header: t("בקשת תמיכה שוטף") },
-    { accessorKey: "declarationK001", header: t("הצהרה בתנאי סף K001") },
-    { accessorKey: "advanceK002", header: t("מקדמה K002") },
-    { accessorKey: "supportSummaryZ62", header: t("ריכוז תמיכות Z62") },
-    { accessorKey: "digitalSupportCommitmentZ61", header: t("התחייבות לקבלת תמיכה Z61 דיגיטלי") },
-    { accessorKey: "digitalDeclarationZ60", header: t("הצהרת מוח Z60 דיגיטלי") },
-    { accessorKey: "organizationId", header: "", meta: { hidden: true } },
-  ];
-  const visibleColumns = columns.filter(
-    (col) => !(col.meta?.hidden)
-  );
+      return <div className="px-2 py-1">{value?.toString?.() || ""}</div>;
+    },
+  }));
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => 
+  visibleColumns.map(col => col.accessorKey as string)
+);
 
   return (
     <div className="mx-auto">
@@ -63,23 +84,58 @@ export default function clubs() {
           onApply={setAdvancedFilters}
           initialFilters={advancedFilters}
         />
-        <DataTable<MacabiClub>
-          fetchData={(params) => {
-            if (!organization?._id)
-              return Promise.resolve({ status: 200, data: [] });
-            return usersApi.fetchAll(params, false, organization._id);
+        <div
+          className="overflow-x-auto w-full"
+          style={{
+            maxWidth: `calc(100vw - ${sidebarIsCollapsed ? "100px" : "18rem"})`
           }}
-          columns={visibleColumns}
-          searchable
-          showAddButton
-          isPagination
-          defaultPageSize={10}
-          idField="id"
-          extraFilters={advancedFilters}
-          onRowClick={() => {
-            
-          }}
-        />
+        >
+          <DataTable<MacabiClub>
+            fetchData={(params) => {
+              if (!organization?._id)
+                return Promise.resolve({ status: 200, data: [] });
+              return usersApi.fetchAll(params, false, organization._id);
+            }}
+            updateData={(updatedRow) => {
+              return usersApi.update({
+                ...updatedRow,
+                id: updatedRow._id,
+              });
+            }}
+            enableColumnReordering={true}
+            columnOrder={columnOrder}
+            onColumnOrderChange={setColumnOrder}
+            columns={visibleColumns}
+            searchable
+            showAddButton
+            isPagination
+            defaultPageSize={10}
+            idField="_id"
+            extraFilters={advancedFilters}
+            onRowClick={() => {
+              
+            }}
+          />
+          {editingCell && (
+          <InlineEditPopup
+            value={editingCell.value}
+            fieldType={editingCell.fieldType}
+            position={editingCell.position}
+            options={editingCell.options}
+            onClose={() => setEditingCell(null)}
+            onSave={(newValue) => {
+              const columnId = editingCell.columnId;
+              const rowData = editingCell.rowData;
+              const updatedRow = {
+                ...rowData,
+                [columnId]: newValue,
+              };
+              editingCell.table?.options?.meta?.handleEdit(updatedRow);
+              setEditingCell(null);
+            }}
+          />
+        )}
+        </div>
       </div>
     </div>
   );

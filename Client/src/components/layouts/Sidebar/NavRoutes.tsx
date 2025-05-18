@@ -23,6 +23,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { resolveTheme } from "@/lib/themeUtils";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
 export function NavRoutes() {
   const { user } = useAuth();
@@ -54,6 +55,10 @@ function SideBarMenuRoute({ route, user }: { route: RouteObject, user: any }) {
       {route.children?.map((childRoute) => {
         if (!childRoute.handle?.showInSidebar) return null;
         if (childRoute.handle?.adminOnly && user?.role !== 'system_admin') return null;
+        if (childRoute.handle?.featureFlag) {
+          const { isEnabled } = useFeatureFlag(childRoute.handle.featureFlag);
+          if (!isEnabled) return null;
+        }
         if (
           childRoute.handle?.isMaccabi &&
           organization?.name !== "מרכז מכבי ישראל"

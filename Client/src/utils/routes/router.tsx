@@ -24,6 +24,9 @@ import Clubs from "@/pages/Clubs";
 import { Navigate } from "react-router-dom";
 import AdminDashboard from '@/pages/Admin';
 import RegistrationSuccess from '@/pages/Forms/externalPage/RegistrationSuccess';
+import FormSettings from "@/components/forms/FormSettings";
+import Rooms from "@/pages/Rooms";
+import { DoorOpen } from "lucide-react";
 
 export const router = createBrowserRouter([
   {
@@ -50,6 +53,16 @@ export const router = createBrowserRouter([
         },
       },
       {
+        path: "rooms",
+        element: <Rooms />,
+        handle: {
+          title: "rooms",
+          icon: DoorOpen,
+          showInSidebar: true,
+          featureFlag: "ff_is_show_rooms"
+        },
+      },
+      {
         path: "forms/:code",
         element: <FormDetails />,
         handle: { showInSidebar: false },
@@ -68,6 +81,10 @@ export const router = createBrowserRouter([
           },
           {
             path: "edit",
+            element: <FormDetails />,
+          },
+          {
+            path: "settings",
             element: <FormDetails />,
           },
         ],

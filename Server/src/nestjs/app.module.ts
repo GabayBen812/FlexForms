@@ -10,6 +10,8 @@ import { OrganizationModule } from './modules/organization.module';
 import { PaymentModule } from './modules/payment.module';
 import { RegistrationModule } from './modules/registration.module';
 import { clubModule } from './modules/club.moudle';
+import { FeatureFlagModule } from './modules/feature-flag.module';
+import { RoomModule } from './modules/room.module';
 dotenv.config();
 @Module({
   imports: [
@@ -20,7 +22,9 @@ dotenv.config();
     OrganizationModule,
     PaymentModule,
     RegistrationModule,
-    clubModule
+    clubModule,
+    FeatureFlagModule,
+    RoomModule
   ],
   controllers: [],
   providers: [AuthService],

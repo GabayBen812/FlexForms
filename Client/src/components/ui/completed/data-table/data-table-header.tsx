@@ -25,6 +25,7 @@ function DataTableHeader<T>({
   const moveColumn = (accessorKey: string, direction: 'left' | 'right') => {
     const currentOrder = table.getState().columnOrder;
     const currentIndex = currentOrder.indexOf(accessorKey);
+    if (currentIndex < 2) return;
     const newIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
 
     if (newIndex >= 0 && newIndex < currentOrder.length) {
@@ -36,15 +37,40 @@ function DataTableHeader<T>({
   };
 
   return (
-  <TableHeader>
+  <TableHeader
+    style={{
+      position: 'sticky',
+      top: 0,
+      zIndex: 30,
+      backgroundColor: "var(--datatable-header)", // חשוב שיהיה רקע כדי שלא יראו מה שמאחור
+    }}>
     {table.getHeaderGroups().map((headerGroup) => (
       <TableRow key={headerGroup.id} className="border-none h-11">
         {headerGroup.headers.map((header, index) => {
           const isFirst = index === 0;
           const accessorKey = header.column.columnDef.accessorKey as string;
           const currentIndex = table.getState().columnOrder.indexOf(accessorKey);
+          const isName = accessorKey === 'clubName';
+          const isNumber = accessorKey === 'clubNumber';
+          let stickyStyles: { [key: string]: any } = {};
+          const stickyBg = "hsl(224, 29.60%, 27.80%)"; 
+          const stickyShadow = "2px 0 5px rgba(0, 0, 0, 0.2)"; 
+          if (isName) {
+            stickyStyles = { position: 'sticky', right: 0, zIndex: 21,
+              backgroundColor: stickyBg,
+             };
+             } else if (isNumber) {
+            const nameHeader = headerGroup.headers.find(
+              (h) => h.column.columnDef.accessorKey === 'clubName'
+            );
+            const nameWidth = (nameHeader?.getSize() || 0) + 26;
+            stickyStyles = { position: 'sticky', right: nameWidth, zIndex: 21,
+              backgroundColor: stickyBg,
+             };
+            }
 
-          return (
+
+         return (
             <TableHead
               className={`bg-primary-foreground text-white ${
                 isFirst && firstColumnRounding
@@ -52,7 +78,8 @@ function DataTableHeader<T>({
               style={{ 
                 width: header.getSize(), 
                 backgroundColor: "var(--datatable-header)",
-                padding: "0.5rem 0.25rem"
+                padding: "0.5rem 0.25rem",
+                ...stickyStyles,
               }}
             >
               <div className="flex items-center justify-between group h-full">

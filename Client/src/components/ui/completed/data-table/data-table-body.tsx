@@ -38,6 +38,7 @@ interface DataTableBodyProps<T> {
 
 interface RowComponentProps<T> {
   row: Row<T>;
+  table: Table<T>;
   actions?: TableAction<T>[] | null;
   renderExpandedContent?: (props: ExpandedContentProps<T>) => React.ReactNode;
   isExpanded: boolean;
@@ -49,11 +50,13 @@ interface RowComponentProps<T> {
 
 const RowComponent = React.memo(function RowComponent<T>({
   row,
+  table,
   actions,
   renderExpandedContent,
   isExpanded,
   columns,
   handleEdit,
+  handleSave,
   onRowClick,
 }: RowComponentProps<T>) {
   const direction = GetDirection();
@@ -61,6 +64,7 @@ const RowComponent = React.memo(function RowComponent<T>({
     ? "rounded-r-lg px-8"
     : "rounded-l-lg px-8";
   const lastColumnRounding = direction ? "rounded-l-lg" : "rounded-r-lg";
+
   return (
     <>
       <TableRow
@@ -71,19 +75,46 @@ const RowComponent = React.memo(function RowComponent<T>({
         } border-b-4 border-background group cursor-pointer transition-colors h-[3.75rem]`}
         onClick={() => (onRowClick ? onRowClick(row) : row.toggleExpanded())}
       >
-        {row.getVisibleCells().map((cell, index) => (
-          <TableCell
-            className={`bg-white text-primary text-base font-normal border-b-4 border-background w-auto whitespace-nowrap transition-colors ${
-              index === 0 ? firstColumnRounding : "rounded-b-[1px]"
-            }`}
-            key={cell.id}
-          >
-            {flexRender(
-              cell.column.columnDef.cell,
-              cell.getContext() as CellContext<T, unknown>
-            )}
-          </TableCell>
-        ))}
+        {row.getVisibleCells().map((cell, index) => {
+          const accessorKey = cell.column.columnDef.accessorKey as string;
+          const isName = accessorKey === "clubName";
+          const isNumber = accessorKey === "clubNumber";
+          const stickyBg = "hsl(0, 0.00%, 100.00%)";
+          // חישוב רוחב name במידה וזה מספר
+         let rightOffset = 0;
+          if (isNumber) {
+            const nameCol = table.getVisibleFlatColumns().find(
+              (col) => col.columnDef.accessorKey === "clubName"
+            );
+            rightOffset = (nameCol?.getSize?.() ?? 0) + 26;
+          }
+
+          const stickyStyles =
+            isName || isNumber
+              ? {
+                  position: "sticky",
+                  right: isName ? 0 : rightOffset,
+                  zIndex: isNumber ? 24 : 23,
+                  backgroundColor: stickyBg,
+                  
+                }
+              : {};
+
+          return (
+            <TableCell
+              className={`bg-white text-primary text-base font-normal border-b-4 border-background w-auto whitespace-nowrap transition-colors ${
+                index === 0 ? firstColumnRounding : "rounded-b-[1px]"
+              }`}
+              key={cell.id}
+              style={stickyStyles}
+            >
+              {flexRender(
+                cell.column.columnDef.cell,
+                cell.getContext() as CellContext<T, unknown>
+              )}
+            </TableCell>
+          );
+        })}
         {actions && (
           <TableCell
             className={`bg-white transition-colors group-hover:bg-muted ${lastColumnRounding} border-b-4 border-background text-left whitespace-nowrap rtl:text-left ltr:text-right`}
@@ -106,7 +137,6 @@ const RowComponent = React.memo(function RowComponent<T>({
                     key={index}
                     onClick={(e: React.MouseEvent) => {
                       e.stopPropagation();
-
                       if (action.onClick) action.onClick(row);
                     }}
                   >
@@ -170,6 +200,7 @@ function DataTableBody<T>({
             <RowComponent<T>
               key={row.id}
               row={row}
+              table={table}
               actions={actions}
               renderExpandedContent={renderExpandedContent}
               isExpanded={row.getIsExpanded()}

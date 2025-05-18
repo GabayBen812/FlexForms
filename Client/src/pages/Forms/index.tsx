@@ -189,11 +189,11 @@ const selectionColumn: ColumnDef<Form, any> = {
         extraFilters={advancedFilters}
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}
-        onRowClick={(formRow) => {
-          //@ts-ignore
-          const form = formRow.original;
-          if (form.code && form._id) {
+        onRowClick={(form) => {
+          if (form && form.code && form._id) {
             navigate(`/forms/${form.code}/dashboard`);
+          } else {
+            console.warn('Form row is missing code or _id', form);
           }
         }}
       />

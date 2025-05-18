@@ -31,7 +31,6 @@ export default function clubs() {
   table: any;
 } | null>(null);
 const sidebarIsCollapsed = state === "collapsed";
-
 const columns = getClubColumns(t);
   const visibleColumns = columns
   .filter((col) => !(col.meta?.hidden))
@@ -65,6 +64,9 @@ const columns = getClubColumns(t);
       return <div className="px-2 py-1">{value?.toString?.() || ""}</div>;
     },
   }));
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => 
+  visibleColumns.map(col => col.accessorKey as string)
+);
 
   return (
     <div className="mx-auto">
@@ -100,6 +102,9 @@ const columns = getClubColumns(t);
                 id: updatedRow._id,
               });
             }}
+            enableColumnReordering={true}
+            columnOrder={columnOrder}
+            onColumnOrderChange={setColumnOrder}
             columns={visibleColumns}
             searchable
             showAddButton

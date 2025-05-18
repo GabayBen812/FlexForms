@@ -2,6 +2,7 @@ import { Injectable, Query } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Club, ClubDocument } from '../schemas/club.schema';
+import mongoose from 'mongoose'; 
 
 
 @Injectable()
@@ -49,6 +50,16 @@ export class ClubService {
 
  async updateClub(id: string, updateData: Partial<ClubDocument> & { id?: string }) {
   const { id: _, ...fields } = updateData;
-  return this.model.findByIdAndUpdate(id, fields, { new: true }) .exec();
+
+  if (fields.organizationId && typeof fields.organizationId === 'string') {
+    try {
+      fields.organizationId = new Types.ObjectId(fields.organizationId);
+    } catch (err) {
+      console.error('Invalid organizationId:', fields.organizationId);
+    }
+  }
+  console.log('Final fields before update:', fields);
+  return this.model.findByIdAndUpdate(id, fields, { new: true }).exec();
 }
+ 
 }

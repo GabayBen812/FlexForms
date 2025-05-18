@@ -36,6 +36,9 @@ export function DataTable<TData>({
   extraFilters = {},
   onRowSelectionChange,
   rowSelection,
+  enableColumnReordering,
+  columnOrder,
+  onColumnOrderChange,
 }: DataTableProps<TData> & { extraFilters?: Record<string, any> }) {
   const [tableData, setTableData] = useState<TData[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -131,7 +134,9 @@ export function DataTable<TData>({
       globalFilter,
       pagination,
       rowSelection,
+      columnOrder: columnOrder || columns.map(col => col.accessorKey as string),
     },
+    onColumnOrderChange: onColumnOrderChange,
     enableRowSelection: true,
     onRowSelectionChange: onRowSelectionChange, 
     pageCount: Math.ceil(totalCount / pagination.pageSize),
@@ -249,7 +254,8 @@ export function DataTable<TData>({
 
       <div className="rounded-lg">
         <Table className="border-collapse border-spacing-2 text-right">
-          <DataTableHeader table={table} actions={enhancedActions} />
+          <DataTableHeader table={table} actions={enhancedActions} 
+          enableColumnReordering={enableColumnReordering} />
           <DataTableBody<TData>
             columns={columns}
             table={table}

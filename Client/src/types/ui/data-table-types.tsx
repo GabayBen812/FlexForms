@@ -30,6 +30,9 @@ export interface DataTableProps<TData> {
   addData: (data: Partial<TData>) => Promise<MutationResponse<TData>>;
   updateData: (data: TData) => Promise<MutationResponse<TData>>;
   deleteData?: (id: number) => Promise<MutationResponse<null>>;
+  enableColumnReordering?: boolean;
+  columnOrder?: string[];
+  onColumnOrderChange?: (columnOrder: string[]) => void;
   columns: ColumnDef<TData>[];
   searchable?: boolean;
   isPagination?: boolean;

@@ -1,11 +1,12 @@
-import { prismaClient } from "../prisma";
+import { Model, Types } from 'mongoose';
 import { ExtendedRequest } from "../types/users/usersRequests";
 import { Response } from "express";
+
 export const getDynamicData = async (
   req: ExtendedRequest,
   res: Response,
   options: {
-    model: string;
+    model: Model<any>;
     searchFields?: { path: string; field: string }[];
     includeCounts?: { [key: string]: boolean };
     include?: { [key: string]: boolean | object };
@@ -56,52 +57,38 @@ export const getDynamicData = async (
 
     // Apply search
     if (search && options.searchFields?.length) {
-      whereClause.OR = options.searchFields.map(({ path, field }) => ({
-        [field]: {
-          path,
-          string_contains: search,
-          mode: "insensitive",
-        },
+      whereClause.$or = options.searchFields.map(({ path, field }) => ({
+        [field]: { $regex: search, $options: 'i' }
       }));
     }
 
-    // Build orderBy clause
-    const orderByClause = sortField
-      ? { [sortField as string]: sortDirection || "asc" }
+    // Build sort clause
+    const sortClause = sortField
+      ? { [sortField as string]: sortDirection === 'desc' ? -1 : 1 } as { [key: string]: 1 | -1 }
       : options.defaultSortField
-      ? { [options.defaultSortField]: "asc" }
+      ? { [options.defaultSortField]: 1 } as { [key: string]: 1 | -1 }
       : undefined;
 
-    // Build include clause only if needed
-    let includeClause: any = {};
-    if (options.includeCounts) {
-      includeClause._count = { select: options.includeCounts };
-    }
+    // Build include clause
+    let populateOptions: any[] = [];
     if (options.include) {
-      includeClause = { ...includeClause, ...options.include };
+      populateOptions = Object.entries(options.include).map(([path, select]) => ({
+        path,
+        select: typeof select === 'object' ? select : true
+      }));
     }
-    const hasIncludes = Object.keys(includeClause).length > 0;
-
-    // Get model
-    const prismaModel = prismaClient[
-      options.model as keyof typeof prismaClient
-    ] as any;
 
     const isPaginated = page !== undefined && pageSize !== undefined;
 
     if (isPaginated) {
-      const totalCountPromise = prismaModel.count({ where: whereClause });
-      const dataPromise = prismaModel.findMany({
-        where: whereClause,
-        ...(hasIncludes && { include: includeClause }),
-        skip,
-        take,
-        orderBy: orderByClause,
-      });
-
       const [totalCount, data] = await Promise.all([
-        totalCountPromise,
-        dataPromise,
+        options.model.countDocuments(whereClause),
+        options.model
+          .find(whereClause)
+          .populate(populateOptions)
+          .skip(skip || 0)
+          .limit(take || 0)
+          .sort(sortClause)
       ]);
 
       const transformedData = options.transformResponse
@@ -113,11 +100,10 @@ export const getDynamicData = async (
         totalCount,
       });
     } else {
-      const data = await prismaModel.findMany({
-        where: whereClause,
-        ...(hasIncludes && { include: includeClause }),
-        orderBy: orderByClause,
-      });
+      const data = await options.model
+        .find(whereClause)
+        .populate(populateOptions)
+        .sort(sortClause);
 
       const transformedData = options.transformResponse
         ? options.transformResponse(data)
@@ -126,7 +112,7 @@ export const getDynamicData = async (
       res.status(200).json(transformedData);
     }
   } catch (error) {
-    console.error(`Error in getDynamicData for ${options.model}:`, error);
+    console.error(`Error in getDynamicData:`, error);
     res.status(500).json({ message: "Server error" });
   }
 };

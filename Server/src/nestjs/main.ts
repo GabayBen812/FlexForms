@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import cookieParser from 'cookie-parser';
+import * as cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 dotenv.config();
@@ -22,7 +22,7 @@ async function bootstrap() {
   
   app.enableCors({
     origin: process.env.NODE_ENV === 'production'
-      ? ['https://your-vercel-domain.vercel.app']
+      ? process.env.CLIENT_URL
       : 'http://localhost:5173',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

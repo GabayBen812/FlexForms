@@ -1,4 +1,4 @@
-import { ColumnDef, Row, RowSelectionState  } from "@tanstack/react-table";
+import { ColumnDef, Row, RowSelectionState } from "@tanstack/react-table";
 import { MutationResponse } from "@/types/api/auth";
 
 export interface ApiQueryParams {
@@ -23,29 +23,20 @@ export interface ExpandedContentProps<TData> {
 }
 
 export interface DataTableProps<TData> {
-  fetchData: (
-    params: ApiQueryParams
-  ) => Promise<ApiResponse<TData> | MutationResponse<TData[]>>;
-  initialData?: TData[];
-  addData: (data: Partial<TData>) => Promise<MutationResponse<TData>>;
-  updateData: (data: TData) => Promise<MutationResponse<TData>>;
-  deleteData?: (id: number) => Promise<MutationResponse<null>>;
-  enableColumnReordering?: boolean;
-  columnOrder?: string[];
-  onColumnOrderChange?: (columnOrder: string[]) => void;
   columns: ColumnDef<TData>[];
-  searchable?: boolean;
-  isPagination?: boolean;
-  actions?: TableAction<TData>[] | null;
-  defaultPageSize?: number;
-  renderExpandedContent?: (
-    props: ExpandedContentProps<TData>
-  ) => React.ReactNode;
-  showAddButton?: boolean;
+  data: TData[];
+  fetchData: (params?: ApiQueryParams, rawDataOnly?: boolean, organizationId?: string) => Promise<ApiResponse<TData> | MutationResponse<TData[]>>;
+  updateData: (data: Partial<TData> & { id: string | number }) => Promise<MutationResponse<TData>>;
+  deleteData?: (id: string | number) => Promise<MutationResponse<TData>>;
+  onRowClick?: (row: TData) => void;
+  extraFilters?: Record<string, any>;
   idField?: keyof TData;
-  onRowClick?: (row: Row<TData>) => void;
-  rowSelection?: RowSelectionState;
+  defaultSortField?: string;
+  defaultSortDirection?: "asc" | "desc";
+  defaultPageSize?: number;
+  onColumnOrderChange?: (columnOrder: string[]) => void;
   onRowSelectionChange?: (selection: RowSelectionState) => void;
+  renderExpandedContent?: (props: { handleSave: (data: Partial<TData>) => Promise<void> }) => React.ReactNode;
 }
 
 export interface TableAction<TData> {
@@ -54,4 +45,5 @@ export interface TableAction<TData> {
   type?: "edit" | "delete" | string;
   editData?: Partial<TData>;
 }
+
 export type FieldType = "TEXT" | "SELECT" | "DATE" | "FILE" | "CURRENCY";

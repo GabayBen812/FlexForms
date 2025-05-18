@@ -29,7 +29,7 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
 
-  const port = process.env.PORT || 3101;
+  const port = 3101;
   console.log('Listening on port:', port);
   console.log('Listening on CLIENT_URL:', process.env.CLIENT_URL);
   console.log('Listening on NODE_ENV:', process.env.NODE_ENV);

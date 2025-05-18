@@ -118,6 +118,7 @@ const columns = getClubColumns(t);
             columns={visibleColumns}
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
+            stickyColumnCount={3}
             searchable
             showAddButton
             isPagination

@@ -28,6 +28,7 @@ interface DataTableBodyProps<T> {
   setSpecialRow: React.Dispatch<React.SetStateAction<"add" | null>>;
   table: Table<T>;
   actions?: TableAction<T>[] | null;
+  stickyColumnCount?: number;
   columns: ColumnDef<T>[];
   renderExpandedContent?: (props: ExpandedContentProps<T>) => React.ReactNode;
   handleSave: (newData: Partial<T>) => void;
@@ -40,6 +41,7 @@ interface RowComponentProps<T> {
   row: Row<T>;
   table: Table<T>;
   actions?: TableAction<T>[] | null;
+  stickyColumnCount?: number;
   renderExpandedContent?: (props: ExpandedContentProps<T>) => React.ReactNode;
   isExpanded: boolean;
   handleEdit?: (row: Partial<T>) => void;
@@ -52,6 +54,7 @@ const RowComponent = React.memo(function RowComponent<T>({
   row,
   table,
   actions,
+  stickyColumnCount,
   renderExpandedContent,
   isExpanded,
   columns,
@@ -75,58 +78,28 @@ const RowComponent = React.memo(function RowComponent<T>({
         } border-b-4 border-background group cursor-pointer transition-colors h-[3.75rem]`}
         onClick={() => (onRowClick ? onRowClick(row) : row.toggleExpanded())}
       >
+                
         {row.getVisibleCells().map((cell, index) => {
-  const columnId = cell.column.id;
-  const accessorKey = cell.column.columnDef.accessorKey as string | undefined;
+          const stickyBg = "white";
+          const effectiveStickyColumnCount = stickyColumnCount ?? 0;
+          const isSticky = index < effectiveStickyColumnCount;
 
-  const isCheckbox = columnId === "select";
-  const isName = accessorKey === "clubName";
-  const isNumber = accessorKey === "clubNumber";
-  
-  const stickyBg = "hsl(0, 0.00%, 100.00%)";
-  let rightOffset = 0;
-  let stickyStyles: React.CSSProperties = {};
+          let stickyStyles: React.CSSProperties = {};
 
-  if (isCheckbox) {
-    stickyStyles = {
-      position: "sticky",
-      right: 0,
-      zIndex: 25,
-      backgroundColor: stickyBg,
-    };
-  }
+          if (isSticky) {
+            const columnsBefore = table.getVisibleFlatColumns().slice(0, index);
+            const rightOffset = columnsBefore.reduce(
+              (sum, col) => sum + (col.getSize?.() ?? 0) + (25-((index+1)*2)),
+              0
+            );
 
-  if (isName) {
-    const checkboxCol = table.getVisibleFlatColumns().find(
-      (col) => col.id === "select"
-    );
-    const checkboxWidth = (checkboxCol?.getSize?.() ?? 0) + 26;
-    stickyStyles = {
-      position: "sticky",
-      right: checkboxWidth,
-      zIndex: 24,
-      backgroundColor: stickyBg,
-    };
-  }
-
-  if (isNumber) {
-    const checkboxCol = table.getVisibleFlatColumns().find(
-      (col) => col.id === "select"
-    );
-    const nameCol = table.getVisibleFlatColumns().find(
-      (col) => col.columnDef.accessorKey === "clubName"
-    );
-    const checkboxWidth = (checkboxCol?.getSize?.() ?? 0) + 26;
-    const nameWidth = (nameCol?.getSize?.() ?? 0) + 18;
-    rightOffset = checkboxWidth + nameWidth;
-    stickyStyles = {
-      position: "sticky",
-      right: rightOffset,
-      zIndex: 23,
-      backgroundColor: stickyBg,
-    };
-  }
-
+            stickyStyles = {
+              position: "sticky",
+              right: `${rightOffset}px`,
+              zIndex: 25 + index,  
+              backgroundColor: stickyBg,
+            };
+          }
 
           return (
             <TableCell
@@ -195,6 +168,7 @@ function DataTableBody<T>({
   table,
   actions,
   columns,
+  stickyColumnCount,
   renderExpandedContent,
   specialRow,
   setSpecialRow,
@@ -230,6 +204,7 @@ function DataTableBody<T>({
               row={row}
               table={table}
               actions={actions}
+              stickyColumnCount={stickyColumnCount}
               renderExpandedContent={renderExpandedContent}
               isExpanded={row.getIsExpanded()}
               columns={columns}

@@ -34,6 +34,7 @@ export interface DataTableProps<TData> {
   columnOrder?: string[];
   onColumnOrderChange?: (columnOrder: string[]) => void;
   columns: ColumnDef<TData>[];
+  stickyColumnCount?: number;
   searchable?: boolean;
   isPagination?: boolean;
   actions?: TableAction<TData>[] | null;

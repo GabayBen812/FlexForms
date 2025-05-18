@@ -24,7 +24,6 @@ import Clubs from "@/pages/Clubs";
 import { Navigate } from "react-router-dom";
 import AdminDashboard from '@/pages/Admin';
 import RegistrationSuccess from '@/pages/Forms/externalPage/RegistrationSuccess';
-import FormSettings from "@/components/forms/FormSettings";
 import Rooms from "@/pages/Rooms";
 import { DoorOpen } from "lucide-react";
 

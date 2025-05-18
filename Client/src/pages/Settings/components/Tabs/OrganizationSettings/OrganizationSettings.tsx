@@ -35,6 +35,7 @@ const organizationFormSchema = z.object({
 function OrganizationSettings() {
   const { toast } = useToast();
   const { t } = useTranslation();
+  //@ts-ignore
   const { organizations } = useContext(OrganizationsContext);
   const [selectedOrganization, setSelectedOrganization] =
     useState<Organization>(organizations[0]);

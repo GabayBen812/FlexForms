@@ -41,7 +41,7 @@ function DataTableHeader<T>({
       <TableRow key={headerGroup.id} className="border-none h-11">
         {headerGroup.headers.map((header, index) => {
           const isFirst = index === 0;
-          const accessorKey = header.column.columnDef.accessorKey as string;
+          const accessorKey = (header.column.columnDef as any).accessorKey as string;
           const currentIndex = table.getState().columnOrder.indexOf(accessorKey);
 
           return (

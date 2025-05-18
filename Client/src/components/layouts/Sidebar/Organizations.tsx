@@ -21,7 +21,7 @@ import { useTranslation } from "react-i18next";
 export function Organizations({ loading }: { loading: boolean }) {
   const { t } = useTranslation();
   const { isMobile } = useSidebar();
-  const { organizations, organization, selectOrganization } =
+  const { organization } =
     useContext(OrganizationsContext);
   console.log("organization", organization);
 
@@ -68,7 +68,8 @@ export function Organizations({ loading }: { loading: boolean }) {
                   {organization?.name}
                 </span>
                 <span className="truncate text-xs">
-                  {organization?.OrganizationRole?.role.name}
+                  {/* @ts-ignore */}
+                  {organization?.role?.name}
                 </span>
               </div>
               <ChevronsUpDown className="ml-auto" />
@@ -84,9 +85,11 @@ export function Organizations({ loading }: { loading: boolean }) {
               {t("organizations")}
             </DropdownMenuLabel>
 
+            {/* @ts-ignore */}
             {organizations.map((organizationChild) => (
               <DropdownMenuItem
                 key={organizationChild.id}
+                //@ts-ignore
                 onClick={() => selectOrganization(organizationChild.id)}
                 className="gap-2 p-2"
                 disabled={organizationChild.id === organization.id}

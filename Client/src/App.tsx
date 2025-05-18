@@ -1,3 +1,5 @@
+import { Routes, Route } from "react-router-dom";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Rooms from "@/pages/Rooms";
 
 function App() {

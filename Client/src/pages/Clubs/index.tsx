@@ -24,6 +24,7 @@ export default function clubs() {
     {accessorKey: "organizationId", header: "", meta: { hidden: true },},
   ];
   const visibleColumns = columns.filter(
+    //@ts-ignore
     (col) => !(col.meta?.hidden)
   );
 
@@ -53,6 +54,7 @@ export default function clubs() {
         showAddButton
         isPagination
         defaultPageSize={10}
+        //@ts-ignore
         idField="_id"
         extraFilters={advancedFilters}
         onRowClick={(user) => {

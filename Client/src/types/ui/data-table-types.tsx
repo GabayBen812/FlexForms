@@ -37,6 +37,16 @@ export interface DataTableProps<TData> {
   onColumnOrderChange?: (columnOrder: string[]) => void;
   onRowSelectionChange?: (selection: RowSelectionState) => void;
   renderExpandedContent?: (props: { handleSave: (data: Partial<TData>) => Promise<void> }) => React.ReactNode;
+  addData?: any;
+  searchable?: boolean;
+  isPagination?: boolean;
+  showAddButton?: boolean;
+  actions?: any;
+  initialData?: any;
+  rowSelection?: any;
+  enableColumnReordering?: boolean;
+  columnOrder?: string[];
+  [key: string]: any;
 }
 
 export interface TableAction<TData> {

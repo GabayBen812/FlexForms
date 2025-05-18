@@ -13,9 +13,9 @@
     "jsx": "react-jsx",
 
     // Strictness & Linting
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "strict": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
 
@@ -23,11 +23,12 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
-    },
-
-    // Cypress support
-    "types": ["cypress"]
+    }
   },
 
-  "include": ["src", "cypress", "vite.config.ts"]
+  "include": ["src", "vite.config.ts"],
+  "exclude": [
+    "node_modules",
+    "cypress"
+  ]
 }

@@ -31,6 +31,9 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3101;
   console.log('Listening on port:', port);
+  console.log('Listening on CLIENT_URL:', process.env.CLIENT_URL);
+  console.log('Listening on NODE_ENV:', process.env.NODE_ENV);
+  console.log('Listening on MONGODB_URI:', process.env.MONGODB_URI);
   await app.listen(port);
 }
 bootstrap();

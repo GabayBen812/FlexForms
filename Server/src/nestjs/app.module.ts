@@ -12,6 +12,7 @@ import { RegistrationModule } from './modules/registration.module';
 import { clubModule } from './modules/club.moudle';
 import { FeatureFlagModule } from './modules/feature-flag.module';
 import { RoomModule } from './modules/room.module';
+import { HealthController } from './controllers/health.controller';
 dotenv.config();
 @Module({
   imports: [
@@ -26,7 +27,7 @@ dotenv.config();
     FeatureFlagModule,
     RoomModule
   ],
-  controllers: [],
+  controllers: [AuthController, HealthController],
   providers: [AuthService],
 })
 export class AppModule {}

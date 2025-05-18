@@ -29,6 +29,8 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
 
-  await app.listen(process.env.PORT || 3101);
+  const port = process.env.PORT || 3101;
+  console.log('Listening on port:', port);
+  await app.listen(port);
 }
 bootstrap();

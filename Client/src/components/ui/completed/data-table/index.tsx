@@ -85,15 +85,32 @@ export function DataTable<TData>({
   };
 
   const handleUpdate = async (row: Row<TData>, data: Partial<TData>) => {
-    const updatedData = {
-      ...row.original,
-      ...data,
-      id: row.original[idField as keyof TData] as string | number
-    };
-    await updateData(updatedData);
-    toast.success(t("changes_updated_successfully"));
+  const updatedData = {
+    ...row.original,
+    ...data,
+    id: row.original[idField as keyof TData] as string | number,
   };
 
+  try {
+    setTableData((prev) =>
+      prev.map((item) =>
+        item[idField] === updatedData[idField] ? updatedData : item
+      ) as TData[]
+    );
+    await updateData(updatedData);
+
+    toast.success(t("changes_updated_successfully"), {
+      duration: 2000,
+      className: "bg-blue-100 text-blue-800 text-xl",
+    });
+  } catch (error) {
+    console.error("Failed to update data:", error);
+    toast.error(t("changes_updated_failed"), {
+      duration: 2000,
+      className: "bg-blue-100 text-blue-800 text-xl",
+    });
+  }
+};
   const handleDeleteData = async (id: string | number) => {
     if (!deleteData || !idField) return;
 
@@ -247,7 +264,7 @@ export function DataTable<TData>({
             specialRow={specialRow}
             setSpecialRow={setSpecialRow}
             handleSave={handleAdd}
-            handleEdit={(row) => handleUpdate(row as any, row)}
+            handleEdit={(row, updatedData) => handleUpdate(row, updatedData)}
             isLoading={isLoading}
             onRowClick={(row) => onRowClick?.(row.original)}
           />

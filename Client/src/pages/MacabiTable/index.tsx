@@ -12,6 +12,7 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { InlineEditPopup } from "@/components/InlineEditPopup";
 import { getClubColumns } from "@/columns/macabiClubColumns";
 
+
 const usersApi = createApiService<MacabiClub>("/clubs");
 
 export default function clubs() {
@@ -107,6 +108,7 @@ const columns = getClubColumns(t);
               return usersApi.fetchAll(params, false, organization._id);
             }}
             updateData={(updatedRow) => {
+              console.log("updatedRow", updatedRow);
               return usersApi.update({
                 ...updatedRow,
                 id: updatedRow._id,
@@ -143,7 +145,11 @@ const columns = getClubColumns(t);
                 ...rowData,
                 [columnId]: newValue,
               };
-              editingCell.table?.options?.meta?.handleEdit(updatedRow);
+              console.log("updatedRow in onSave", updatedRow);
+              editingCell.table?.options?.meta?.handleEdit(
+  editingCell.table.getRow(editingCell.rowIndex), // row
+  { [columnId]: newValue }                       // data
+);
               setEditingCell(null);
             }}
           />

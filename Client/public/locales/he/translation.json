@@ -21,6 +21,8 @@
   "options": "אפשרויות",
   "option": "אפשרות",
   "add_option": "הוסף אפשרות",
+  "read_from_excel_file": "קרא מקובץ אקסל",
+  "export_to_excel_file":"ייצא לקובץ אקסל",
   "required_field": "שדה חובה",
   "preview_form": "תצוגה מקדימה של הטופס",
   "submit_form": "שלח טופס",

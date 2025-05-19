@@ -21,6 +21,18 @@ export class ClubService {
     return code;
   }
 
+ async create(data: Partial<Club>) {
+  const code = await this.generateUniqueCode();
+
+  const { organizationId, ...rest } = data;
+
+  return this.model.create({
+    ...rest,
+    code,
+    organizationId: new Types.ObjectId(organizationId),
+  });
+}
+
   findAll() {
     return this.model.find().exec();
   }

@@ -40,6 +40,7 @@ export function DataTable<TData>({
   enableColumnReordering,
   columnOrder,
   onColumnOrderChange,
+  visibleRows,
 }: DataTableProps<TData> & { extraFilters?: Record<string, any> }) {
   const [tableData, setTableData] = useState<TData[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -205,6 +206,11 @@ export function DataTable<TData>({
     loadData();
   }, [pagination.pageIndex, pagination.pageSize, sorting, globalFilter, memoizedExtraFilters]);
   
+  useEffect(() => {
+  if (visibleRows) {
+    visibleRows(table.getRowModel().rows.map((row) => row.original));
+  }
+}, [table.getRowModel().rows, visibleRows]);
 
   const toggleAddRow = () => {
     setSpecialRow((prev) => (prev === "add" ? null : "add"));
@@ -260,7 +266,7 @@ export function DataTable<TData>({
         </div>
       </div>
       <div className="rounded-lg">
-        <Table className="border-collapse border-spacing-2 text-right">
+        <Table className="border-collapse border-spacing-0 text-right">
           <DataTableHeader table={table} actions={enhancedActions} 
           enableColumnReordering={enableColumnReordering}
           stickyColumnCount={stickyColumnCount} />

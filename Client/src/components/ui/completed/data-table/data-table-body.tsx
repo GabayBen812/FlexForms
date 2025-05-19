@@ -89,9 +89,9 @@ const RowComponent = React.memo(function RowComponent<T>({
           if (isSticky) {
             const columnsBefore = table.getVisibleFlatColumns().slice(0, index);
             const rightOffset = columnsBefore.reduce(
-  (sum, col) => sum + (col.getSize?.() ?? 0),
-  0
-);
+            (sum, col) => sum + ((col.getSize?.() ?? 0)),
+            0
+            );
 
             stickyStyles = {
               position: "sticky",

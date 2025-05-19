@@ -51,7 +51,7 @@ function DataTableHeader<T>({
     <TableRow key={headerGroup.id}>
       {headerGroup.headers.map((header, index) => {
         const stickyBg = "hsl(224, 29.60%, 27.80%)";
-        console.log("stickyColumnCount1212", stickyColumnCount);
+        
           const effectiveStickyColumnCount = stickyColumnCount ?? 0;
           const isSticky = index < effectiveStickyColumnCount;
           const columnId = header.column.id;
@@ -62,14 +62,14 @@ function DataTableHeader<T>({
           if (isSticky) {
             const columnsBefore = table.getVisibleFlatColumns().slice(0, index);
             const rightOffset = columnsBefore.reduce(
-              (sum, col) => sum + (col.getSize?.() ?? 0) + (25-((index+1)*2)),
-              0
-            );
+  (sum, col) => sum + (col.getSize?.() ?? 0),
+  0
+);
         
             stickyStyles = {
               position: "sticky",
               right: `${rightOffset}px`,
-              zIndex: 25 + index,  
+              zIndex: 25 - index,  
               backgroundColor: stickyBg,
             };
           }

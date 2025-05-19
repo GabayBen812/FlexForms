@@ -6,10 +6,16 @@ import { UserFromRequest } from '../types/Requests/UserFromRequest';
 import { JwtAuthGuard } from '../middlewares/jwt-auth.guard';
 import { CustomRequest } from '../types/Requests/CustomRequest';
 
-@UseGuards(JwtAuthGuard)
+
 @Controller('clubs')
 export class ClubController {
   constructor(private readonly service: ClubService) {}
+
+  @Post()
+    async create(@Body() dto: CreateClubDto) {
+      console.log('Received request:', dto);
+      return this.service.create(dto);
+    }
 
   @Get()
   async getClubs(

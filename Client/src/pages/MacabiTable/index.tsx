@@ -5,12 +5,14 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { createApiService } from "@/api/utils/apiFactory";
 import { MacabiClub } from "@/types/macabiClub/macabiClub";
 import { FieldType } from "@/types/ui/data-table-types";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 import { InlineEditPopup } from "@/components/InlineEditPopup";
 import { getClubColumns } from "@/columns/macabiClubColumns";
+import ExcelImporterExporter from "@/components/ui/ExcelImporterExporter";
+import apiClient from "@/api/apiClient";
 
 
 const usersApi = createApiService<MacabiClub>("/clubs");
@@ -33,10 +35,11 @@ export default function clubs() {
   table: any;
 } | null>(null);
 const sidebarIsCollapsed = state === "collapsed";
+const [excelData, setExcelData] = useState<MacabiClub[]>([]);
+const [currentVisibleRows, setCurrentVisibleRows] = useState<any[]>([]);
 const columns = getClubColumns(t);
 
  const visibleColumns = columns
-  //@ts-ignore
   .filter((col) => !(col.meta?.hidden))
   .map((column) => {
     if (column.id === "select") {
@@ -79,10 +82,33 @@ const columns = getClubColumns(t);
       },
     };
   });
-  //@ts-ignore
+  
   const [columnOrder, setColumnOrder] = useState<string[]>(() => visibleColumns.map(col => col.id ?? col.accessorKey) as string[]
 );
+const fieldMap: Record<string, string> = {};
+columns.forEach(col => {
+  const accessor = col.accessorKey;
+  const header = col.header?.toString?.(); 
+  if (accessor && header) {
+    fieldMap[header] = accessor;
+  }
+});
 
+const handleExcelSave = async (newData: Record<string, any>[]) => {
+   for (const newclub of newData) {
+    try {
+      if (newclub._id) {
+        await usersApi.update({ ...newclub, id: newclub._id });
+      } else {
+        newclub.organizationId= organization?._id
+        await usersApi.create(newclub);
+
+      }
+    } catch (error) {
+      console.error("Failed to import row", newclub, error);
+    }
+  }
+};
   return (
     <div className="mx-auto">
       <h1 className="text-2xl font-semibold text-primary mb-6">{t("clubs")}</h1>
@@ -91,6 +117,21 @@ const columns = getClubColumns(t);
           <Button variant="outline" onClick={() => setIsAdvancedOpen(true)}>
             {t('advanced_search', 'חיפוש מתקדם')}
           </Button>
+           <ExcelImporterExporter
+            title={t("import_excel_title", "ייבוא קובץ מועדונים")}
+            subtitle={t("import_excel_subtitle", "אנא וודא שהעמודות תואמות לשדות")}
+            fields={columns.map((col) => ({
+              visual_name: col.header?.toString?.() || "",
+              technical_name: col.accessorKey || col.id || "",
+            })).slice(1, -1)}
+            onlyImport= {false}
+            onlyExport={false}
+            excelData={currentVisibleRows} 
+            onSave={(data) => {
+            handleExcelSave(data);
+            setExcelData(data); 
+          }}
+          />
         </div>
         <AdvancedSearchModal
           open={isAdvancedOpen}
@@ -110,12 +151,11 @@ const columns = getClubColumns(t);
               if (!organization?._id)
                 return Promise.resolve({ status: 200, data: [] });
               return usersApi.fetchAll(params, false, organization._id);
-            }}
+                }}
             updateData={(updatedRow) => {
               console.log("updatedRow", updatedRow);
               return usersApi.update({
                 ...updatedRow,
-                //@ts-ignore
                 id: updatedRow._id,
               });
             }}
@@ -125,12 +165,12 @@ const columns = getClubColumns(t);
             columns={visibleColumns}
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
-            stickyColumnCount={3}
+            stickyColumnCount={2}
             searchable
             showAddButton
             isPagination
-            defaultPageSize={10}
-            //@ts-ignore
+            defaultPageSize={465}
+            visibleRows={setCurrentVisibleRows}
             idField="_id"
             extraFilters={advancedFilters}
             onRowClick={() => {

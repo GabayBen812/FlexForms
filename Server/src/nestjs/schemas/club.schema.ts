@@ -5,20 +5,20 @@ export type ClubDocument = Club & Document;
 
 @Schema({ timestamps: true })
 export class Club {
-  @Prop({ required: true })
-  name!: string;
+  @Prop()
+  clubName?: string;
 
   @Prop({ type: Types.ObjectId, ref: 'Organization', required: true })
   organizationId!: Types.ObjectId;
 
-  @Prop({ required: true })
+  @Prop()
   email?: string;
 
-  @Prop({ required: true })
+  @Prop()
   phone?: string;
 
   @Prop()
-  number?: string;
+  clubNumber?: string;
 
   @Prop()
   clubEstablished?: string;

@@ -28,12 +28,13 @@ export class AuthController {
       { expiresIn: '2h' }
     );
     
+    const isProd = process.env.NODE_ENV === 'production';
     
-  
     res.cookie('jwt', token, {
       httpOnly: true,
-      sameSite: 'none',
-      secure: true,
+      sameSite: isProd ? 'none' : 'lax',
+      secure: isProd ? true : false,
+      path: '/',
       maxAge: 1000 * 60 * 60 * 2,
     });
   

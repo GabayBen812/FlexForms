@@ -12,7 +12,6 @@ import { columns } from "./rooms/columns";
 import { CreateRoomDialog } from "./rooms/CreateRoomDialog";
 import { EditRoomDialog } from "./rooms/EditRoomDialog";
 import { DeleteRoomDialog } from "./rooms/DeleteRoomDialog";
-import type { Room } from "./rooms/columns";
 
 export default function Rooms() {
   const { t } = useTranslation();
@@ -71,7 +70,7 @@ export default function Rooms() {
         </Button>
       </div>
 
-      <DataTable<Room>
+      <DataTable
         columns={columns({
           onEdit: (room) => {
             setSelectedRoom(room);
@@ -84,8 +83,6 @@ export default function Rooms() {
         })}
         data={rooms}
         isLoading={queryLoading}
-        fetchData={async () => ({ data: rooms, totalCount: rooms.length, totalPages: 1 })}
-        updateData={async () => Promise.resolve({} as any)}
       />
 
       <CreateRoomDialog

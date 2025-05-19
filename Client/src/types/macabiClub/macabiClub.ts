@@ -3,7 +3,6 @@ enum Status {
     Inactive = "inactive",
   }
   export interface MacabiClub {
-  _id: string;
   name: string;
   number: string;
   serviceAgreementDate: string;

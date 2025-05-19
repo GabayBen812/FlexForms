@@ -28,6 +28,7 @@ interface DataTableBodyProps<T> {
   setSpecialRow: React.Dispatch<React.SetStateAction<"add" | null>>;
   table: Table<T>;
   actions?: TableAction<T>[] | null;
+  stickyColumnCount?: number;
   columns: ColumnDef<T>[];
   renderExpandedContent?: (props: ExpandedContentProps<T>) => React.ReactNode;
   handleSave: (newData: Partial<T>) => void;
@@ -38,7 +39,9 @@ interface DataTableBodyProps<T> {
 
 interface RowComponentProps<T> {
   row: Row<T>;
+  table: Table<T>;
   actions?: TableAction<T>[] | null;
+  stickyColumnCount?: number;
   renderExpandedContent?: (props: ExpandedContentProps<T>) => React.ReactNode;
   isExpanded: boolean;
   handleEdit?: (row: Partial<T>) => void;
@@ -49,11 +52,14 @@ interface RowComponentProps<T> {
 
 const RowComponent = React.memo(function RowComponent<T>({
   row,
+  table,
   actions,
+  stickyColumnCount,
   renderExpandedContent,
   isExpanded,
   columns,
   handleEdit,
+  handleSave,
   onRowClick,
 }: RowComponentProps<T>) {
   const direction = GetDirection();
@@ -61,6 +67,7 @@ const RowComponent = React.memo(function RowComponent<T>({
     ? "rounded-r-lg px-8"
     : "rounded-l-lg px-8";
   const lastColumnRounding = direction ? "rounded-l-lg" : "rounded-r-lg";
+
   return (
     <>
       <TableRow
@@ -71,19 +78,44 @@ const RowComponent = React.memo(function RowComponent<T>({
         } border-b-4 border-background group cursor-pointer transition-colors h-[3.75rem]`}
         onClick={() => (onRowClick ? onRowClick(row) : row.toggleExpanded())}
       >
-        {row.getVisibleCells().map((cell, index) => (
-          <TableCell
-            className={`bg-white text-primary text-base font-normal border-b-4 border-background w-auto whitespace-nowrap transition-colors ${
-              index === 0 ? firstColumnRounding : "rounded-b-[1px]"
-            }`}
-            key={cell.id}
-          >
-            {flexRender(
-              cell.column.columnDef.cell,
-              cell.getContext() as CellContext<T, unknown>
-            )}
-          </TableCell>
-        ))}
+                
+        {row.getVisibleCells().map((cell, index) => {
+          const stickyBg = "white";
+          const effectiveStickyColumnCount = stickyColumnCount ?? 0;
+          const isSticky = index < effectiveStickyColumnCount;
+
+          let stickyStyles: React.CSSProperties = {};
+
+          if (isSticky) {
+            const columnsBefore = table.getVisibleFlatColumns().slice(0, index);
+            const rightOffset = columnsBefore.reduce(
+              (sum, col) => sum + (col.getSize?.() ?? 0) + (25-((index+1)*2)),
+              0
+            );
+
+            stickyStyles = {
+              position: "sticky",
+              right: `${rightOffset}px`,
+              zIndex: 25 + index,  
+              backgroundColor: stickyBg,
+            };
+          }
+
+          return (
+            <TableCell
+              className={`bg-white text-primary text-base font-normal border-b-4 border-background w-auto whitespace-nowrap transition-colors ${
+                index === 0 ? firstColumnRounding : "rounded-b-[1px]"
+              }`}
+              key={cell.id}
+              style={stickyStyles}
+            >
+              {flexRender(
+                cell.column.columnDef.cell,
+                cell.getContext() as CellContext<T, unknown>
+              )}
+            </TableCell>
+          );
+        })}
         {actions && (
           <TableCell
             className={`bg-white transition-colors group-hover:bg-muted ${lastColumnRounding} border-b-4 border-background text-left whitespace-nowrap rtl:text-left ltr:text-right`}
@@ -106,7 +138,6 @@ const RowComponent = React.memo(function RowComponent<T>({
                     key={index}
                     onClick={(e: React.MouseEvent) => {
                       e.stopPropagation();
-
                       if (action.onClick) action.onClick(row);
                     }}
                   >
@@ -137,6 +168,7 @@ function DataTableBody<T>({
   table,
   actions,
   columns,
+  stickyColumnCount,
   renderExpandedContent,
   specialRow,
   setSpecialRow,
@@ -170,7 +202,9 @@ function DataTableBody<T>({
             <RowComponent<T>
               key={row.id}
               row={row}
+              table={table}
               actions={actions}
+              stickyColumnCount={stickyColumnCount}
               renderExpandedContent={renderExpandedContent}
               isExpanded={row.getIsExpanded()}
               columns={columns}

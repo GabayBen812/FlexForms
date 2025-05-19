@@ -25,6 +25,7 @@ export function DataTable<TData>({
   deleteData,
   columns = [],
   searchable = true,
+  stickyColumnCount,
   isPagination = true,
   showAddButton = false,
   actions = null,
@@ -255,11 +256,13 @@ export function DataTable<TData>({
       <div className="rounded-lg">
         <Table className="border-collapse border-spacing-2 text-right">
           <DataTableHeader table={table} actions={enhancedActions} 
-          enableColumnReordering={enableColumnReordering} />
+          enableColumnReordering={enableColumnReordering}
+          stickyColumnCount={stickyColumnCount} />
           <DataTableBody<TData>
             columns={columns}
             table={table}
             actions={enhancedActions}
+            stickyColumnCount={stickyColumnCount}
             renderExpandedContent={renderExpandedContent as any}
             specialRow={specialRow}
             setSpecialRow={setSpecialRow}

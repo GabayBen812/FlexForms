@@ -145,11 +145,10 @@ const columns = getClubColumns(t);
                 ...rowData,
                 [columnId]: newValue,
               };
-              console.log("updatedRow in onSave", updatedRow);
-              editingCell.table?.options?.meta?.handleEdit(
-  editingCell.table.getRow(editingCell.rowIndex), // row
-  { [columnId]: newValue }                       // data
-);
+                editingCell.table?.options?.meta?.handleEdit(
+                editingCell.table.getRow(editingCell.rowIndex), 
+                { [columnId]: newValue }                      
+              );
               setEditingCell(null);
             }}
           />

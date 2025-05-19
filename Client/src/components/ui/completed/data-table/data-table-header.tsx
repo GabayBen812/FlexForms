@@ -27,7 +27,7 @@ function DataTableHeader<T>({
   const moveColumn = (accessorKey: string, direction: 'left' | 'right') => {
     const currentOrder = table.getState().columnOrder;
     const currentIndex = currentOrder.indexOf(accessorKey);
-    if (currentIndex < 2) return;
+    if (currentIndex < 3) return;
     const newIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
 
     if (newIndex >= 0 && newIndex < currentOrder.length) {
@@ -51,6 +51,7 @@ function DataTableHeader<T>({
     <TableRow key={headerGroup.id}>
       {headerGroup.headers.map((header, index) => {
         const stickyBg = "hsl(224, 29.60%, 27.80%)";
+        console.log("stickyColumnCount1212", stickyColumnCount);
           const effectiveStickyColumnCount = stickyColumnCount ?? 0;
           const isSticky = index < effectiveStickyColumnCount;
           const columnId = header.column.id;

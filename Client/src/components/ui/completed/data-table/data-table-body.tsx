@@ -89,26 +89,37 @@ const RowComponent = React.memo(function RowComponent<T>({
           if (isSticky) {
             const columnsBefore = table.getVisibleFlatColumns().slice(0, index);
             const rightOffset = columnsBefore.reduce(
-              (sum, col) => sum + (col.getSize?.() ?? 0) + (25-((index+1)*2)),
-              0
-            );
+  (sum, col) => sum + (col.getSize?.() ?? 0),
+  0
+);
 
             stickyStyles = {
               position: "sticky",
               right: `${rightOffset}px`,
-              zIndex: 25 + index,  
+              zIndex: 25 - index,  
               backgroundColor: stickyBg,
             };
           }
 
           return (
-            <TableCell
-              className={`bg-white text-primary text-base font-normal border-b-4 border-background w-auto whitespace-nowrap transition-colors ${
-                index === 0 ? firstColumnRounding : "rounded-b-[1px]"
-              }`}
-              key={cell.id}
-              style={stickyStyles}
-            >
+         <TableCell
+  className={`bg-white text-primary text-base font-normal border-b-4 border-background px-4 transition-colors ${
+    index === 0 ? firstColumnRounding : "rounded-b-[1px]"
+  } ${cell.column.id === "clubName" ? "whitespace-normal break-words" : "whitespace-nowrap"}`}
+  key={cell.id}
+  style={{
+    ...stickyStyles,
+    ...(cell.column.id === "clubName"
+      ? {
+          minWidth: "160px",
+          maxWidth: "900px",
+          width: "800px",
+          whiteSpace: "normal",
+          wordBreak: "break-word",
+        }
+      : {}),
+  }}
+>
               {flexRender(
                 cell.column.columnDef.cell,
                 cell.getContext() as CellContext<T, unknown>

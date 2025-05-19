@@ -22,10 +22,10 @@ export default function Login() {
   const { isLoginLoading, login } = auth;
 
   useEffect(() => {
-    if (auth.isAuthenticated) {
+    if (!auth.isUserLoading && auth.isAuthenticated) {
       navigate("/home");
     }
-  }, [auth.isAuthenticated, navigate]);
+  }, [auth.isAuthenticated, auth.isUserLoading, navigate]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

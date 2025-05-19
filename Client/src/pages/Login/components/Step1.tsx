@@ -29,6 +29,8 @@ function Step1() {
     }
 
     if (response && response.status === 200) {
+      // Wait for the cookie to be set before navigating
+      await new Promise(res => setTimeout(res, 200));
       navigate("/home");
     } else {
       setErrorMessage(response?.error || "אירעה שגיאה, נסה שוב.");

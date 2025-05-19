@@ -50,7 +50,8 @@ function AccountInformationFrom() {
   const onSubmit = async (data: AccountFormValues) => {
     try {
       if (!user) return;
-      await updateUser({ ...data, id: user.id });
+      //@ts-ignore
+      await updateUser(data);
 
       toast({
         title: t("success"),

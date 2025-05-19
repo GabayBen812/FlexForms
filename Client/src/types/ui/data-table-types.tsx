@@ -35,6 +35,7 @@ export interface DataTableProps<TData> {
   defaultSortDirection?: "asc" | "desc";
   defaultPageSize?: number;
   onColumnOrderChange?: (columnOrder: string[]) => void;
+  stickyColumnCount?: number;
   onRowSelectionChange?: (selection: RowSelectionState) => void;
   renderExpandedContent?: (props: { handleSave: (data: Partial<TData>) => Promise<void> }) => React.ReactNode;
   addData?: any;

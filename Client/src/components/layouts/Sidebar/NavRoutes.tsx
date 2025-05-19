@@ -51,7 +51,7 @@ function SideBarMenuRoute({ route, user }: { route: RouteObject, user: any }) {
   const { organization } = useOrganization();
 
   return (
-    <SidebarMenu className="gap-5">
+    <SidebarMenu className="gap-0">
       {route.children?.map((childRoute) => {
         if (!childRoute.handle?.showInSidebar) return null;
         if (childRoute.handle?.adminOnly && user?.role !== 'system_admin') return null;

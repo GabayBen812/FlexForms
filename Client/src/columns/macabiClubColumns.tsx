@@ -1,28 +1,30 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { MacabiClub } from "@/types/macabiClub/macabiClub";
+import { selectionColumn } from "./selectionColumns"; 
 import { FieldType } from "@/types/ui/data-table-types";
 
 export function getClubColumns(t: (key: string) => string): ColumnDef<MacabiClub>[] {
-  return [
+  //@ts-ignore
+  return [ selectionColumn,
     {
-      accessorKey: "name",
+      accessorKey: "clubName",
       header: t("club_name"),
       meta: { fieldType: "TEXT", editable: false },
     },
     {
-      accessorKey: "number",
+      accessorKey: "clubNumber",
       header: t("club_number"),
       meta: { fieldType: "TEXT", editable: false },
     },
     {
       accessorKey: "serviceAgreementDate",
       header: t("תאריך הסכם שירותים"),
-      meta: { fieldType: "DATE", editable: true },
+      meta: { fieldType: "TEXT", editable: true },
     },
     {
       accessorKey: "serviceDeclarationDate",
       header: t("תאריך הצהרה על קבלת שירותים"),
-      meta: { fieldType: "DATE", editable: true },
+      meta: { fieldType: "TEXT", editable: true },
     },
     {
       accessorKey: "clubEstablished",

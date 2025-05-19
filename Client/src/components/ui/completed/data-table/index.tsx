@@ -25,6 +25,7 @@ export function DataTable<TData>({
   deleteData,
   columns = [],
   searchable = true,
+  stickyColumnCount,
   isPagination = true,
   showAddButton = false,
   actions = null,
@@ -52,6 +53,13 @@ export function DataTable<TData>({
   });
   const [specialRow, setSpecialRow] = useState<"add" | null>(null);
   
+  // Determine excludeFields and pass to DataTableAddButton
+  let excludeFields = [];
+  if (Array.isArray(showAddButton)) {
+    excludeFields = showAddButton;
+  }
+  const showAdd = !!showAddButton;
+
   const handleAdd = async (newData: Partial<TData>) => {
     if (!addData || !idField) return;
     const tempId = `temp-${Date.now()}`;
@@ -85,15 +93,32 @@ export function DataTable<TData>({
   };
 
   const handleUpdate = async (row: Row<TData>, data: Partial<TData>) => {
-    const updatedData = {
-      ...row.original,
-      ...data,
-      id: row.original[idField as keyof TData] as string | number
-    };
-    await updateData(updatedData);
-    toast.success(t("changes_updated_successfully"));
+  const updatedData = {
+    ...row.original,
+    ...data,
+    id: row.original[idField as keyof TData] as string | number,
   };
 
+  try {
+    setTableData((prev) =>
+      prev.map((item) =>
+        item[idField] === updatedData[idField] ? updatedData : item
+      ) as TData[]
+    );
+    await updateData(updatedData);
+
+    toast.success(t("changes_updated_successfully"), {
+      duration: 2000,
+      className: "bg-blue-100 text-blue-800 text-xl",
+    });
+  } catch (error) {
+    console.error("Failed to update data:", error);
+    toast.error(t("changes_updated_failed"), {
+      duration: 2000,
+      className: "bg-blue-100 text-blue-800 text-xl",
+    });
+  }
+};
   const handleDeleteData = async (id: string | number) => {
     if (!deleteData || !idField) return;
 
@@ -215,9 +240,7 @@ export function DataTable<TData>({
 
   return (
     <div className="space-y-4">
-      <div
-        className={`flex items-center ${searchable ? "justify-between" : "justify-end"}`}
-      >
+      <div className="flex items-center justify-between w-full">
         {searchable && (
           <div className="flex items-center gap-2">
             <DataTableSearch
@@ -227,27 +250,31 @@ export function DataTable<TData>({
             <DataTableDownloadButton table={table as any} />
           </div>
         )}
-         <div className="flex justify-center w-full">
-        <DataTableAddButton
-          showAddButton={showAddButton}
-          onToggleAddRow={toggleAddRow}
-        />
+        <div className="flex items-center">
+          <DataTableAddButton
+            showAddButton={showAdd}
+            columns={columns}
+            onAdd={handleAdd}
+            excludeFields={excludeFields}
+          />
         </div>
       </div>
-
       <div className="rounded-lg">
         <Table className="border-collapse border-spacing-2 text-right">
           <DataTableHeader table={table} actions={enhancedActions} 
-          enableColumnReordering={enableColumnReordering} />
+          enableColumnReordering={enableColumnReordering}
+          stickyColumnCount={stickyColumnCount} />
           <DataTableBody<TData>
             columns={columns}
             table={table}
             actions={enhancedActions}
+            stickyColumnCount={stickyColumnCount}
             renderExpandedContent={renderExpandedContent as any}
             specialRow={specialRow}
             setSpecialRow={setSpecialRow}
             handleSave={handleAdd}
-            handleEdit={(row) => handleUpdate(row as any, row)}
+            //@ts-ignore
+            handleEdit={(row, updatedData) => handleUpdate(row, updatedData)}
             isLoading={isLoading}
             onRowClick={(row) => onRowClick?.(row.original)}
           />

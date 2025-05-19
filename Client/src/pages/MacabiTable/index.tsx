@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import DataTable from "@/components/ui/completed/data-table";
 import { useOrganization } from "@/hooks/useOrganization";
 import { createApiService } from "@/api/utils/apiFactory";
@@ -12,6 +12,7 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { InlineEditPopup } from "@/components/InlineEditPopup";
 import { getClubColumns } from "@/columns/macabiClubColumns";
 
+
 const usersApi = createApiService<MacabiClub>("/clubs");
 
 export default function clubs() {
@@ -20,6 +21,7 @@ export default function clubs() {
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>({});
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const { state } = useSidebar();
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [editingCell, setEditingCell] = useState<{
   rowIndex: number;
   columnId: string;
@@ -32,43 +34,53 @@ export default function clubs() {
 } | null>(null);
 const sidebarIsCollapsed = state === "collapsed";
 const columns = getClubColumns(t);
-  //@ts-ignore
-  const visibleColumns = columns.filter((col) => !(col.meta?.hidden))
-  .map((column) => ({
-    ...column,
-    cell: (info: any) => {
-      const meta = column.meta;
-      const value = info.getValue();
-      //@ts-ignore
-      if (meta?.editable) {
-        return (
-          <div
-            onClick={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              setEditingCell({
-                rowIndex: info.row.index,
-                columnId: info.column.id,
-                value,
-                //@ts-ignore
-                fieldType: meta.fieldType,
-                //@ts-ignore
-                options: meta.options,
-                rowData: info.row.original,
-                table: info.table,
-                position: { x: rect.left + rect.width / 2, y: rect.bottom },
-              });
-            }}
-          >
-            {value?.toString?.() || ""}
-          </div>
-        );
-      }
 
-      return <div className="px-2 py-1">{value?.toString?.() || ""}</div>;
-    },
-  }));
+ const visibleColumns = columns
   //@ts-ignore
-  const [columnOrder, setColumnOrder] = useState<string[]>(() => visibleColumns.map(col => col.accessorKey as string)
+  .filter((col) => !(col.meta?.hidden))
+  .map((column) => {
+    if (column.id === "select") {
+  
+      return column;
+    }
+
+    return {
+      ...column,
+      cell: (info: any) => {
+        const meta = column.meta;
+        const value = info.getValue();
+
+        //@ts-ignore
+        if (meta?.editable) {
+          return (
+            <div
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                setEditingCell({
+                  rowIndex: info.row.index,
+                  columnId: info.column.id,
+                  value,
+                  //@ts-ignore
+                  fieldType: meta.fieldType,
+                  //@ts-ignore
+                  options: meta.options,
+                  rowData: info.row.original,
+                  table: info.table,
+                  position: { x: rect.left + rect.width / 2, y: rect.bottom },
+                });
+              }}
+            >
+              {value?.toString?.() || ""}
+            </div>
+          );
+        }
+
+        return <div className="px-2 py-1">{value?.toString?.() || ""}</div>;
+      },
+    };
+  });
+  //@ts-ignore
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => visibleColumns.map(col => col.id ?? col.accessorKey) as string[]
 );
 
   return (
@@ -94,15 +106,16 @@ const columns = getClubColumns(t);
           }}
         >
           <DataTable<MacabiClub>
-            data={[]}
             fetchData={(params) => {
               if (!organization?._id)
                 return Promise.resolve({ status: 200, data: [] });
               return usersApi.fetchAll(params, false, organization._id);
             }}
             updateData={(updatedRow) => {
+              console.log("updatedRow", updatedRow);
               return usersApi.update({
                 ...updatedRow,
+                //@ts-ignore
                 id: updatedRow._id,
               });
             }}
@@ -110,10 +123,14 @@ const columns = getClubColumns(t);
             columnOrder={columnOrder}
             onColumnOrderChange={setColumnOrder}
             columns={visibleColumns}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
+            stickyColumnCount={3}
             searchable
             showAddButton
             isPagination
             defaultPageSize={10}
+            //@ts-ignore
             idField="_id"
             extraFilters={advancedFilters}
             onRowClick={() => {
@@ -134,7 +151,10 @@ const columns = getClubColumns(t);
                 ...rowData,
                 [columnId]: newValue,
               };
-              editingCell.table?.options?.meta?.handleEdit(updatedRow);
+                editingCell.table?.options?.meta?.handleEdit(
+                editingCell.table.getRow(editingCell.rowIndex), 
+                { [columnId]: newValue }                      
+              );
               setEditingCell(null);
             }}
           />

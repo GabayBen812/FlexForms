@@ -1,7 +1,7 @@
 // import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Toaster } from "sonner";
@@ -9,11 +9,13 @@ import { Mail, Lock } from "lucide-react";
 import footerSvg from "@/assets/landing/footer.svg";
 import heroIllustration from "@/assets/landing/hero-illustration.svg";
 import logoNoBG from "@/assets/landing/logoNoBG.svg";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Login() {
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const auth = useContext(AuthContext);
+  const queryClient = useQueryClient();
   // const { t } = useTranslation();
 
   if (!auth) throw new Error("AuthContext must be used within an AuthProvider");
@@ -30,18 +32,18 @@ export default function Login() {
       password: String(password),
     });
 
-    console.log("Login response:", response);
-    console.log("After login: isAuthenticated =", auth.isAuthenticated);
-
     if (!response || response.status !== 200) {
       setErrorMessage(response?.error || "אירעה שגיאה, נסה שוב.");
+      return;
     }
 
-    if (response && response.status === 200) {
-      navigate("/home");
-    } else {
-      setErrorMessage(response?.error || "אירעה שגיאה, נסה שוב.");
-    }
+    // Wait for the cookie to be set before refetching user data
+    await new Promise(res => setTimeout(res, 200));
+    await queryClient.invalidateQueries({ queryKey: ["user"] });
+    await queryClient.refetchQueries({ queryKey: ["user"] });
+
+    // Only navigate after successful login
+    navigate("/home");
   };
 
   return (

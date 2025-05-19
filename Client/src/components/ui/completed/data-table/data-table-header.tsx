@@ -10,12 +10,14 @@ interface DataTableHeaderProps<T> {
   actions?: TableAction<T>[] | null;
   enableColumnReordering?: boolean;
   onColumnOrderChange?: (newOrder: string[]) => void;
+  stickyColumnCount?: number;
 }
 
 function DataTableHeader<T>({ 
   table,
   actions,
   enableColumnReordering,
+  stickyColumnCount,
   onColumnOrderChange  
 }: DataTableHeaderProps<T>) {
   const direction = GetDirection();
@@ -25,6 +27,7 @@ function DataTableHeader<T>({
   const moveColumn = (accessorKey: string, direction: 'left' | 'right') => {
     const currentOrder = table.getState().columnOrder;
     const currentIndex = currentOrder.indexOf(accessorKey);
+    if (currentIndex < 3) return;
     const newIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
 
     if (newIndex >= 0 && newIndex < currentOrder.length) {
@@ -36,23 +39,51 @@ function DataTableHeader<T>({
   };
 
   return (
-  <TableHeader>
-    {table.getHeaderGroups().map((headerGroup) => (
-      <TableRow key={headerGroup.id} className="border-none h-11">
-        {headerGroup.headers.map((header, index) => {
-          const isFirst = index === 0;
-          const accessorKey = (header.column.columnDef as any).accessorKey as string;
-          const currentIndex = table.getState().columnOrder.indexOf(accessorKey);
+  <TableHeader
+    style={{
+      position: 'sticky',
+      top: 0,
+      zIndex: 30,
+      backgroundColor: "var(--datatable-header)",
+    }}>
 
-          return (
+    {table.getHeaderGroups().map((headerGroup) => (
+    <TableRow key={headerGroup.id}>
+      {headerGroup.headers.map((header, index) => {
+        const stickyBg = "hsl(224, 29.60%, 27.80%)";
+        console.log("stickyColumnCount1212", stickyColumnCount);
+          const effectiveStickyColumnCount = stickyColumnCount ?? 0;
+          const isSticky = index < effectiveStickyColumnCount;
+          const columnId = header.column.id;
+          const currentIndex = table.getState().columnOrder.indexOf(columnId);
+          const isFirst = index === 0;
+          let stickyStyles: React.CSSProperties = {};
+        
+          if (isSticky) {
+            const columnsBefore = table.getVisibleFlatColumns().slice(0, index);
+            const rightOffset = columnsBefore.reduce(
+              (sum, col) => sum + (col.getSize?.() ?? 0) + (25-((index+1)*2)),
+              0
+            );
+        
+            stickyStyles = {
+              position: "sticky",
+              right: `${rightOffset}px`,
+              zIndex: 25 + index,  
+              backgroundColor: stickyBg,
+            };
+          }
+
+         return (
             <TableHead
-              className={`bg-primary-foreground text-white ${
+              className={`bg-primary-foreground text-white text-center ${
                 isFirst && firstColumnRounding
               }`}
               style={{ 
                 width: header.getSize(), 
                 backgroundColor: "var(--datatable-header)",
-                padding: "0.5rem 0.25rem"
+                padding: "0.5rem 0.25rem",
+                ...stickyStyles,
               }}
             >
               <div className="flex items-center justify-between group h-full">
@@ -60,7 +91,10 @@ function DataTableHeader<T>({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      moveColumn(accessorKey, 'left');
+                      //@ts-ignore
+//                       moveColumn(accessorKey, 'left'); check this later
+                      moveColumn(columnId, 'left');
+
                     }}
                     className="hover:bg-gray-100/20 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                     disabled={currentIndex === 0}
@@ -98,7 +132,9 @@ function DataTableHeader<T>({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      moveColumn(accessorKey, 'right');
+                      //@ts-ignore
+//                       moveColumn(accessorKey, 'right');
+                      moveColumn(columnId, 'right');
                     }}
                     className="hover:bg-gray-100/20 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                     disabled={currentIndex === table.getState().columnOrder.length - 1}

@@ -12,7 +12,6 @@ import { columns } from "./rooms/columns";
 import { CreateRoomDialog } from "./rooms/CreateRoomDialog";
 import { EditRoomDialog } from "./rooms/EditRoomDialog";
 import { DeleteRoomDialog } from "./rooms/DeleteRoomDialog";
-import type { Room } from "./rooms/columns";
 
 export default function Rooms() {
   const { t } = useTranslation();
@@ -65,13 +64,10 @@ export default function Rooms() {
     <div className="container mx-auto py-10">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">{t("rooms")}</h1>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t("add_room")}
-        </Button>
       </div>
 
-      <DataTable<Room>
+      <DataTable
+        //@ts-ignore
         columns={columns({
           onEdit: (room) => {
             setSelectedRoom(room);
@@ -82,10 +78,9 @@ export default function Rooms() {
             setIsDeleteDialogOpen(true);
           },
         })}
+        showAddButton
         data={rooms}
         isLoading={queryLoading}
-        fetchData={async () => ({ data: rooms, totalCount: rooms.length, totalPages: 1 })}
-        updateData={async () => Promise.resolve({} as any)}
       />
 
       <CreateRoomDialog

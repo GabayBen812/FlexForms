@@ -21,12 +21,6 @@ export default function Login() {
   if (!auth) throw new Error("AuthContext must be used within an AuthProvider");
   const { isLoginLoading, login } = auth;
 
-  useEffect(() => {
-    if (!auth.isUserLoading && auth.isAuthenticated) {
-      navigate("/home");
-    }
-  }, [auth.isAuthenticated, auth.isUserLoading, navigate]);
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
@@ -47,6 +41,9 @@ export default function Login() {
     await new Promise(res => setTimeout(res, 200));
     await queryClient.invalidateQueries({ queryKey: ["user"] });
     await queryClient.refetchQueries({ queryKey: ["user"] });
+
+    // Only navigate after successful login
+    navigate("/home");
   };
 
   return (

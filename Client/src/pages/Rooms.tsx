@@ -64,13 +64,10 @@ export default function Rooms() {
     <div className="container mx-auto py-10">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">{t("rooms")}</h1>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t("add_room")}
-        </Button>
       </div>
 
       <DataTable
+        //@ts-ignore
         columns={columns({
           onEdit: (room) => {
             setSelectedRoom(room);
@@ -81,6 +78,7 @@ export default function Rooms() {
             setIsDeleteDialogOpen(true);
           },
         })}
+        showAddButton
         data={rooms}
         isLoading={queryLoading}
       />

@@ -1,28 +1,83 @@
 // components/data-table/data-table-add-button.tsx
-import { LucidePlusCircle, PlusCircle, PlusCircleIcon } from "lucide-react";
-import { Button } from "../../button";
-import { useTranslation } from "react-i18next";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/Input";
 
 interface DataTableAddButtonProps {
-  onToggleAddRow: () => void;
-  showAddButton?: boolean;
+  showAddButton: any;
+  onToggleAddRow?: any;
+  columns?: any[];
+  onAdd: any;
+  excludeFields?: any[];
 }
 
-export const DataTableAddButton = ({
-  onToggleAddRow,
-  showAddButton,
-}: DataTableAddButtonProps) => {
-  const { t } = useTranslation();
-  return showAddButton ? (
-    <div className="flex justify-center mt-4">
-    <Button
-     variant={"accentGhost"} 
-     onClick={onToggleAddRow}
-     className="text-xl px-10 py-6 gap-3"
-     >
-      <PlusCircle />
-      {t("add")}
-    </Button>
-    </div>
-  ) : null;
-};
+export function DataTableAddButton({ showAddButton, onToggleAddRow, columns = [], onAdd, excludeFields = [] }: DataTableAddButtonProps) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  // Exclude fields by name
+  const excludeNames = excludeFields.map(f => f.name);
+  const defaultValues = Object.fromEntries(excludeFields.map(f => [f.name, f.defaultValue]));
+
+  // Only show data columns (exclude select/duplicate/actions and excluded fields)
+  const dataColumns = columns.filter(
+    (col) => col.accessorKey && !["select", "duplicate", "actions"].includes(col.accessorKey) && !excludeNames.includes(col.accessorKey)
+  );
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    await onAdd({ ...form, ...defaultValues });
+    setSaving(false);
+    setOpen(false);
+    setForm({});
+  };
+
+  if (!showAddButton) return null;
+
+  return (
+    <>
+      <Button variant="outline" onClick={() => setOpen(true)}>
+        <Plus className="w-4 h-4 mr-2" /> הוסף
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-lg w-full">
+          <DialogHeader>
+            <DialogTitle>הוסף רשומה חדשה</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {dataColumns.map((col) => (
+              <div key={col.accessorKey}>
+                <label className="block mb-1 font-medium">{col.header}</label>
+                <Input
+                  name={col.accessorKey}
+                  value={form[col.accessorKey] || ""}
+                  onChange={handleChange}
+                  className="w-full"
+                  required
+                />
+              </div>
+            ))}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                ביטול
+              </Button>
+              <Button type="submit" disabled={saving}>
+                שמור
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+export default DataTableAddButton;

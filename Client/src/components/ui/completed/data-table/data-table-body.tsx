@@ -103,7 +103,7 @@ const RowComponent = React.memo(function RowComponent<T>({
 
           return (
             <TableCell
-              className={`bg-white text-primary text-base font-normal border-b-4 border-background w-auto whitespace-nowrap transition-colors ${
+              className={`bg-white text-primary text-base font-normal border-b-4 border-background w-auto whitespace-nowrap transition-colors text-center ${
                 index === 0 ? firstColumnRounding : "rounded-b-[1px]"
               }`}
               key={cell.id}

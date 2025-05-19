@@ -93,8 +93,7 @@ export default function FeatureFlagsTable() {
         updateData={async () => { return { data: {} as FeatureFlag, status: 200 }; }}
         searchable
         isPagination={true}
-        //@ts-ignore
-        onRowClick={row => setOrgsModalFlag(row.original)}
+        onRowClick={row => setOrgsModalFlag(row)}
       />
 
       {/* Edit Dialog */}

@@ -75,7 +75,7 @@ function DataTableHeader<T>({
 
          return (
             <TableHead
-              className={`bg-primary-foreground text-white ${
+              className={`bg-primary-foreground text-white text-center ${
                 isFirst && firstColumnRounding
               }`}
               style={{ 
@@ -90,7 +90,10 @@ function DataTableHeader<T>({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      //@ts-ignore
+//                       moveColumn(accessorKey, 'left'); check this later
                       moveColumn(columnId, 'left');
+
                     }}
                     className="hover:bg-gray-100/20 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                     disabled={currentIndex === 0}
@@ -128,6 +131,8 @@ function DataTableHeader<T>({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      //@ts-ignore
+//                       moveColumn(accessorKey, 'right');
                       moveColumn(columnId, 'right');
                     }}
                     className="hover:bg-gray-100/20 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"

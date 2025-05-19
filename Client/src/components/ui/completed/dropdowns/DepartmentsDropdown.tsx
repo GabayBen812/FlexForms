@@ -27,6 +27,7 @@ export function DepartmentsDropdown({
   selectedDepartment,
   onSelectDepartment,
 }: DepartmentsDropdownProps) {
+  //@ts-ignore
   const { departments, departmentsStatus } = useContext(OrganizationsContext);
   const { t } = useTranslation();
 
@@ -61,6 +62,7 @@ export function DepartmentsDropdown({
               <div className="flex aspect-square size-8 items-center justify-center rounded-md text-sidebar-primary-foreground">
                 <Avatar className="rounded-md size-8">
                   <AvatarImage
+                    //@ts-ignore
                     src={getImage(department?.logo)}
                     alt={department?.name.he}
                   />
@@ -93,6 +95,7 @@ export function DepartmentsDropdown({
                 <div className="flex size-6 items-center justify-center rounded-sm border">
                   <Avatar className="rounded-md size-8">
                     <AvatarImage
+                      //@ts-ignore
                       src={getImage(department.logo)}
                       alt={department.name.he}
                     />

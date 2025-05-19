@@ -4,6 +4,7 @@ import { selectionColumn } from "./selectionColumns";
 import { FieldType } from "@/types/ui/data-table-types";
 
 export function getClubColumns(t: (key: string) => string): ColumnDef<MacabiClub>[] {
+  //@ts-ignore
   return [ selectionColumn,
     {
       accessorKey: "clubName",

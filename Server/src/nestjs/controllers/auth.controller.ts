@@ -37,7 +37,7 @@ export class AuthController {
       maxAge: 1000 * 60 * 60 * 2,
     });
   
-    return res.status(200).json({ message: 'התחברת בהצלחה' });
+    return res.status(200).json({ status: 200, message: 'התחברת בהצלחה' });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -54,6 +54,6 @@ export class AuthController {
       secure: true,
     });
     
-    return res.status(200).json({ message: 'התנתקת בהצלחה' });
+    return res.status(200).json({ status: 200, message: 'התנתקת בהצלחה' });
   }
 }

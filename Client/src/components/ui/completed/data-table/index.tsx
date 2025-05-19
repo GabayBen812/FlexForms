@@ -53,6 +53,13 @@ export function DataTable<TData>({
   });
   const [specialRow, setSpecialRow] = useState<"add" | null>(null);
   
+  // Determine excludeFields and pass to DataTableAddButton
+  let excludeFields = [];
+  if (Array.isArray(showAddButton)) {
+    excludeFields = showAddButton;
+  }
+  const showAdd = !!showAddButton;
+
   const handleAdd = async (newData: Partial<TData>) => {
     if (!addData || !idField) return;
     const tempId = `temp-${Date.now()}`;
@@ -233,9 +240,7 @@ export function DataTable<TData>({
 
   return (
     <div className="space-y-4">
-      <div
-        className={`flex items-center ${searchable ? "justify-between" : "justify-end"}`}
-      >
+      <div className="flex items-center justify-between w-full">
         {searchable && (
           <div className="flex items-center gap-2">
             <DataTableSearch
@@ -245,14 +250,15 @@ export function DataTable<TData>({
             <DataTableDownloadButton table={table as any} />
           </div>
         )}
-         <div className="flex justify-center w-full">
-        <DataTableAddButton
-          showAddButton={showAddButton}
-          onToggleAddRow={toggleAddRow}
-        />
+        <div className="flex items-center">
+          <DataTableAddButton
+            showAddButton={showAdd}
+            columns={columns}
+            onAdd={handleAdd}
+            excludeFields={excludeFields}
+          />
         </div>
       </div>
-
       <div className="rounded-lg">
         <Table className="border-collapse border-spacing-2 text-right">
           <DataTableHeader table={table} actions={enhancedActions} 

@@ -102,24 +102,13 @@ const RowComponent = React.memo(function RowComponent<T>({
           }
 
           return (
-         <TableCell
-  className={`bg-white text-primary text-base font-normal border-b-4 border-background px-4 transition-colors ${
-    index === 0 ? firstColumnRounding : "rounded-b-[1px]"
-  } ${cell.column.id === "clubName" ? "whitespace-normal break-words" : "whitespace-nowrap"}`}
-  key={cell.id}
-  style={{
-    ...stickyStyles,
-    ...(cell.column.id === "clubName"
-      ? {
-          minWidth: "160px",
-          maxWidth: "900px",
-          width: "800px",
-          whiteSpace: "normal",
-          wordBreak: "break-word",
-        }
-      : {}),
-  }}
->
+            <TableCell
+              className={`bg-white text-primary text-base font-normal border-b-4 border-background w-auto whitespace-nowrap transition-colors text-center ${
+                index === 0 ? firstColumnRounding : "rounded-b-[1px]"
+              }`}
+              key={cell.id}
+              style={stickyStyles}
+            >
               {flexRender(
                 cell.column.columnDef.cell,
                 cell.getContext() as CellContext<T, unknown>

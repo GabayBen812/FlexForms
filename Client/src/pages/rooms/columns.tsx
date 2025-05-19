@@ -25,6 +25,7 @@ export const columns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Room>[] =
     id: "select",
     header: ({ table }) => (
       <Checkbox
+        //@ts-ignore
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")

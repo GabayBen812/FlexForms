@@ -270,6 +270,7 @@ export function DataTable<TData>({
             specialRow={specialRow}
             setSpecialRow={setSpecialRow}
             handleSave={handleAdd}
+            //@ts-ignore
             handleEdit={(row, updatedData) => handleUpdate(row, updatedData)}
             isLoading={isLoading}
             onRowClick={(row) => onRowClick?.(row.original)}

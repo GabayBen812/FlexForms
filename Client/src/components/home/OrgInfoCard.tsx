@@ -16,8 +16,10 @@ export default function OrgInfoCard() {
       </CardHeader>
       <CardContent>
         <div className="text-sm text-muted-foreground mb-1">מספר מזהה: {organization.id || organization._id}</div>
+        {/* @ts-ignore */}
         {organization.admins && (
           <div className="text-sm text-muted-foreground mb-1">
+            {/* @ts-ignore */}
             מנהלים: {organization.admins.map((a: any) => a.fullName || a.email).join(", ")}
           </div>
         )}

@@ -91,7 +91,9 @@ function DataTableHeader<T>({
                     onClick={(e) => {
                       e.stopPropagation();
                       //@ts-ignore
-                      moveColumn(accessorKey, 'left');
+//                       moveColumn(accessorKey, 'left'); check this later
+                      moveColumn(columnId, 'left');
+
                     }}
                     className="hover:bg-gray-100/20 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                     disabled={currentIndex === 0}
@@ -130,7 +132,8 @@ function DataTableHeader<T>({
                     onClick={(e) => {
                       e.stopPropagation();
                       //@ts-ignore
-                      moveColumn(accessorKey, 'right');
+//                       moveColumn(accessorKey, 'right');
+                      moveColumn(columnId, 'right');
                     }}
                     className="hover:bg-gray-100/20 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                     disabled={currentIndex === table.getState().columnOrder.length - 1}

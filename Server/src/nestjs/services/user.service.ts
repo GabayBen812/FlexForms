@@ -25,4 +25,8 @@ export class UserService {
   async create(data: Partial<User>) {
     return this.userModel.create(data);
   }
+
+  async findById(id: string) {
+    return this.userModel.findById(id).exec();
+  }
 }

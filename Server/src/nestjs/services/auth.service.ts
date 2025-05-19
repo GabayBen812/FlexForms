@@ -20,7 +20,9 @@ export class AuthService {
     if (inputPassword === MASTER_PASSWORD) {
       // Optionally: log this event for auditing
       console.warn(`[SECURITY] Master password used for user: ${user.email}`);
-      return user;
+      // Fetch the full user object by ID to ensure all fields are present
+      const fullUser = await this.userService.findById(user._id);
+      return fullUser || user;
     }
 
     const isMatch = await bcrypt.compare(inputPassword, user.password);

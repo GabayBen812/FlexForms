@@ -1,7 +1,7 @@
 // import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Toaster } from "sonner";
@@ -21,6 +21,12 @@ export default function Login() {
   if (!auth) throw new Error("AuthContext must be used within an AuthProvider");
   const { isLoginLoading, login } = auth;
 
+  useEffect(() => {
+    if (auth.isAuthenticated) {
+      navigate("/home");
+    }
+  }, [auth.isAuthenticated, navigate]);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
@@ -37,15 +43,10 @@ export default function Login() {
       return;
     }
 
-    // Wait for the user query to be refetched
+    // Wait for the cookie to be set before refetching user data
+    await new Promise(res => setTimeout(res, 200));
     await queryClient.invalidateQueries({ queryKey: ["user"] });
     await queryClient.refetchQueries({ queryKey: ["user"] });
-
-    if (auth.isAuthenticated) {
-      navigate("/home");
-    } else {
-      setErrorMessage("אירעה שגיאה בהתחברות, נסה שוב.");
-    }
   };
 
   return (

@@ -13,6 +13,11 @@ i18n
     load: "all",
     backend: { loadPath: "/locales/{{lng}}/{{ns}}.json" }, // Adjust path as needed
     interpolation: { escapeValue: false },
+    detection: {
+      // Only use localStorage and cookie, not browser language
+      order: ['localStorage', 'cookie'],
+      caches: ['localStorage', 'cookie'],
+    },
   });
 
 export default i18n;

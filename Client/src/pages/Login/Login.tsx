@@ -9,11 +9,13 @@ import { Mail, Lock } from "lucide-react";
 import footerSvg from "@/assets/landing/footer.svg";
 import heroIllustration from "@/assets/landing/hero-illustration.svg";
 import logoNoBG from "@/assets/landing/logoNoBG.svg";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Login() {
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const auth = useContext(AuthContext);
+  const queryClient = useQueryClient();
   // const { t } = useTranslation();
 
   if (!auth) throw new Error("AuthContext must be used within an AuthProvider");
@@ -30,17 +32,19 @@ export default function Login() {
       password: String(password),
     });
 
-    console.log("Login response:", response);
-    console.log("After login: isAuthenticated =", auth.isAuthenticated);
-
     if (!response || response.status !== 200) {
       setErrorMessage(response?.error || "אירעה שגיאה, נסה שוב.");
+      return;
     }
 
-    if (response && response.status === 200) {
+    // Wait for the user query to be refetched
+    await queryClient.invalidateQueries({ queryKey: ["user"] });
+    await queryClient.refetchQueries({ queryKey: ["user"] });
+
+    if (auth.isAuthenticated) {
       navigate("/home");
     } else {
-      setErrorMessage(response?.error || "אירעה שגיאה, נסה שוב.");
+      setErrorMessage("אירעה שגיאה בהתחברות, נסה שוב.");
     }
   };
 

@@ -165,7 +165,7 @@ const handleExcelSave = async (newData: Record<string, any>[]) => {
             columns={visibleColumns}
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
-            stickyColumnCount={2}
+            stickyColumnCount={3}
             searchable
             showAddButton
             isPagination

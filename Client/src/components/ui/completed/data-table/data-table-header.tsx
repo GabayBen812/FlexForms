@@ -11,6 +11,8 @@ interface DataTableHeaderProps<T> {
   enableColumnReordering?: boolean;
   onColumnOrderChange?: (newOrder: string[]) => void;
   stickyColumnCount?: number;
+  selectedRowCount?: number;
+  enableRowSelection?: boolean;
 }
 
 function DataTableHeader<T>({ 
@@ -18,6 +20,8 @@ function DataTableHeader<T>({
   actions,
   enableColumnReordering,
   stickyColumnCount,
+  selectedRowCount,
+  enableRowSelection,
   onColumnOrderChange  
 }: DataTableHeaderProps<T>) {
   const direction = GetDirection();
@@ -86,6 +90,7 @@ function DataTableHeader<T>({
                 ...stickyStyles,
               }}
             >
+              
               <div className="flex items-center justify-between group h-full">
                 {enableColumnReordering && (
                   <button
@@ -126,6 +131,11 @@ function DataTableHeader<T>({
                     ) : header.column.getIsSorted() === "desc" ? (
                       <ChevronDown className="h-4 w-4" />
                     ) : null)}
+                    {isFirst && enableRowSelection && selectedRowCount !== undefined && (
+  <div className="text-xs text-white mt-1">
+    {selectedRowCount} שורות נבחרו
+  </div>
+)}
                 </div>
 
                 {enableColumnReordering && (

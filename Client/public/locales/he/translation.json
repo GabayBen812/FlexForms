@@ -166,5 +166,6 @@
   "room_location": "מיקום החדר",
   "room_created_success": "החדר נוצר בהצלחה",
   "room_updated_success": "החדר עודכן בהצלחה",
-  "room_deleted_success": "החדר נמחק בהצלחה"
+  "room_deleted_success": "החדר נמחק בהצלחה",
+  "total_rows": "סך השורות"
 }

@@ -66,17 +66,17 @@ function DataTableDownloadButtonBase<TData>({
     document.body.removeChild(link);
   };
 
-  return (
-    <Button
-      variant="default"
-      size="icon"
-      className="h-9 w-9 bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg transition-all duration-200 border border-green-400/20 backdrop-blur-sm rounded-lg"
-      onClick={handleDownload}
-      title="Download CSV"
-    >
-      <FileDown className="h-4 w-4 text-white" strokeWidth={2.5} />
-    </Button>
-  );
+  // return (
+  //   <Button
+  //     variant="default"
+  //     size="icon"
+  //     className="h-9 w-9 bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg transition-all duration-200 border border-green-400/20 backdrop-blur-sm rounded-lg"
+  //     onClick={handleDownload}
+  //     title="Download CSV"
+  //   >
+  //     <FileDown className="h-4 w-4 text-white" strokeWidth={2.5} />
+  //   </Button>
+  // );
 }
 
 export const DataTableDownloadButton = withFeatureFlag(DataTableDownloadButtonBase, {

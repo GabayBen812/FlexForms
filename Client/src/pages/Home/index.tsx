@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { OrganizationsContext } from "@/contexts/OrganizationsContext";
@@ -9,12 +9,18 @@ import { DoorOpen, Users as UsersIcon, CreditCard } from "lucide-react";
 import apiClient from "@/api/apiClient";
 import WelcomeBanner from "@/components/home/WelcomeBanner";
 import DashboardWidgets from "@/components/home/DashboardWidgets";
+import { createApiService } from "@/api/utils/apiFactory";
+
+
 
 export default function Home() {
   const { organization } = useContext(OrganizationsContext);
   const auth = useContext(AuthContext);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    console.log("organization", organization);
+  }, []);
   // Feature flags
   const { isEnabled: roomsFF } = useFeatureFlag("ff_is_show_rooms");
   const { isEnabled: paymentsFF } = useFeatureFlag("ff_is_show_payments");
@@ -35,11 +41,15 @@ export default function Home() {
   });
 
   const { data: users = [], isLoading: usersLoading } = useQuery({
-    queryKey: ["users"],
+    queryKey: ["users", organization?._id],
     queryFn: async () => {
-      const res = await apiClient.get("/users");
-      return res.data;
-    },
+    const res = await apiClient.get("/users", {
+      params: {
+        organizationId: organization?._id,
+      },
+    });
+    return res.data;
+  },
     enabled: usersFF || userRole === "admin" || userRole === "system_admin",
   });
 

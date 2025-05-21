@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import * as XLSX from "xlsx";
 import { useTranslation } from "react-i18next";
+import { FileDown, Download  } from 'lucide-react';
 
 
 type ExcelImporterExporterProps = {
@@ -145,6 +146,7 @@ const handleExport = () => {
     style={{ backgroundColor: color, color: "white", marginRight: "10px" }}
   >
     { t("read_from_excel_file")}
+    <FileDown className="w-5 h-5" />
   </Button>
 )}
 
@@ -156,6 +158,7 @@ const handleExport = () => {
     style={{ backgroundColor: color, color: "white" }}
   >
     {t("export_to_excel_file")}
+    <Download />
   </Button>
 )}
 </div>

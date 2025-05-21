@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, ArrowLeft, ArrowRight } from "lucide-react";
 import { GetDirection } from "@/lib/i18n";
 import { TableAction } from "@/types/ui/data-table-types";
 import Pagination from "./Pagination";
+import { useTranslation } from "react-i18next";
 
 interface DataTableHeaderProps<T> {
   table: Table<T>;
@@ -27,6 +28,7 @@ function DataTableHeader<T>({
   const direction = GetDirection();
   const firstColumnRounding = direction ? "rounded-r-lg" : "rounded-l-lg";
   const lastColumnRounding = direction ? "rounded-l-lg" : "rounded-r-lg";
+  const { t } = useTranslation();
 
   const moveColumn = (accessorKey: string, direction: 'left' | 'right') => {
     const currentOrder = table.getState().columnOrder;
@@ -96,8 +98,6 @@ function DataTableHeader<T>({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      //@ts-ignore
-//                       moveColumn(accessorKey, 'left'); check this later
                       moveColumn(columnId, 'left');
 
                     }}
@@ -132,10 +132,10 @@ function DataTableHeader<T>({
                       <ChevronDown className="h-4 w-4" />
                     ) : null)}
                     {isFirst && enableRowSelection && selectedRowCount !== undefined && (
-  <div className="text-xs text-white mt-1">
-    {selectedRowCount} שורות נבחרו
-  </div>
-)}
+                    <div className="text-xs text-white mt-1">
+                    {selectedRowCount} {t("selected")}
+                    </div>
+                    )}
                 </div>
 
                 {enableColumnReordering && (

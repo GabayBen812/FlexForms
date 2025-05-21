@@ -27,10 +27,7 @@ export default function Home() {
   const { isEnabled: usersFF } = useFeatureFlag("ff_is_show_users");
   const { isEnabled: formsFF } = useFeatureFlag("ff_is_show_forms");
 
-  // User role
   const userRole = auth?.user?.role;
-
-  // Data queries
   const { data: rooms = [], isLoading: roomsLoading } = useQuery({
     queryKey: ["rooms"],
     queryFn: async () => {

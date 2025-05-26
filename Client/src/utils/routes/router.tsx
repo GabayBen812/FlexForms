@@ -135,12 +135,27 @@ export const router = createBrowserRouter([
         },
       },
       {
+        path: "requests",
+        element: <MacabiTable />,
+        handle: { title: "requests", icon: ClubsIcon, showInSidebar: true, featureFlag: "is_show_requests" },
+      },
+      {
         path: "organization-settings",
         element: <OrganizationSettings />,
         handle: {
           title: "organization_settings",
           icon: SettingsIcon,
           showInSidebar: true,
+        },
+      },
+      {
+        path: "messages",
+        element: <OrganizationSettings />,
+        handle: {
+          title: "messages",
+          icon: SettingsIcon,
+          showInSidebar: true,
+          featureFlag: "is_show_messages"
         },
       },
       {

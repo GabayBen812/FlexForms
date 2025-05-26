@@ -11,9 +11,10 @@
   "is_active": "האם פעיל",
   "created_at": "נוצר בתאריך",
   "add_field": "הוסף שדה",
-  "field_label": "תווית שדה",
+  "field_label": "שם שדה",
   "field_type": "סוג שדה",
   "text": "טקסט",
+  "requests":"בקשות",
   "number": "מספר",
   "date": "תאריך",
   "checkbox": "תיבת סימון",
@@ -64,6 +65,7 @@
   "user_email": "אימייל משתמש",
   "user_role": "הרשאת המשתמש",
   "organization_settings": "הגדרות הארגון",
+  "messages": "מסרונים",
   "payer_name": "שם המשלם",
   "payer_email": "אימייל המשלם",
   "amount": "סכום",
@@ -167,6 +169,6 @@
   "room_created_success": "החדר נוצר בהצלחה",
   "room_updated_success": "החדר עודכן בהצלחה",
   "room_deleted_success": "החדר נמחק בהצלחה",
-  "total_rows": "סך השורות",
+  "total_rows": "כמות",
   "selected": "נבחרו"
 }

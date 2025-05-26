@@ -30,7 +30,7 @@ function Step1() {
 
     if (response && response.status === 200) {
       // Wait for the cookie to be set before navigating
-      await new Promise(res => setTimeout(res, 200));
+      await new Promise((res) => setTimeout(res, 200));
       navigate("/home");
     } else {
       setErrorMessage(response?.error || "אירעה שגיאה, נסה שוב.");
@@ -43,7 +43,7 @@ function Step1() {
       onSubmit={handleSubmit}
     >
       <h1 className="font-semibold text-2xl text-center leading-tight">
-        FlexForms
+        Paradise
         <br />
         <span className="text-sm font-normal text-gray-600">
           מערכת ניהול טפסים והרשמות דיגיטליות

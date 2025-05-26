@@ -14,35 +14,25 @@ const usersApi = createApiService<Club>("/clubs");
 export default function clubs() {
   const { t } = useTranslation();
   const { organization } = useOrganization();
-  const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>({});
+  const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
+    {}
+  );
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   const columns: ColumnDef<Club>[] = [
     { accessorKey: "name", header: t("club_name") },
     { accessorKey: "email", header: t("club_email") },
     { accessorKey: "phone", header: t("club_phone") },
-    {accessorKey: "organizationId", header: "", meta: { hidden: true },},
+    { accessorKey: "organizationId", header: "", meta: { hidden: true } },
   ];
   const visibleColumns = columns.filter(
     //@ts-ignore
-    (col) => !(col.meta?.hidden)
+    (col) => !col.meta?.hidden
   );
 
   return (
     <div className="mx-auto">
       <h1 className="text-2xl font-semibold text-primary mb-6">{t("clubs")}</h1>
-      <div className="flex gap-2 mb-2">
-        <Button variant="outline" onClick={() => setIsAdvancedOpen(true)}>
-          {t('advanced_search', 'חיפוש מתקדם')}
-        </Button>
-      </div>
-      <AdvancedSearchModal
-        open={isAdvancedOpen}
-        onClose={() => setIsAdvancedOpen(false)}
-        columns={visibleColumns}
-        onApply={setAdvancedFilters}
-        initialFilters={advancedFilters}
-      />
       <DataTable<Club>
         fetchData={(params) => {
           if (!organization?._id)
@@ -52,14 +42,15 @@ export default function clubs() {
         columns={visibleColumns}
         searchable
         showAddButton
+        showAdvancedSearch
+        onAdvancedSearchChange={setAdvancedFilters}
+        initialAdvancedFilters={advancedFilters}
         isPagination
         defaultPageSize={10}
         //@ts-ignore
         idField="_id"
         extraFilters={advancedFilters}
-        onRowClick={(user) => {
-          
-        }}
+        onRowClick={(user) => {}}
       />
     </div>
   );

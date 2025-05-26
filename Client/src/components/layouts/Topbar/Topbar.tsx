@@ -9,9 +9,8 @@ function Topbar() {
   const { organization, isOrganizationFetching } = useOrganization();
 
   if (!organization || isOrganizationFetching) {
-    return null
-  };
-  
+    return null;
+  }
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-start gap-2 border-b bg-white absolute w-screen z-50">
@@ -41,9 +40,7 @@ function Topbar() {
         </div>
 
         <div className="flex-1 flex items-center justify-end">
-          <span className="text-sm font-semibold">
-           Version: {APP_VERSION}
-          </span>
+          <span className="text-sm font-semibold">Version: {APP_VERSION}</span>
           <LanguagePicker />
         </div>
       </div>

@@ -65,7 +65,7 @@
   "edit_general_settings": "Edit organization's general settings",
   "no_results_title": "It's a little empty here...",
   "no_results_description": "No results found for your search. Try a different keyword.",
-  "no_results_calls": "No calls found", 
+  "no_results_calls": "No calls found",
   "users_count": "Users Count",
   "permissions": "Permissions",
   "resource": "Resource",
@@ -175,5 +175,7 @@
   "read_from_excel_file": "Read from Excel File",
   "export_to_excel_file": "Export to Excel File",
   "total_rows": "Total Rows",
-  "selected": "Selected"
- }
+  "selected": "Selected",
+  "multiple_selection_enabled": "Multiple selection enabled",
+  "type_and_comma": "Type option and press comma to add..."
+}

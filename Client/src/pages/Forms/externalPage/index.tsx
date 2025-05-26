@@ -49,7 +49,7 @@ export default function FormRegistration() {
         isRequired: f.isRequired ?? false,
       })),
   ];
-  
+
   const getFieldValidation = (field: FieldConfig) => {
     if (field.isRequired) {
       switch (field.type) {
@@ -59,12 +59,23 @@ export default function FormRegistration() {
         case "date":
           return z.string().min(1, { message: t("required_field") });
         case "checkbox":
-          return z.boolean().refine(val => val === true, { message: t("required_field") });
+          return z
+            .boolean()
+            .refine((val) => val === true, { message: t("required_field") });
+        case "select":
+          return z.string().min(1, { message: t("required_field") });
+        case "multiselect":
+          return z.array(z.string()).min(1, { message: t("required_field") });
         default:
           return z.any();
       }
     } else {
-      return z.any().optional();
+      switch (field.type) {
+        case "multiselect":
+          return z.array(z.string()).optional();
+        default:
+          return z.any().optional();
+      }
     }
   };
 
@@ -73,8 +84,6 @@ export default function FormRegistration() {
       dynamicFields.map((field) => [field.name, getFieldValidation(field)])
     )
   );
-  
-
 
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
@@ -88,13 +97,32 @@ export default function FormRegistration() {
         onSubmit={async (data) => {
           try {
             const { fullName, email, phone, ...rest } = data;
+
+            // Convert any empty arrays to undefined for optional multiselect fields
+            const processedRest = Object.entries(rest).reduce(
+              (acc, [key, value]) => {
+                const field = dynamicFields.find((f) => f.name === key);
+                if (
+                  field?.type === "multiselect" &&
+                  Array.isArray(value) &&
+                  value.length === 0
+                ) {
+                  acc[key] = undefined;
+                } else {
+                  acc[key] = value;
+                }
+                return acc;
+              },
+              {} as Record<string, any>
+            );
+
             await registrationApi.create({
               formId: form._id,
               organizationId: form.organizationId,
               fullName,
               email,
               phone,
-              additionalData: rest,
+              additionalData: processedRest,
             });
             navigate(`/forms/${code}/registration/success`);
           } catch (err) {

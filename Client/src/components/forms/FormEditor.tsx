@@ -4,25 +4,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { 
-  Trash2, 
-  ArrowUp, 
-  ArrowDown, 
-  Type, 
-  Calendar, 
-  Mail, 
-  CheckSquare, 
-  FileText, 
-  ListFilter, 
+import {
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  Type,
+  Calendar,
+  Mail,
+  CheckSquare,
+  FileText,
+  ListFilter,
+  List as ListIcon,
   PenLine,
   Save,
-  LayoutGrid, 
-  List 
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import FieldConfigEditor from "./FieldConfigEditor";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Props {
   initialFields: FieldConfig[];
@@ -36,6 +42,7 @@ const fieldTypeIcons = {
   checkbox: CheckSquare,
   terms: FileText,
   select: ListFilter,
+  multiselect: ListIcon,
   signature: PenLine,
 };
 
@@ -54,7 +61,11 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
     setFields([...fields, newField]);
   };
 
-  const handleUpdateField = (index: number, key: keyof FieldConfig, value: any) => {
+  const handleUpdateField = (
+    index: number,
+    key: keyof FieldConfig,
+    value: any
+  ) => {
     setFields((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [key]: value };
@@ -70,13 +81,16 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
     const newFields = [...fields];
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= newFields.length) return;
-    [newFields[index], newFields[targetIndex]] = [newFields[targetIndex], newFields[index]];
+    [newFields[index], newFields[targetIndex]] = [
+      newFields[targetIndex],
+      newFields[index],
+    ];
     setFields(newFields);
     toast.success(t("field_moved"), {
-    description: t(`field_moved_${direction}`),
-    duration: 2000,
-    className: "bg-blue-100 text-blue-800 text-base",
-  });
+      description: t(`field_moved_${direction}`),
+      duration: 2000,
+      className: "bg-blue-100 text-blue-800 text-base",
+    });
   };
 
   return (
@@ -93,7 +107,9 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
                     className="flex items-center gap-2 hover:bg-primary/10 transition-colors"
                   >
                     <Icon className="w-4 h-4" />
-                    <span className="hidden sm:inline">{t(`add_${type}_field`)}</span>
+                    <span className="hidden sm:inline">
+                      {t(`add_${type}_field`)}
+                    </span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -113,10 +129,12 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
         </Button> */}
       </div>
 
-      <div className={cn(
-        "space-y-4",
-        layoutMode === "grid" && "grid grid-cols-1 md:grid-cols-2 gap-4"
-      )}>
+      <div
+        className={cn(
+          "space-y-4",
+          layoutMode === "grid" && "grid grid-cols-1 md:grid-cols-2 gap-4"
+        )}
+      >
         <AnimatePresence>
           {fields.map((field, index) => (
             <motion.div
@@ -188,7 +206,9 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
                   </label>
                   <Input
                     value={field.label}
-                    onChange={(e) => handleUpdateField(index, "label", e.target.value)}
+                    onChange={(e) =>
+                      handleUpdateField(index, "label", e.target.value)
+                    }
                     className="w-full"
                   />
                 </div>
@@ -198,14 +218,13 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
                     {t("field_type")}
                   </label>
                   <div className="flex items-center gap-2">
-                    {React.createElement(fieldTypeIcons[field.type as keyof typeof fieldTypeIcons], {
-                      className: "w-4 h-4"
-                    })}
-                    <Input
-                      value={field.type}
-                      disabled
-                      className="opacity-70"
-                    />
+                    {React.createElement(
+                      fieldTypeIcons[field.type as keyof typeof fieldTypeIcons],
+                      {
+                        className: "w-4 h-4",
+                      }
+                    )}
+                    <Input value={field.type} disabled className="opacity-70" />
                   </div>
                 </div>
               </div>
@@ -213,7 +232,13 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
               <div className="mt-4">
                 <FieldConfigEditor
                   field={field}
-                  onChange={updated => setFields(prev => { const copy = [...prev]; copy[index] = updated; return copy; })}
+                  onChange={(updated) =>
+                    setFields((prev) => {
+                      const copy = [...prev];
+                      copy[index] = updated;
+                      return copy;
+                    })
+                  }
                 />
               </div>
             </motion.div>
@@ -228,7 +253,9 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
           >
             <Type className="w-12 h-12 mx-auto mb-4 text-gray-400" />
             <p className="text-gray-500 text-lg">{t("no_fields_added")}</p>
-            <p className="text-sm text-gray-400 mt-2">{t("add_fields_instructions")}</p>
+            <p className="text-sm text-gray-400 mt-2">
+              {t("add_fields_instructions")}
+            </p>
           </motion.div>
         )}
       </div>
@@ -237,12 +264,12 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
         <Button
           onClick={() => onUpdate(fields)}
           className="bg-primary hover:bg-primary/90 shadow-lg text-lg px-8 py-7"
-          style={{ alignSelf: 'flex-end' }}
+          style={{ alignSelf: "flex-end" }}
         >
-         <div className="flex items-center gap-2">
-          {t("save_changes")}
-          <Save className="!w-6 !h-6 shrink-0" />
-         </div>
+          <div className="flex items-center gap-2">
+            {t("save_changes")}
+            <Save className="!w-6 !h-6 shrink-0" />
+          </div>
         </Button>
       </div>
     </div>

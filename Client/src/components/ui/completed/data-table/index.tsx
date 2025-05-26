@@ -8,6 +8,8 @@ import {
   useReactTable,
   PaginationState,
   Row,
+  getFilteredRowModel,
+  FilterFn,
 } from "@tanstack/react-table";
 import { Table } from "@/components/ui/table";
 import DataTableBody from "./data-table-body";
@@ -15,8 +17,35 @@ import DataTableHeader from "./data-table-header";
 import { DataTableSearch } from "./data-table-search";
 import { DataTableAddButton } from "./data-table-add-button";
 import { DataTableDownloadButton } from "./data-table-download-button";
-import { ApiQueryParams, DataTableProps } from "@/types/ui/data-table-types";
+import { DataTableAdvancedSearchBtn } from "./data-table-advanced-search-btn";
+import {
+  ApiQueryParams,
+  DataTableProps,
+  ColumnMeta,
+  ExpandedContentProps,
+} from "@/types/ui/data-table-types";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { AdvancedSearchModal } from "./AdvancedSearchModal";
+
+const globalFilterFn: FilterFn<any> = (row, columnId, filterValue) => {
+  const search = String(filterValue).toLowerCase();
+
+  // Get all searchable values from the row
+  const searchableValues = row
+    .getAllCells()
+    .filter((cell) => {
+      const meta = cell.column.columnDef.meta as ColumnMeta;
+      return !meta?.excludeFromSearch;
+    })
+    .map((cell) => {
+      const value = cell.getValue();
+      return value == null ? "" : String(value).toLowerCase();
+    });
+
+  // Check if any value includes the search term
+  return searchableValues.some((value) => value.includes(search));
+};
 
 export function DataTable<TData>({
   fetchData,
@@ -25,9 +54,17 @@ export function DataTable<TData>({
   deleteData,
   columns = [],
   searchable = true,
+  showAdvancedSearch = false,
+  onAdvancedSearchChange,
+  initialAdvancedFilters = {},
   stickyColumnCount,
   isPagination = true,
   showAddButton = false,
+  customAddButton,
+  showActionColumn = false,
+  showEditButton = false,
+  showDeleteButton = false,
+  showDuplicateButton = false,
   actions = null,
   defaultPageSize = 10,
   renderExpandedContent,
@@ -47,13 +84,17 @@ export function DataTable<TData>({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState<string>("");
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState(
+    initialAdvancedFilters
+  );
   const { t } = useTranslation();
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: defaultPageSize,
   });
   const [specialRow, setSpecialRow] = useState<"add" | null>(null);
-  
+
   // Determine excludeFields and pass to DataTableAddButton
   let excludeFields = [];
   if (Array.isArray(showAddButton)) {
@@ -94,41 +135,32 @@ export function DataTable<TData>({
   };
 
   const handleUpdate = async (row: Row<TData>, data: Partial<TData>) => {
-  const updatedData = {
-    ...row.original,
-    ...data,
-    id: row.original[idField as keyof TData] as string | number,
+    if (!idField) return;
+
+    const id = row.original[idField] as string | number;
+    const updatedData = { ...data, id };
+
+    try {
+      await updateData(updatedData);
+      loadData();
+    } catch (error) {
+      console.error("Failed to update data:", error);
+      toast.error(t("error"));
+    }
   };
-
-  try {
-    setTableData((prev) =>
-      prev.map((item) =>
-        item[idField] === updatedData[idField] ? updatedData : item
-      ) as TData[]
-    );
-    await updateData(updatedData);
-
-    toast.success(t("changes_updated_successfully"), {
-      duration: 2000,
-      className: "bg-blue-100 text-blue-800 text-xl",
-    });
-  } catch (error) {
-    console.error("Failed to update data:", error);
-    toast.error(t("changes_updated_failed"), {
-      duration: 2000,
-      className: "bg-blue-100 text-blue-800 text-xl",
-    });
-  }
-};
   const handleDeleteData = async (id: string | number) => {
     if (!deleteData || !idField) return;
 
     try {
-      setTableData((prev) => prev.filter((item) => item[idField] !== id));
-      await deleteData(Number(id));
-      toast("Event has been created", {});
+      setIsLoading(true);
+      await deleteData(id);
+      await loadData(); // Refresh the table data
+      toast.success(t("deleted_successfully"));
     } catch (error) {
       console.error("Failed to delete data:", error);
+      toast.error(t("delete_failed"));
+      // Refresh the table to ensure it's in sync
+      await loadData();
     } finally {
       setIsLoading(false);
     }
@@ -137,28 +169,30 @@ export function DataTable<TData>({
   const table = useReactTable({
     data: tableData,
     columns,
-    columnResizeMode: "onChange",
     state: {
       sorting,
       globalFilter,
       pagination,
       rowSelection,
-      columnOrder: columnOrder || columns.map(col => (col as any).accessorKey as string),
+      columnOrder:
+        columnOrder || columns.map((col) => (col as any).accessorKey as string),
     },
+    globalFilterFn: globalFilterFn,
     onColumnOrderChange: onColumnOrderChange,
     enableRowSelection: !!onRowSelectionChange,
-    onRowSelectionChange: onRowSelectionChange, 
+    onRowSelectionChange: onRowSelectionChange,
     pageCount: Math.ceil(totalCount / pagination.pageSize),
     manualPagination: true,
     manualSorting: true,
-    manualFiltering: true,
+    manualFiltering: false,
+    enableFilters: true,
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-
     meta: {
       handleAdd,
       handleEdit: handleUpdate,
@@ -200,17 +234,26 @@ export function DataTable<TData>({
     }
   };
 
-  const memoizedExtraFilters = useMemo(() => extraFilters, [JSON.stringify(extraFilters)]);
+  const memoizedExtraFilters = useMemo(
+    () => extraFilters,
+    [JSON.stringify(extraFilters)]
+  );
 
   useEffect(() => {
     loadData();
-  }, [pagination.pageIndex, pagination.pageSize, sorting, globalFilter, memoizedExtraFilters]);
-  
+  }, [
+    pagination.pageIndex,
+    pagination.pageSize,
+    sorting,
+    globalFilter,
+    memoizedExtraFilters,
+  ]);
+
   useEffect(() => {
-  if (visibleRows) {
-    visibleRows(table.getRowModel().rows.map((row) => row.original));
-  }
-}, [table.getRowModel().rows, visibleRows]);
+    if (visibleRows) {
+      visibleRows(table.getRowModel().rows.map((row) => row.original));
+    }
+  }, [table.getRowModel().rows, visibleRows]);
 
   const toggleAddRow = () => {
     setSpecialRow((prev) => (prev === "add" ? null : "add"));
@@ -244,50 +287,98 @@ export function DataTable<TData>({
       })
     : null;
 
+  const handleAdvancedSearchApply = (filters: Record<string, any>) => {
+    setAdvancedFilters(filters);
+    onAdvancedSearchChange?.(filters);
+    setIsAdvancedOpen(false);
+  };
+
+  const wrappedRenderExpandedContent = renderExpandedContent
+    ? (props: ExpandedContentProps<TData>) => {
+        const wrappedHandleSave = async (data: Partial<TData>) => {
+          await props.handleSave?.(data);
+        };
+        return renderExpandedContent({ handleSave: wrappedHandleSave });
+      }
+    : undefined;
+
+  const wrappedOnRowClick = onRowClick
+    ? (row: Row<TData>) => onRowClick(row.original)
+    : undefined;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between w-full">
-        {searchable && (
-          <div className="flex items-center gap-2">
-            <DataTableSearch
-              globalFilter={globalFilter}
-              setGlobalFilter={setGlobalFilter}
-            />
-            <div className="text-sm text-black font-medium">
-            {t("total_rows")} : {table.getPrePaginationRowModel().rows.length} 
-        </div>
-            <DataTableDownloadButton table={table as any} />
-          </div>
-        )}
-        <div className="flex items-center gap-4">
-          <DataTableAddButton
-            showAddButton={showAdd}
+        <div className="flex items-center gap-2">
+          {searchable && (
+            <>
+              <div className="text-sm text-black font-medium">
+                {t("total_rows")} :{" "}
+                {table.getPrePaginationRowModel().rows.length}
+              </div>
+              <DataTableSearch
+                table={table}
+                globalFilter={globalFilter}
+                setGlobalFilter={setGlobalFilter}
+              />
+              <DataTableDownloadButton table={table as any} />
+            </>
+          )}
+          <DataTableAdvancedSearchBtn
+            showAdvancedSearch={showAdvancedSearch}
             columns={columns}
-            onAdd={handleAdd}
-            excludeFields={excludeFields}
+            onAdvancedSearchChange={onAdvancedSearchChange}
+            initialAdvancedFilters={initialAdvancedFilters}
           />
         </div>
+        <div className="flex items-center gap-4">
+          {customAddButton || (
+            <DataTableAddButton
+              showAddButton={showAdd}
+              columns={columns}
+              onAdd={handleAdd}
+              excludeFields={excludeFields}
+            />
+          )}
+        </div>
       </div>
+
+      {showAdvancedSearch && (
+        <AdvancedSearchModal
+          open={isAdvancedOpen}
+          onClose={() => setIsAdvancedOpen(false)}
+          columns={columns}
+          onApply={handleAdvancedSearchApply}
+          initialFilters={advancedFilters}
+        />
+      )}
+
       <div className="rounded-lg">
         <Table className="border-collapse border-spacing-0 text-right">
-          <DataTableHeader table={table} actions={enhancedActions} 
-          enableColumnReordering={enableColumnReordering}
-          stickyColumnCount={stickyColumnCount} 
-          selectedRowCount = {selectedRowCount}
-          enableRowSelection={!!onRowSelectionChange}/>
+          <DataTableHeader
+            table={table}
+            actions={showActionColumn ? [] : null}
+            enableColumnReordering={enableColumnReordering}
+            stickyColumnCount={stickyColumnCount}
+            selectedRowCount={selectedRowCount}
+            enableRowSelection={!!onRowSelectionChange}
+          />
           <DataTableBody<TData>
             columns={columns}
             table={table}
-            actions={enhancedActions}
+            actions={actions}
             stickyColumnCount={stickyColumnCount}
-            renderExpandedContent={renderExpandedContent as any}
+            renderExpandedContent={wrappedRenderExpandedContent}
             specialRow={specialRow}
             setSpecialRow={setSpecialRow}
             handleSave={handleAdd}
-            //@ts-ignore
-            handleEdit={(row, updatedData) => handleUpdate(row, updatedData)}
+            handleEdit={handleUpdate}
             isLoading={isLoading}
-            onRowClick={(row) => onRowClick?.(row.original)}
+            onRowClick={wrappedOnRowClick}
+            showActionColumn={showActionColumn}
+            showEditButton={showEditButton}
+            showDeleteButton={showDeleteButton}
+            showDuplicateButton={showDuplicateButton}
           />
         </Table>
       </div>

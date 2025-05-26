@@ -11,8 +11,6 @@ import WelcomeBanner from "@/components/home/WelcomeBanner";
 import DashboardWidgets from "@/components/home/DashboardWidgets";
 import { createApiService } from "@/api/utils/apiFactory";
 
-
-
 export default function Home() {
   const { organization } = useContext(OrganizationsContext);
   const auth = useContext(AuthContext);
@@ -23,9 +21,9 @@ export default function Home() {
   }, []);
   // Feature flags
   const { isEnabled: roomsFF } = useFeatureFlag("ff_is_show_rooms");
-  const { isEnabled: paymentsFF } = useFeatureFlag("s_show_payments");
+  const { isEnabled: paymentsFF } = useFeatureFlag("is_show_payments");
   const { isEnabled: usersFF } = useFeatureFlag("ff_is_show_users");
-  const { isEnabled: formsFF } = useFeatureFlag("ff_is_show_forms");
+  const { isEnabled: formsFF } = useFeatureFlag("is_show_forms");
 
   const userRole = auth?.user?.role;
   const { data: rooms = [], isLoading: roomsLoading } = useQuery({
@@ -40,13 +38,13 @@ export default function Home() {
   const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ["users", organization?._id],
     queryFn: async () => {
-    const res = await apiClient.get("/users", {
-      params: {
-        organizationId: organization?._id,
-      },
-    });
-    return res.data;
-  },
+      const res = await apiClient.get("/users", {
+        params: {
+          organizationId: organization?._id,
+        },
+      });
+      return res.data;
+    },
     enabled: usersFF || userRole === "admin" || userRole === "system_admin",
   });
 
@@ -60,12 +58,16 @@ export default function Home() {
   });
 
   const { data: forms = [], isLoading: formsLoading } = useQuery({
-    queryKey: ["forms"],
+    queryKey: ["forms", organization?._id],
     queryFn: async () => {
-      const res = await apiClient.get("/forms");
+      const res = await apiClient.get("/forms", {
+        params: {
+          organizationId: organization?._id,
+        },
+      });
       return res.data;
     },
-    enabled: formsFF,
+    enabled: formsFF && !!organization?._id,
   });
 
   // Prepare all possible cards

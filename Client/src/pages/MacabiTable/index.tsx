@@ -117,9 +117,6 @@ export default function clubs() {
       <h1 className="text-2xl font-semibold text-primary mb-6">{t("clubs")}</h1>
       <div className="overflow-x-auto">
         <div className="flex gap-2 mb-2">
-          <Button variant="outline" onClick={() => setIsAdvancedOpen(true)}>
-            {t("advanced_search", "חיפוש מתקדם")}
-          </Button>
           <ExcelImporterExporter
             title={t("import_excel_title", "ייבוא קובץ מועדונים")}
             subtitle={t(
@@ -142,13 +139,6 @@ export default function clubs() {
             }}
           />
         </div>
-        <AdvancedSearchModal
-          open={isAdvancedOpen}
-          onClose={() => setIsAdvancedOpen(false)}
-          columns={visibleColumns}
-          onApply={setAdvancedFilters}
-          initialFilters={advancedFilters}
-        />
         <div
           className="overflow-x-auto w-full"
           style={{
@@ -185,6 +175,9 @@ export default function clubs() {
             idField="_id"
             extraFilters={advancedFilters}
             onRowClick={() => {}}
+            showAdvancedSearch
+            onAdvancedSearchChange={setAdvancedFilters}
+            initialAdvancedFilters={advancedFilters}
           />
           {editingCell && (
             <InlineEditPopup

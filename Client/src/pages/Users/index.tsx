@@ -17,7 +17,9 @@ export default function Users() {
   const { t } = useTranslation();
   const { organization } = useOrganization();
   const navigate = useNavigate();
-  const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>({});
+  const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
+    {}
+  );
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
 
@@ -28,35 +30,31 @@ export default function Users() {
     { accessorKey: "organizationId", header: "", meta: { hidden: true } },
   ];
   //@ts-ignore
-  const visibleColumns = columns.filter((col) => !(col.meta?.hidden));
+  const visibleColumns = columns.filter((col) => !col.meta?.hidden);
 
   return (
     <div className="mx-auto">
       <h1 className="text-2xl font-semibold text-primary mb-6">{t("users")}</h1>
-      <div className="flex gap-2 mb-2">
-        <Button variant="outline" onClick={() => setIsAdvancedOpen(true)}>
-          {t('advanced_search', 'חיפוש מתקדם')}
-        </Button>
-      </div>
-      <AdvancedSearchModal
-        open={isAdvancedOpen}
-        onClose={() => setIsAdvancedOpen(false)}
-        columns={visibleColumns}
-        onApply={setAdvancedFilters}
-        initialFilters={advancedFilters}
-      />
       <DataTable<User>
         data={users}
         updateData={async () => Promise.resolve({} as any)}
         fetchData={async (params) => {
           if (!organization?._id) return { status: 200, data: [] };
-          const result = await usersApi.fetchAll(params, false, organization._id);
-          if ('data' in result && Array.isArray(result.data)) setUsers(result.data);
+          const result = await usersApi.fetchAll(
+            params,
+            false,
+            organization._id
+          );
+          if ("data" in result && Array.isArray(result.data))
+            setUsers(result.data);
           return result;
         }}
         columns={visibleColumns}
         searchable
         showAddButton
+        showAdvancedSearch
+        onAdvancedSearchChange={setAdvancedFilters}
+        initialAdvancedFilters={advancedFilters}
         isPagination
         defaultPageSize={10}
         idField="_id"

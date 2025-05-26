@@ -6,6 +6,7 @@ import { Layout } from "@/components/layouts/Layout";
 import HomeIcon from "@/assets/icons/HomeIcon";
 import ReportsIcon from "@/assets/icons/ReportsIcon";
 import CallsIcon from "@/assets/icons/CallsIcon";
+import PaymentsIcon from "@/assets/icons/PaymentsIcon";
 import PeopleIcon from "@/assets/icons/PeopleIcon";
 import Settings from "@/pages/Settings/Settings";
 import OrganizationSettings from "@/pages/OrganizationSettings";
@@ -22,8 +23,8 @@ import FormDetails from "@/pages/Forms/dashboardPage";
 import FormRegistration from "@/pages/Forms/externalPage";
 import Clubs from "@/pages/Clubs";
 import { Navigate } from "react-router-dom";
-import AdminDashboard from '@/pages/Admin';
-import RegistrationSuccess from '@/pages/Forms/externalPage/RegistrationSuccess';
+import AdminDashboard from "@/pages/Admin";
+import RegistrationSuccess from "@/pages/Forms/externalPage/RegistrationSuccess";
 import FormSettings from "@/components/forms/FormSettings";
 import Rooms from "@/pages/Rooms";
 import { DoorOpen } from "lucide-react";
@@ -59,7 +60,7 @@ export const router = createBrowserRouter([
           title: "rooms",
           icon: DoorOpen,
           showInSidebar: true,
-          featureFlag: "ff_is_show_rooms"
+          featureFlag: "ff_is_show_rooms",
         },
       },
       {
@@ -88,16 +89,25 @@ export const router = createBrowserRouter([
             element: <FormDetails />,
           },
         ],
-      },          
+      },
       {
         path: "create-form",
         element: <CreateForm />,
-        handle: { title: "create_form", icon: ReportsIcon, showInSidebar: false },
+        handle: {
+          title: "create_form",
+          icon: ReportsIcon,
+          showInSidebar: false,
+        },
       },
       {
         path: "payments",
         element: <Payments />,
-        handle: { title: "payments", icon: CallsIcon, showInSidebar: true,featureFlag: "is_show_payments" },
+        handle: {
+          title: "payments",
+          icon: PaymentsIcon,
+          showInSidebar: true,
+          featureFlag: "is_show_payments",
+        },
       },
       {
         path: "users",
@@ -107,12 +117,22 @@ export const router = createBrowserRouter([
       {
         path: "clubs",
         element: <Clubs />,
-        handle: { title: "clubs", icon: ClubsIcon, showInSidebar: true,featureFlag: "is_show_clubs" },
+        handle: {
+          title: "clubs",
+          icon: ClubsIcon,
+          showInSidebar: true,
+          featureFlag: "is_show_clubs",
+        },
       },
       {
         path: "macabi-table",
         element: <MacabiTable />,
-        handle: { title: "macabi_table", icon: ClubsIcon, showInSidebar: true, isMaccabi: true },
+        handle: {
+          title: "macabi_table",
+          icon: ClubsIcon,
+          showInSidebar: true,
+          isMaccabi: true,
+        },
       },
       {
         path: "organization-settings",

@@ -6,8 +6,10 @@ export default function Cta() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="flex flex-col md:flex-row items-center justify-between">
           <div className="mb-6 md:mb-0">
-            <p className="text-xl text-blue-200 font-semibold mb-2">למה אתם מחכים?</p>
-            <h2 className="text-3xl font-bold">הצטרפו ל-FlexForms עוד היום</h2>
+            <p className="text-xl text-blue-200 font-semibold mb-2">
+              למה אתם מחכים?
+            </p>
+            <h2 className="text-3xl font-bold">הצטרפו ל-Paradise עוד היום</h2>
           </div>
           <div className="flex gap-4">
             <Link

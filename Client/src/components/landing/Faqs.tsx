@@ -14,13 +14,14 @@ export default function Faqs() {
             <div>
               <h4 className="text-xl font-bold">איך מגדירים תשלום?</h4>
               <p className="text-slate-600">
-                דרך מערכת הניהול ניתן להגדיר גבייה, הוראות קבע, תשלומים וקופונים.
+                דרך מערכת הניהול ניתן להגדיר גבייה, הוראות קבע, תשלומים
+                וקופונים.
               </p>
             </div>
             <div>
               <h4 className="text-xl font-bold">האם הנתונים מאובטחים?</h4>
               <p className="text-slate-600">
-                FlexForms פועלת לפי התקנים המחמירים ביותר בתחום אבטחת מידע.
+                Paradise פועלת לפי התקנים המחמירים ביותר בתחום אבטחת מידע.
               </p>
             </div>
             <div>

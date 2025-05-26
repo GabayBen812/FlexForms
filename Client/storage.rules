@@ -1,0 +1,15 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /signatures/{fileName} {
+      // Allow read/write access to signature files
+      allow read, write: if true;
+    }
+    
+    match /{allPaths=**} {
+      // Keep other paths restricted
+      allow read, write: if request.auth != null;
+    }
+  }
+} 

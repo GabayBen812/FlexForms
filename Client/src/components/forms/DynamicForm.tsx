@@ -8,8 +8,7 @@ import SignatureCanvas from "react-signature-canvas";
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { handleImageUpload } from "@/lib/imageUtils";
-import { Send, Eraser, Save } from 'lucide-react';
-
+import { Send, Eraser, Save } from "lucide-react";
 
 export interface FieldConfig {
   name: string;
@@ -57,57 +56,74 @@ export default function DynamicForm({
     if (!sigCanvasRefs.current[fieldName]) return;
 
     try {
-      // Convert canvas to blob
-      const dataURL = sigCanvasRefs.current[fieldName]?.toDataURL();
-      // Upload to Firebase Storage - Return later after paying for firebase
+      // Get the signature as a base64 string
+      const dataURL = sigCanvasRefs.current[fieldName]?.toDataURL("image/png");
+      if (!dataURL) {
+        console.error("No signature data available");
+        return;
+      }
 
-
-
-      // const response = await fetch(dataURL);
-      // const blob = await response.blob();
-      
-      // Create a File object from the blob
-      // const file = new File([blob], "signature.png", { type: "image/png" });
-      
-
-      // const signatureUrl = await handleImageUpload(file, `signatures/${fieldName}`);
-      // setValue(fieldName, dataURL);
-      // Set the URL in the form
+      // Set the base64 data immediately for preview
       setValue(fieldName, dataURL);
+
+      // Try to upload to Firebase
+      try {
+        const signatureUrl = await handleImageUpload(
+          dataURL,
+          `signatures/${fieldName}`
+        );
+        // If upload successful, update the value with the URL
+        setValue(fieldName, signatureUrl);
+      } catch (error) {
+        console.error(
+          "Failed to upload signature to Firebase, using base64 data instead:",
+          error
+        );
+        // Keep using the base64 data if upload fails
+      }
     } catch (error) {
       console.error("Error saving signature:", error);
     }
   };
 
   const processSignatureFields = async (data: any) => {
-    return { ...data };
-    /*
-    // --- Enable this block when Firebase Storage is available ---
     const newData = { ...data };
-    const signatureFields = fields.filter(f => f.type === 'signature');
-    console.log('[processSignatureFields] signatureFields:', signatureFields);
+    const signatureFields = fields.filter((f) => f.type === "signature");
+
     for (const field of signatureFields) {
       const value = newData[field.name];
-      console.log(`[processSignatureFields] Checking field '${field.name}':`, value);
-      if (value && typeof value === 'string' && value.startsWith('data:image/')) {
-        console.log(`[processSignatureFields] Uploading signature for field '${field.name}'`);
-        const response = await fetch(value);
-        const blob = await response.blob();
-        const file = new File([blob], 'signature.png', { type: 'image/png' });
-        const url = await handleImageUpload(file, `signatures/${field.name}`);
-        console.log(`[processSignatureFields] Uploaded signature URL for field '${field.name}':`, url);
-        newData[field.name] = url;
+      if (value && typeof value === "string") {
+        try {
+          // If it's already a Firebase URL, keep it as is
+          if (value.startsWith("https://firebasestorage.googleapis.com")) {
+            continue;
+          }
+
+          // If it's base64, try to upload it
+          if (value.startsWith("data:image")) {
+            const url = await handleImageUpload(
+              value,
+              `signatures/${field.name}`
+            );
+            newData[field.name] = url;
+          }
+        } catch (error) {
+          console.error(
+            `Error processing signature field ${field.name}:`,
+            error
+          );
+          // Keep the base64 data if upload fails
+        }
       }
     }
-    console.log('[processSignatureFields] Final processed data:', newData);
+
     return newData;
-    */
   };
 
   const handleFormSubmit = async (data: any) => {
-    console.log('[handleFormSubmit] Raw form data:', data);
+    console.log("[handleFormSubmit] Raw form data:", data);
     const processedData = await processSignatureFields(data);
-    console.log('[handleFormSubmit] Processed form data:', processedData);
+    console.log("[handleFormSubmit] Processed form data:", processedData);
     onSubmit(processedData);
   };
 
@@ -116,12 +132,14 @@ export default function DynamicForm({
       case "text":
       case "date":
       case "email":
-        return <Input 
-          type={field.type} 
-          {...register(field.name)} 
-          disabled={mode !== "registration"} 
-          data-cy={`field-input-${field.name}`}
-        />;
+        return (
+          <Input
+            type={field.type}
+            {...register(field.name)}
+            disabled={mode !== "registration"}
+            data-cy={`field-input-${field.name}`}
+          />
+        );
       case "select":
         return (
           <select
@@ -130,10 +148,15 @@ export default function DynamicForm({
             disabled={mode !== "registration"}
             data-cy={`field-select-${field.name}`}
           >
-            <option value="" data-cy={`field-select-option-${field.name}-empty`}>{t("select_option")}</option>
+            <option
+              value=""
+              data-cy={`field-select-option-${field.name}-empty`}
+            >
+              {t("select_option")}
+            </option>
             {field.config?.options?.map((opt: any, i: number) => (
-              <option 
-                key={i} 
+              <option
+                key={i}
                 value={opt.value}
                 data-cy={`field-select-option-${field.name}-${opt.value}`}
               >
@@ -144,10 +167,13 @@ export default function DynamicForm({
         );
       case "checkbox":
         return (
-          <label className="flex items-center gap-2" data-cy={`field-checkbox-label-${field.name}`}>
-            <input 
-              type="checkbox" 
-              disabled={mode !== "registration"} 
+          <label
+            className="flex items-center gap-2"
+            data-cy={`field-checkbox-label-${field.name}`}
+          >
+            <input
+              type="checkbox"
+              disabled={mode !== "registration"}
               {...register(field.name)}
               data-cy={`field-checkbox-${field.name}`}
             />
@@ -200,18 +226,18 @@ export default function DynamicForm({
       case "terms":
         return (
           <div data-cy={`field-terms-container-${field.name}`}>
-            <div 
+            <div
               className="text-sm bg-gray-100 p-2 rounded whitespace-pre-line"
               data-cy={`field-terms-text-${field.name}`}
             >
               {field.config?.text || ""}
             </div>
-            <label 
+            <label
               className="flex items-center gap-2 mt-2"
               data-cy={`field-terms-label-${field.name}`}
             >
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 {...register(field.name)}
                 data-cy={`field-terms-checkbox-${field.name}`}
               />
@@ -220,10 +246,12 @@ export default function DynamicForm({
           </div>
         );
       default:
-        return <Input 
-          {...register(field.name)} 
-          data-cy={`field-input-${field.name}`}
-        />;
+        return (
+          <Input
+            {...register(field.name)}
+            data-cy={`field-input-${field.name}`}
+          />
+        );
     }
   };
 
@@ -249,7 +277,11 @@ export default function DynamicForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="flex flex-col gap-6" data-cy="registration-form">
+    <form
+      onSubmit={handleSubmit(handleFormSubmit)}
+      className="flex flex-col gap-6"
+      data-cy="registration-form"
+    >
       <h2 className="text-lg font-bold" data-cy="form-title">
         {mode === "registration"
           ? ""
@@ -258,17 +290,27 @@ export default function DynamicForm({
           : t("add_x", { x: t(headerKey) })}
       </h2>
 
-      <div className="grid grid-cols-2 gap-4 border-b pb-4" data-cy="form-header-fields">
+      <div
+        className="grid grid-cols-2 gap-4 border-b pb-4"
+        data-cy="form-header-fields"
+      >
         {fields
           .filter((f) => f.name === "title" || f.name === "description")
           .map((field) => (
-            <div key={field.name} className="flex flex-col" data-cy={`form-header-field-${field.name}`}>
-              <label className="text-sm font-medium" data-cy={`form-header-label-${field.name}`}>
+            <div
+              key={field.name}
+              className="flex flex-col"
+              data-cy={`form-header-field-${field.name}`}
+            >
+              <label
+                className="text-sm font-medium"
+                data-cy={`form-header-label-${field.name}`}
+              >
                 {t(field.label)}
               </label>
-              <Input 
-                type="text" 
-                {...register(field.name)} 
+              <Input
+                type="text"
+                {...register(field.name)}
                 data-cy={`form-header-input-${field.name}`}
               />
             </div>
@@ -279,14 +321,19 @@ export default function DynamicForm({
         if (field.name === "title" || field.name === "description") return null;
 
         return (
-          <div 
-            key={field.name} 
-            className={`border p-4 rounded bg-gray-50 ${errors[field.name] ? 'border-red-500' : ''}`}
+          <div
+            key={field.name}
+            className={`border p-4 rounded bg-gray-50 ${
+              errors[field.name] ? "border-red-500" : ""
+            }`}
             data-cy={`field-container-${field.name}`}
           >
             {mode !== "registration" ? (
               <div data-cy={`field-editor-${field.name}`}>
-                <label className="text-sm font-medium" data-cy={`field-editor-label-${field.name}`}>
+                <label
+                  className="text-sm font-medium"
+                  data-cy={`field-editor-label-${field.name}`}
+                >
                   {t("field_label")}
                 </label>
                 <Input
@@ -298,20 +345,26 @@ export default function DynamicForm({
               </div>
             ) : (
               <div>
-                <label 
-                  className="text-sm font-medium" 
+                <label
+                  className="text-sm font-medium"
                   data-cy={`field-label-${field.name}`}
                 >
-                  {field.label} {field.isRequired && <span className="text-red-500">*</span>}
+                  {field.label}{" "}
+                  {field.isRequired && <span className="text-red-500">*</span>}
                 </label>
               </div>
             )}
 
-            <div className="mt-3" data-cy={`field-input-container-${field.name}`}>
-              {field.type === "text" || field.type === "date" || field.type === "email" ? (
-                <Input 
-                  type={field.type} 
-                  {...register(field.name)} 
+            <div
+              className="mt-3"
+              data-cy={`field-input-container-${field.name}`}
+            >
+              {field.type === "text" ||
+              field.type === "date" ||
+              field.type === "email" ? (
+                <Input
+                  type={field.type}
+                  {...register(field.name)}
                   disabled={mode !== "registration"}
                   data-cy={`field-input-${field.name}`}
                 />
@@ -322,10 +375,15 @@ export default function DynamicForm({
                   disabled={mode !== "registration"}
                   data-cy={`field-select-${field.name}`}
                 >
-                  <option value="" data-cy={`field-select-option-${field.name}-empty`}>{t("select_option")}</option>
+                  <option
+                    value=""
+                    data-cy={`field-select-option-${field.name}-empty`}
+                  >
+                    {t("select_option")}
+                  </option>
                   {field.config?.options?.map((opt: any, i: number) => (
-                    <option 
-                      key={i} 
+                    <option
+                      key={i}
                       value={opt.value}
                       data-cy={`field-select-option-${field.name}-${opt.value}`}
                     >
@@ -334,10 +392,13 @@ export default function DynamicForm({
                   ))}
                 </select>
               ) : field.type === "checkbox" ? (
-                <label className="flex items-center gap-2" data-cy={`field-checkbox-label-${field.name}`}>
-                  <input 
-                    type="checkbox" 
-                    disabled={mode !== "registration"} 
+                <label
+                  className="flex items-center gap-2"
+                  data-cy={`field-checkbox-label-${field.name}`}
+                >
+                  <input
+                    type="checkbox"
+                    disabled={mode !== "registration"}
                     {...register(field.name)}
                     data-cy={`field-checkbox-${field.name}`}
                   />
@@ -389,18 +450,18 @@ export default function DynamicForm({
                 </div>
               ) : field.type === "terms" ? (
                 <div data-cy={`field-terms-container-${field.name}`}>
-                  <div 
+                  <div
                     className="text-sm bg-gray-100 p-2 rounded whitespace-pre-line"
                     data-cy={`field-terms-text-${field.name}`}
                   >
                     {field.config?.text || ""}
                   </div>
-                  <label 
+                  <label
                     className="flex items-center gap-2 mt-2"
                     data-cy={`field-terms-label-${field.name}`}
                   >
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       {...register(field.name)}
                       data-cy={`field-terms-checkbox-${field.name}`}
                     />
@@ -408,16 +469,16 @@ export default function DynamicForm({
                   </label>
                 </div>
               ) : (
-                <Input 
-                  {...register(field.name)} 
+                <Input
+                  {...register(field.name)}
                   data-cy={`field-input-${field.name}`}
                 />
               )}
             </div>
 
             {errors[field.name] && (
-              <p 
-                className="text-red-500 text-sm mt-1" 
+              <p
+                className="text-red-500 text-sm mt-1"
                 data-cy={`field-error-${field.name}`}
               >
                 {errors[field.name]?.message as string}
@@ -429,13 +490,16 @@ export default function DynamicForm({
 
       <div className="flex justify-end mt-4 gap-2" data-cy="form-actions">
         {extraButtons}
-       
-       <Button loading={isSubmitting} type="submit" data-cy="submit-button"
-       className="bg-primary hover:bg-primary/90 shadow-lg text-lg px-6 py-6"
-       >
-        {mode === "registration" && <Send className="!w-5 !h-5 mr-2" />}
-        {mode === "registration" ? t("submit_registration") : t("create")}
-      </Button>
+
+        <Button
+          loading={isSubmitting}
+          type="submit"
+          data-cy="submit-button"
+          className="bg-primary hover:bg-primary/90 shadow-lg text-lg px-6 py-6"
+        >
+          {mode === "registration" && <Send className="!w-5 !h-5 mr-2" />}
+          {mode === "registration" ? t("submit_registration") : t("create")}
+        </Button>
       </div>
     </form>
   );

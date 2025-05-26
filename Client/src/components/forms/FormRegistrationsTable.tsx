@@ -30,7 +30,7 @@ export default function FormRegistrationsTable({ form }: Props) {
 
   return (
     <div className="col-span-2">
-      <h2 className="text-xl font-semibold mb-4">{form.title} - {t("registrations_list")}</h2>
+      <h2 className="text-xl font-semibold mb-4">{form.title}</h2>
       <div className="flex gap-2 mb-2">
         <Button variant="outline" onClick={() => setIsAdvancedOpen(true)}>
           {t('advanced_search', 'חיפוש מתקדם')}

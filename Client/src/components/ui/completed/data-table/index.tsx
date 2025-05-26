@@ -253,7 +253,7 @@ export function DataTable<TData>({
               globalFilter={globalFilter}
               setGlobalFilter={setGlobalFilter}
             />
-            <div className="text-sm text-black font-medium">
+            <div className="text-ml text-black font-medium">
             {t("total_rows")} : {table.getPrePaginationRowModel().rows.length} 
         </div>
             <DataTableDownloadButton table={table as any} />

@@ -23,7 +23,7 @@ export default function Home() {
   }, []);
   // Feature flags
   const { isEnabled: roomsFF } = useFeatureFlag("ff_is_show_rooms");
-  const { isEnabled: paymentsFF } = useFeatureFlag("ff_is_show_payments");
+  const { isEnabled: paymentsFF } = useFeatureFlag("s_show_payments");
   const { isEnabled: usersFF } = useFeatureFlag("ff_is_show_users");
   const { isEnabled: formsFF } = useFeatureFlag("ff_is_show_forms");
 

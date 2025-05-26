@@ -97,7 +97,7 @@ export const router = createBrowserRouter([
       {
         path: "payments",
         element: <Payments />,
-        handle: { title: "payments", icon: CallsIcon, showInSidebar: true },
+        handle: { title: "payments", icon: CallsIcon, showInSidebar: true,featureFlag: "is_show_payments" },
       },
       {
         path: "users",
@@ -107,7 +107,7 @@ export const router = createBrowserRouter([
       {
         path: "clubs",
         element: <Clubs />,
-        handle: { title: "clubs", icon: ClubsIcon, showInSidebar: true },
+        handle: { title: "clubs", icon: ClubsIcon, showInSidebar: true,featureFlag: "is_show_clubs" },
       },
       {
         path: "macabi-table",

@@ -137,29 +137,6 @@ export default function GeneralSettings() {
         </div>
       </div>
 
-      {/* Theme */}
-      <div className="flex border-b border-border pb-4 items-center">
-        <div className="w-72">
-          <h2 className="font-semibold">{t("theme")}</h2>
-          <p className="text-sm text-secondary">{t("select_theme")}</p>
-        </div>
-        <div className="flex gap-4 items-center">
-          {themeColors.map((color) => (
-            <div
-              key={color}
-              onClick={() => setValue("theme", color, { shouldDirty: true })}
-              className={`size-8 rounded-lg cursor-pointer border-2 transition-transform transform 
-                ${
-                  theme === color
-                    ? "scale-110 border-primary"
-                    : "border-transparent hover:scale-110"
-                }`}
-              style={{ backgroundColor: resolveTheme(color).accent }}
-            />
-          ))}
-        </div>
-      </div>
-
       {/* Image */}
       <div className="flex border-b border-border pb-4 items-center gap-4">
         <div className="w-72">

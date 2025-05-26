@@ -8,6 +8,7 @@ import { AuthContext } from "@/contexts/AuthContext";
 export default function QuickActions() {
   const navigate = useNavigate();
   const { isEnabled: roomsFF } = useFeatureFlag("ff_is_show_rooms");
+  const { isEnabled: paymentsFF } = useFeatureFlag("is_show_payments");
   const { isEnabled: usersFF } = useFeatureFlag("ff_is_show_users");
   const { user } = useContext(AuthContext);
   const canManageUsers = usersFF || user?.role === "admin" || user?.role === "system_admin";

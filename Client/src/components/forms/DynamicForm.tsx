@@ -252,7 +252,7 @@ export default function DynamicForm({
     <form onSubmit={handleSubmit(handleFormSubmit)} className="flex flex-col gap-6" data-cy="registration-form">
       <h2 className="text-lg font-bold" data-cy="form-title">
         {mode === "registration"
-          ? t("form_registration")
+          ? ""
           : mode === "edit"
           ? t("editing_x", { x: t(headerKey) })
           : t("add_x", { x: t(headerKey) })}

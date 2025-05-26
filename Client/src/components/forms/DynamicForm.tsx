@@ -245,6 +245,39 @@ export default function DynamicForm({
             </label>
           </div>
         );
+      case "multiselect":
+        return (
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
+              {field.config?.options?.map((opt: any) => (
+                <label
+                  key={opt.value}
+                  className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full text-sm hover:bg-gray-200 cursor-pointer group"
+                  data-cy={`field-multiselect-option-${field.name}-${opt.value}`}
+                >
+                  <input
+                    type="checkbox"
+                    value={opt.value}
+                    {...register(field.name)}
+                    className="rounded border-gray-300 focus:ring-primary"
+                    disabled={mode !== "registration"}
+                  />
+                  <span className="group-hover:text-primary transition-colors">
+                    {opt.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+            {errors[field.name] && (
+              <p
+                className="text-red-500 text-sm"
+                data-cy={`field-error-${field.name}`}
+              >
+                {errors[field.name]?.message as string}
+              </p>
+            )}
+          </div>
+        );
       default:
         return (
           <Input
@@ -468,6 +501,37 @@ export default function DynamicForm({
                     {t("i_agree")}
                   </label>
                 </div>
+              ) : field.type === "multiselect" ? (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    {field.config?.options?.map((opt: any) => (
+                      <label
+                        key={opt.value}
+                        className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full text-sm hover:bg-gray-200 cursor-pointer group"
+                        data-cy={`field-multiselect-option-${field.name}-${opt.value}`}
+                      >
+                        <input
+                          type="checkbox"
+                          value={opt.value}
+                          {...register(field.name)}
+                          className="rounded border-gray-300 focus:ring-primary"
+                          disabled={mode !== "registration"}
+                        />
+                        <span className="group-hover:text-primary transition-colors">
+                          {opt.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  {errors[field.name] && (
+                    <p
+                      className="text-red-500 text-sm"
+                      data-cy={`field-error-${field.name}`}
+                    >
+                      {errors[field.name]?.message as string}
+                    </p>
+                  )}
+                </div>
               ) : (
                 <Input
                   {...register(field.name)}
@@ -475,32 +539,9 @@ export default function DynamicForm({
                 />
               )}
             </div>
-
-            {errors[field.name] && (
-              <p
-                className="text-red-500 text-sm mt-1"
-                data-cy={`field-error-${field.name}`}
-              >
-                {errors[field.name]?.message as string}
-              </p>
-            )}
           </div>
         );
       })}
-
-      <div className="flex justify-end mt-4 gap-2" data-cy="form-actions">
-        {extraButtons}
-
-        <Button
-          loading={isSubmitting}
-          type="submit"
-          data-cy="submit-button"
-          className="bg-primary hover:bg-primary/90 shadow-lg text-lg px-6 py-6"
-        >
-          {mode === "registration" && <Send className="!w-5 !h-5 mr-2" />}
-          {mode === "registration" ? t("submit_registration") : t("create")}
-        </Button>
-      </div>
     </form>
   );
 }

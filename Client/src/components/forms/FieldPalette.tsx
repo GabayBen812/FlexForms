@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 const fieldTypes = [
   { type: "text", label: "טקסט חופשי" },
   { type: "select", label: "בחירה" },
+  { type: "multiselect", label: "בחירה מרובה" },
   { type: "checkbox", label: "תקנון" },
   { type: "date", label: "תאריך" },
   { type: "signature", label: "חתימה דיגיטלית" },

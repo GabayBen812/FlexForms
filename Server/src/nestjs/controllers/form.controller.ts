@@ -21,6 +21,15 @@ export class FormController {
   const { organizationId, ...rest } = dto;
   return this.service.update(id, rest);
 }
+
+  @UseGuards(JwtAuthGuard)
+  @Put(':id/settings')
+  async updateSettings(@Param('id') id: string, @Body() body: any) {
+    // Only allow updating specific fields
+    const { isActive, maxRegistrators, registrationDeadline } = body;
+    return this.service.update(id, { isActive, maxRegistrators, registrationDeadline });
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get()
   async getAll(@Query() query: any) {

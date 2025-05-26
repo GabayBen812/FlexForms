@@ -17,11 +17,6 @@ export default function WelcomeBanner() {
         </h2>
       </CardHeader>
       <CardContent>
-        <div className="text-lg text-muted-foreground">
-          {organization?.name
-            ? t("welcome_org", `לארגון ${organization.name}`)
-            : t("welcome_flexforms", "ל-FlexForms!")}
-        </div>
         <div className="mt-2 text-sm text-muted-foreground">
           {t("motivation", "מאחלים לך יום עבודה מוצלח ופורה!")}
         </div>

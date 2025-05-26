@@ -16,7 +16,7 @@ export const DataTableSearch = ({
   const { t } = useTranslation();
   return (
     <Input
-      placeholder={t("search") + "..."}
+      placeholder={t("search")}
       value={globalFilter ?? ""}
       icon={<Search className="text-secondary" />}
       onChange={(e) => setGlobalFilter(e.target.value)}

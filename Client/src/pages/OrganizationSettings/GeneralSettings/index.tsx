@@ -124,18 +124,6 @@ export default function GeneralSettings() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       {/* Name */}
-      <div className="flex border-b border-border pb-6 items-center gap-4">
-        <div className="w-72">
-          <h2 className="font-semibold">{t("organization_name")}</h2>
-          <p className="text-sm text-secondary">{t("choose_org_name")}</p>
-        </div>
-        <div className="flex flex-col gap-1 w-full max-w-sm">
-          <Input placeholder="ארגון לדוגמה" {...register("name")} />
-          {errors.name && (
-            <span className="text-sm text-red-500">{errors.name.message}</span>
-          )}
-        </div>
-      </div>
 
       {/* Image */}
       <div className="flex border-b border-border pb-4 items-center gap-4">

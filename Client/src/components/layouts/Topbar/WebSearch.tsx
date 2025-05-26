@@ -52,7 +52,7 @@ export function CommandDialogDemo() {
     <Command className="rounded-lg border shadow-sm md:min-w-[450px]">
       <CommandInput
         className="shadow-none"
-        placeholder={t("search") + "..."}
+        placeholder={t("search")}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setTimeout(() => setIsFocused(false), 200)}
         onValueChange={setQuery}

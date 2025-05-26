@@ -25,6 +25,12 @@ export class Form {
 
   @Prop()
   code!: number;
+
+  @Prop()
+  maxRegistrators?: number;
+
+  @Prop()
+  registrationDeadline?: string;
 }
 
 export const FormSchema = SchemaFactory.createForClass(Form);

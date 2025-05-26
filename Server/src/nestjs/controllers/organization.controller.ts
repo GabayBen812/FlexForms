@@ -64,4 +64,16 @@ export class OrganizationController {
   ) {
     return this.organizationService.removeFeatureFlag(id, body.featureFlagId);
   }
+
+  // Update organization name
+  @Put(':id')
+  async updateOrganizationName(
+    @Param('id') id: string,
+    @Body('name') name: string
+  ) {
+    if (!name || typeof name !== 'string') {
+      throw new BadRequestException('Name is required');
+    }
+    return this.organizationService.updateName(id, name);
+  }
 }

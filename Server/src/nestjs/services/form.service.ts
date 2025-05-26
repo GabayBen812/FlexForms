@@ -35,7 +35,18 @@ export class FormService {
   
 
   update(id: string, data: Partial<Form>) {
-    return this.model.findByIdAndUpdate(id, data, { new: true }).exec();
+    // Unset fields if they are null
+    const update: any = {};
+    const unset: any = {};
+    for (const key of Object.keys(data)) {
+      if (data[key] === null) {
+        unset[key] = "";
+      } else {
+        update[key] = data[key];
+      }
+    }
+    const updateObj = Object.keys(unset).length > 0 ? { $set: update, $unset: unset } : update;
+    return this.model.findByIdAndUpdate(id, updateObj, { new: true }).exec();
   }
 
   async findAll(query: any = {}) {

@@ -2,6 +2,8 @@ import { Input } from "@/components/ui/Input";
 import { useTranslation } from "react-i18next";
 import { FieldConfig } from "./DynamicForm";
 import { X } from "lucide-react";
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
 interface Props {
   field: FieldConfig;
@@ -88,24 +90,44 @@ export default function FieldConfigEditor({ field, onChange }: Props) {
 
   if (field.type === "terms") {
     return (
-      <div className="mt-2 space-y-2">
+      <div className="mt-2 space-y-2 min-h-[200px]">
         <label className="font-semibold">{t("terms_text")}</label>
-        <textarea
-          className="border rounded w-full p-2"
-          rows={4}
-          value={field.config?.text || ""}
-          onChange={(e) =>
-            onChange({ ...field, config: { text: e.target.value } })
-          }
-        />
+        <div className="border rounded">
+          <CKEditor
+            editor={ClassicEditor}
+            data={field.config?.text || ""}
+            onChange={(event, editor) => {
+              const data = editor.getData();
+              onChange({ ...field, config: { text: data } });
+            }}
+            config={{
+              toolbar: [
+                'heading',
+                '|',
+                'bold',
+                'italic',
+                'link',
+                'bulletedList',
+                'numberedList',
+                '|',
+                'outdent',
+                'indent',
+                '|',
+                'blockQuote',
+                'insertTable',
+                'undo',
+                'redo'
+              ],
+              height: '300px'
+            }}
+          />
+        </div>
       </div>
     );
   }
 
   return (
     <div>
-      {/* Existing config editors */}
-      {/* ... existing code ... */}
       <div className="mt-2">
         <label className="font-semibold flex items-center gap-2">
           <input

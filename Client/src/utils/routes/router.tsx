@@ -32,6 +32,11 @@ import { DoorOpen } from "lucide-react";
 export const router = createBrowserRouter([
   {
     path: "/",
+    element: <LandingPage />,
+    handle: { showInSidebar: false },
+  },
+  {
+    path: "/",
     element: (
       <Layout>
         <PrivateRoute />
@@ -132,6 +137,7 @@ export const router = createBrowserRouter([
           icon: ClubsIcon,
           showInSidebar: true,
           isMaccabi: true,
+          featureFlag: "is_maccabi",
         },
       },
       {
@@ -176,11 +182,6 @@ export const router = createBrowserRouter([
   },
   { path: "/login", element: <Login /> },
   { path: "/create-organization", element: <CreateOrganization /> },
-  {
-    path: "/landing",
-    element: <LandingPage />,
-    handle: { showInSidebar: false },
-  },
   {
     path: "/forms/:code/registration",
     element: <FormRegistration />,

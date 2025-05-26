@@ -67,4 +67,12 @@ export class OrganizationService {
       { new: true }
     ).exec();
   }
+
+  async updateName(orgId: string, name: string) {
+    return this.model.findByIdAndUpdate(
+      orgId,
+      { name },
+      { new: true }
+    ).exec();
+  }
 }

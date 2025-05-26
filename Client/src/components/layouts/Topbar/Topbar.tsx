@@ -1,16 +1,41 @@
+import { useState } from "react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Hotel } from "lucide-react";
 import { CommandDialogDemo } from "./WebSearch";
 import LanguagePicker from "@/components/LanguagePicker";
 import { APP_VERSION } from "@/version";
+import { Pencil } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { updateOrganizationName } from "@/api/organizations";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { t } from "i18next";
 
 function Topbar() {
-  const { organization, isOrganizationFetching } = useOrganization();
+  const { organization, isOrganizationFetching, refetchOrganization } = useOrganization();
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(organization?.name || "");
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const { isEnabled: canEditOrgName } = useFeatureFlag("is_edit_org_name");
 
   if (!organization || isOrganizationFetching) {
     return null;
   }
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      await updateOrganizationName(organization._id, name);
+      toast({ title: t("organization_name_updated"), description: undefined });
+      setEditing(false);
+      refetchOrganization?.();
+    } catch (e) {
+      toast({ title: "Failed to update organization name.", description: undefined });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-start gap-2 border-b bg-white absolute w-screen z-50">
@@ -25,12 +50,46 @@ function Topbar() {
             </Avatar>
           </div>
           <div className="grid flex-1 ltr:text-left rtl:text-right text-sm leading-tight">
-            <h1
-              className="truncate font-bold text-xl"
-              style={{ color: "var(--primary)" }}
-            >
-              {organization?.name}
-            </h1>
+            {canEditOrgName ? (
+              editing ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    className="border rounded px-2 py-1 text-sm"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder={organization?.name}
+                    disabled={loading}
+                    autoFocus
+                    onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
+                  />
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleSave}
+                    disabled={loading || !name.trim()}
+                  >
+                    Save
+                  </button>
+                </div>
+              ) : (
+                <h1
+                  className="truncate font-bold text-xl flex items-center gap-2 group cursor-pointer"
+                  style={{ color: "var(--primary)" }}
+                  onClick={() => { setEditing(true); setName(organization?.name || ""); }}
+                >
+                  {organization?.name}
+                  <span className="transition-opacity opacity-30 group-hover:opacity-100">
+                    <Pencil size={18} />
+                  </span>
+                </h1>
+              )
+            ) : (
+              <h1
+                className="truncate font-bold text-xl"
+                style={{ color: "var(--primary)" }}
+              >
+                {organization?.name}
+              </h1>
+            )}
           </div>
         </div>
         <div className="relative h-20">

@@ -27,3 +27,7 @@ export const assignFeatureFlagsToOrganization = async (orgId: string, featureFla
 export const removeFeatureFlagFromOrganization = async (orgId: string, featureFlagId: string) => {
   return apiClient.put(`/organizations/${orgId}/feature-flags/remove`, { featureFlagId });
 };
+
+export const updateOrganizationName = async (organizationId: string, name: string) => {
+  return apiClient.put(`/organizations/${organizationId}`, { name });
+};

@@ -11,4 +11,6 @@ export type Form = {
   createdAt: Date;
   createdBy: string;
   updatedAt: Date;
+  maxRegistrators?: number;
+  registrationDeadline?: string;
 };

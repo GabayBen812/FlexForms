@@ -36,10 +36,11 @@ export function DataTable<TData>({
   initialData,
   extraFilters = {},
   onRowSelectionChange,
-  rowSelection,
+  rowSelection = -1,
   enableColumnReordering,
   columnOrder,
   onColumnOrderChange,
+  visibleRows,
 }: DataTableProps<TData> & { extraFilters?: Record<string, any> }) {
   const [tableData, setTableData] = useState<TData[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -145,7 +146,7 @@ export function DataTable<TData>({
       columnOrder: columnOrder || columns.map(col => (col as any).accessorKey as string),
     },
     onColumnOrderChange: onColumnOrderChange,
-    enableRowSelection: true,
+    enableRowSelection: !!onRowSelectionChange,
     onRowSelectionChange: onRowSelectionChange, 
     pageCount: Math.ceil(totalCount / pagination.pageSize),
     manualPagination: true,
@@ -164,7 +165,7 @@ export function DataTable<TData>({
       handleDelete: handleDeleteData,
     },
   });
-
+  const selectedRowCount = table.getSelectedRowModel?.().rows.length ?? 0;
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -205,6 +206,11 @@ export function DataTable<TData>({
     loadData();
   }, [pagination.pageIndex, pagination.pageSize, sorting, globalFilter, memoizedExtraFilters]);
   
+  useEffect(() => {
+  if (visibleRows) {
+    visibleRows(table.getRowModel().rows.map((row) => row.original));
+  }
+}, [table.getRowModel().rows, visibleRows]);
 
   const toggleAddRow = () => {
     setSpecialRow((prev) => (prev === "add" ? null : "add"));
@@ -247,10 +253,13 @@ export function DataTable<TData>({
               globalFilter={globalFilter}
               setGlobalFilter={setGlobalFilter}
             />
+            <div className="text-sm text-black font-medium">
+            {t("total_rows")} : {table.getPrePaginationRowModel().rows.length} 
+        </div>
             <DataTableDownloadButton table={table as any} />
           </div>
         )}
-        <div className="flex items-center">
+        <div className="flex items-center gap-4">
           <DataTableAddButton
             showAddButton={showAdd}
             columns={columns}
@@ -260,10 +269,12 @@ export function DataTable<TData>({
         </div>
       </div>
       <div className="rounded-lg">
-        <Table className="border-collapse border-spacing-2 text-right">
+        <Table className="border-collapse border-spacing-0 text-right">
           <DataTableHeader table={table} actions={enhancedActions} 
           enableColumnReordering={enableColumnReordering}
-          stickyColumnCount={stickyColumnCount} />
+          stickyColumnCount={stickyColumnCount} 
+          selectedRowCount = {selectedRowCount}
+          enableRowSelection={!!onRowSelectionChange}/>
           <DataTableBody<TData>
             columns={columns}
             table={table}

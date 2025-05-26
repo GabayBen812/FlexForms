@@ -97,20 +97,27 @@ export const createApiService = <T>(
       }
     },
 
-    create: async (data: Partial<T>): Promise<MutationResponse<T>> => {
-      try {
-        const payload = includeOrgId
-          ? { ...data, organizationId: getUserOrganizationId() }
-          : data;
+ create: async (data: Partial<T>): Promise<MutationResponse<T>> => {
+  try {
+    const payload = includeOrgId
+      ? { ...data, organizationId: getUserOrganizationId() }
+      : data;
 
-        const { url, config } = resolveRoute(customRoutes.create, baseUrl);
-        const response = await apiClient.post<T>(url, payload, config);
+    const { url, config } = resolveRoute(customRoutes.create, baseUrl);
+    const method = (config?.method as any) || "post";
+    const response = await apiClient.request<T>({
+      method,
+      url,
+      data: payload,
+      ...config,
+    });
 
-        return { status: response.status, data: response.data };
-      } catch (error) {
-        return handleApiError(error);
-      }
-    },
+    return { status: response.status, data: response.data };
+  } catch (error) {
+    return handleApiError(error);
+  }
+},
+
 
     update: async (data: Partial<T> & { id: string | number }): Promise<MutationResponse<T>> => {
       try {

@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Hotel } from "lucide-react";
 import { CommandDialogDemo } from "./WebSearch";
 import LanguagePicker from "@/components/LanguagePicker";
+import { APP_VERSION } from "@/version";
 
 function Topbar() {
   const { organization, isOrganizationFetching } = useOrganization();
@@ -40,6 +41,9 @@ function Topbar() {
         </div>
 
         <div className="flex-1 flex items-center justify-end">
+          <span className="text-sm font-semibold">
+           Version: {APP_VERSION}
+          </span>
           <LanguagePicker />
         </div>
       </div>

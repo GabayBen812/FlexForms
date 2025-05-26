@@ -48,6 +48,7 @@ export interface DataTableProps<TData> {
   enableColumnReordering?: boolean;
   columnOrder?: string[];
   [key: string]: any;
+  visibleRows?: (rows: TData[]) => void
 }
 
 export interface TableAction<TData> {

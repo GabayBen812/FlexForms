@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, ArrowLeft, ArrowRight } from "lucide-react";
 import { GetDirection } from "@/lib/i18n";
 import { TableAction } from "@/types/ui/data-table-types";
 import Pagination from "./Pagination";
+import { useTranslation } from "react-i18next";
 
 interface DataTableHeaderProps<T> {
   table: Table<T>;
@@ -11,6 +12,8 @@ interface DataTableHeaderProps<T> {
   enableColumnReordering?: boolean;
   onColumnOrderChange?: (newOrder: string[]) => void;
   stickyColumnCount?: number;
+  selectedRowCount?: number;
+  enableRowSelection?: boolean;
 }
 
 function DataTableHeader<T>({ 
@@ -18,11 +21,14 @@ function DataTableHeader<T>({
   actions,
   enableColumnReordering,
   stickyColumnCount,
+  selectedRowCount,
+  enableRowSelection,
   onColumnOrderChange  
 }: DataTableHeaderProps<T>) {
   const direction = GetDirection();
   const firstColumnRounding = direction ? "rounded-r-lg" : "rounded-l-lg";
   const lastColumnRounding = direction ? "rounded-l-lg" : "rounded-r-lg";
+  const { t } = useTranslation();
 
   const moveColumn = (accessorKey: string, direction: 'left' | 'right') => {
     const currentOrder = table.getState().columnOrder;
@@ -51,7 +57,7 @@ function DataTableHeader<T>({
     <TableRow key={headerGroup.id}>
       {headerGroup.headers.map((header, index) => {
         const stickyBg = "hsl(224, 29.60%, 27.80%)";
-        console.log("stickyColumnCount1212", stickyColumnCount);
+        
           const effectiveStickyColumnCount = stickyColumnCount ?? 0;
           const isSticky = index < effectiveStickyColumnCount;
           const columnId = header.column.id;
@@ -62,14 +68,14 @@ function DataTableHeader<T>({
           if (isSticky) {
             const columnsBefore = table.getVisibleFlatColumns().slice(0, index);
             const rightOffset = columnsBefore.reduce(
-              (sum, col) => sum + (col.getSize?.() ?? 0) + (25-((index+1)*2)),
-              0
-            );
+  (sum, col) => sum + (col.getSize?.() ?? 0),
+  0
+);
         
             stickyStyles = {
               position: "sticky",
               right: `${rightOffset}px`,
-              zIndex: 25 + index,  
+              zIndex: 25 - index,  
               backgroundColor: stickyBg,
             };
           }
@@ -86,13 +92,12 @@ function DataTableHeader<T>({
                 ...stickyStyles,
               }}
             >
+              
               <div className="flex items-center justify-between group h-full">
                 {enableColumnReordering && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      //@ts-ignore
-//                       moveColumn(accessorKey, 'left'); check this later
                       moveColumn(columnId, 'left');
 
                     }}
@@ -126,6 +131,11 @@ function DataTableHeader<T>({
                     ) : header.column.getIsSorted() === "desc" ? (
                       <ChevronDown className="h-4 w-4" />
                     ) : null)}
+                    {isFirst && enableRowSelection && selectedRowCount !== undefined && (
+                    <div className="text-xs text-white mt-1">
+                    {selectedRowCount} {t("selected")}
+                    </div>
+                    )}
                 </div>
 
                 {enableColumnReordering && (

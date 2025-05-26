@@ -171,5 +171,9 @@
   "registration_fail": "Registration Failed",
   "registration_success": "Registration Success",
   "changes_updated_successfully": "Changes updated successfully",
-  "changes_updated_failed": "Changes updated failed"
-}
+  "changes_updated_failed": "Changes updated failed",
+  "read_from_excel_file": "Read from Excel File",
+  "export_to_excel_file": "Export to Excel File",
+  "total_rows": "Total Rows",
+  "selected": "Selected"
+ }

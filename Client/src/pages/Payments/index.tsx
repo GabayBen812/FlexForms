@@ -30,14 +30,20 @@ const paymentsApi = createApiService<Payment>("/payments", {
 export default function Payments() {
   const { t } = useTranslation();
   const { organization } = useContext(OrganizationsContext);
-  const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>({});
+  const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
+    {}
+  );
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   const columns: ColumnDef<Payment>[] = [
     { accessorKey: "payerName", header: t("payer_name") },
     { accessorKey: "payerEmail", header: t("payer_email") },
     { accessorKey: "amount", header: t("amount") },
-    { accessorKey: "date", header: t("date") },
+    {
+      accessorKey: "date",
+      header: t("date"),
+      meta: { isDate: true },
+    },
     { accessorKey: "formId", header: t("form") },
   ];
 
@@ -64,19 +70,9 @@ export default function Payments() {
 
   return (
     <div className="mx-auto">
-      <h1 className="text-2xl font-semibold text-primary mb-6">{t("payments")}</h1>
-      <div className="flex gap-2 mb-2">
-        <Button variant="outline" onClick={() => setIsAdvancedOpen(true)}>
-          {t('advanced_search', 'חיפוש מתקדם')}
-        </Button>
-      </div>
-      <AdvancedSearchModal
-        open={isAdvancedOpen}
-        onClose={() => setIsAdvancedOpen(false)}
-        columns={columns}
-        onApply={setAdvancedFilters}
-        initialFilters={advancedFilters}
-      />
+      <h1 className="text-2xl font-semibold text-primary mb-6">
+        {t("payments")}
+      </h1>
       <DataTable<Payment>
         data={[]}
         updateData={async () => Promise.resolve({} as any)}
@@ -87,6 +83,9 @@ export default function Payments() {
         actions={actions}
         searchable
         showAddButton
+        showAdvancedSearch
+        onAdvancedSearchChange={setAdvancedFilters}
+        initialAdvancedFilters={advancedFilters}
         isPagination
         defaultPageSize={10}
         idField="id"
@@ -126,7 +125,10 @@ export async function fetchAllFeatureFlags(params: ApiQueryParams) {
   return res.data;
 }
 
-export async function updateFeatureFlag(id: string, data: Partial<FeatureFlag>) {
+export async function updateFeatureFlag(
+  id: string,
+  data: Partial<FeatureFlag>
+) {
   const res = await apiClient.put(`/feature-flags/${id}`, data);
   return res.data;
 }

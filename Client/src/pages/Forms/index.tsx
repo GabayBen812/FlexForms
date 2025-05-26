@@ -6,8 +6,8 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { createApiService } from "@/api/utils/apiFactory";
 import { Form } from "@/types/forms/Form";
 import { TableAction } from "@/types/ui/data-table-types";
-import { useCallback, useEffect, useState } from "react";
-import { Copy } from 'lucide-react';
+import { useCallback, useEffect, useState, useMemo } from "react";
+import { Copy, Plus } from "lucide-react";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
 import apiClient from "@/api/apiClient";
@@ -18,125 +18,112 @@ export default function Forms() {
   const { t } = useTranslation();
   const { organization } = useOrganization();
   const navigate = useNavigate();
-  const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>({});
+  const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
+    {}
+  );
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [registrationCounts, setRegistrationCounts] = useState<Record<string, number>>({});
+  const [registrationCounts, setRegistrationCounts] = useState<
+    Record<string, number>
+  >({});
   const [refreshKey, setRefreshKey] = useState(0);
-  
-const selectionColumn: ColumnDef<Form, any> = {
-  accessorKey: "select",
-  header: ({ table }) => (
-    <input
-      type="checkbox"
-      checked={table.getIsAllPageRowsSelected()}
-      onChange={table.getToggleAllPageRowsSelectedHandler()}
-      onClick={(e) => e.stopPropagation()}
-    />
-  ),
-  cell: ({ row }) => (
-    <input
-      type="checkbox"
-      checked={row.getIsSelected()}
-      onChange={row.getToggleSelectedHandler()}
-      onClick={(e) => e.stopPropagation()}
-    />
-  ),
-  size: 40,
-};
 
-const duplicateColumn: ColumnDef<Form, any> = {
-  accessorKey: "duplicate",
-  header: "",
-  cell: ({ row }) => (
-    <Button
-      variant="outline" size="sm"
-      onClick={(e) => {
-        e.stopPropagation();
-        handleDuplicateForm(row.original);
-      }}
-    >
-      {t("duplicate_form")}
-      <Copy className="w-5 h-5"/>
-    </Button>
-  ),
-  size: 100,
-};
-
-const columns: ColumnDef<Form>[] = [
-  {
-    accessorKey: "numberOfRegistrations",
-    header: t("number_of_registrations", "מספר נרשמים"),
-    cell: ({ row }) => (
-      <div className="w-full text-center">
-        {registrationCounts[row.original._id] ?? 0}
-      </div>
+  const selectionColumn: ColumnDef<Form, any> = {
+    accessorKey: "select",
+    header: ({ table }) => (
+      <input
+        type="checkbox"
+        checked={table.getIsAllPageRowsSelected()}
+        onChange={table.getToggleAllPageRowsSelectedHandler()}
+        onClick={(e) => e.stopPropagation()}
+      />
     ),
-  },
-  {
-    accessorKey: "description",
-    header: t("form_description"),
     cell: ({ row }) => (
-      <div className="w-full text-center">
-        {row.getValue("description")}
-      </div>
+      <input
+        type="checkbox"
+        checked={row.getIsSelected()}
+        onChange={row.getToggleSelectedHandler()}
+        onClick={(e) => e.stopPropagation()}
+      />
     ),
-  },
-  {
-    accessorKey: "title",
-    header: t("form_title"),
-    cell: ({ row }) => (
-      <div className="w-full text-center">
-        {row.getValue("title")}
-      </div>
-    ),
-  },
-  duplicateColumn,
-  selectionColumn,
-];
+    size: 40,
+  };
 
-const columnOrder = [
-  "select",
-  "duplicate",
-  "title",
-  "description",
-  "numberOfRegistrations",
-];
+  const columns: ColumnDef<Form>[] = [
+    selectionColumn,
+    {
+      accessorKey: "numberOfRegistrations",
+      header: t("number_of_registrations", "מספר נרשמים"),
+      cell: ({ row }) => (
+        <div className="w-full text-center">
+          {registrationCounts[row.original._id] ?? 0}
+        </div>
+      ),
+      size: 120,
+    },
+    {
+      accessorKey: "description",
+      header: t("form_description"),
+      cell: ({ row }) => (
+        <div className="w-full text-center">{row.getValue("description")}</div>
+      ),
+      size: 300,
+    },
+    {
+      accessorKey: "title",
+      header: t("form_title"),
+      cell: ({ row }) => (
+        <div className="w-full text-center">{row.getValue("title")}</div>
+      ),
+      size: 250,
+    },
+  ];
 
-const actions: TableAction<Form>[] = [
-  { label: t("delete"), type: "delete" },
-];
+  const columnOrder = [
+    "select",
+    "title",
+    "description",
+    "numberOfRegistrations",
+  ];
 
-const fetchData = useCallback(
-  async (params: any) => {
+  const actions: TableAction<Form>[] = [{ label: t("delete"), type: "delete" }];
+
+  const fetchData = useCallback(
+    async (params: any) => {
       const cleanParams = Object.fromEntries(
-      Object.entries({ ...params, ...advancedFilters, organizationId: organization?._id }).filter(
-        ([, v]) => v !== undefined && v !== ""
-      )
-    );
-    if (!organization?._id)
-      return Promise.resolve({ 
-        data: [], 
-        totalCount: 0, 
-        totalPages: 0 
-      });
-    
-    const res = await formsApi.fetchAll(cleanParams);
-    const forms: Form[] = Array.isArray(res.data) ? res.data.filter(Boolean) : [];
-    
-    return {
-      data: forms,
-      totalCount: forms.length,
-      totalPages: 1,
-    };
-  },
-  [organization?._id, advancedFilters]
-);
-const wrappedFetchData = async (params: any) => {
-  if (!organization?._id) return Promise.resolve({ status: 200, data: [] });
-  const response = await formsApi.fetchAll(params, false, organization._id);
-  const forms: Form[] = Array.isArray(response.data) ? response.data.filter(Boolean) : [];
-   const formIds = forms.map((f) => f._id).join(",");
+        Object.entries({
+          ...params,
+          ...advancedFilters,
+          organizationId: organization?._id,
+        }).filter(([, v]) => v !== undefined && v !== "")
+      );
+      if (!organization?._id)
+        return Promise.resolve({
+          data: [],
+          totalCount: 0,
+          totalPages: 0,
+        });
+
+      const res = await formsApi.fetchAll(cleanParams);
+      const forms: Form[] = Array.isArray(res.data)
+        ? res.data.filter(Boolean)
+        : [];
+
+      return {
+        data: forms,
+        totalCount: forms.length,
+        totalPages: 1,
+      };
+    },
+    [organization?._id, advancedFilters]
+  );
+  const wrappedFetchData = async (params: any) => {
+    if (!organization?._id) return Promise.resolve({ status: 200, data: [] });
+    const response = await formsApi.fetchAll(params, false, organization._id);
+    const forms: Form[] = Array.isArray(response.data)
+      ? response.data.filter(Boolean)
+      : [];
+    const formIds = forms.map((f) => f._id).join(",");
     if (formIds) {
       try {
         const res = await apiClient.get<{
@@ -156,71 +143,72 @@ const wrappedFetchData = async (params: any) => {
 
     return response;
   };
-const handleDuplicateForm = async (form: Form) => {
-try {
-  const duplicatedForm = {
-    ...form,
-    title: `${form.title}-Copy`,
-    _id: undefined,
-    id: undefined,
-    createdAt: undefined,
-    updatedAt: undefined,
+  const handleDuplicateForm = async (form: Form) => {
+    try {
+      const duplicatedForm = {
+        ...form,
+        title: `${form.title}-Copy`,
+        _id: undefined,
+        id: undefined,
+        createdAt: undefined,
+        updatedAt: undefined,
+      };
+
+      const created = await formsApi.create(duplicatedForm);
+      if (created) {
+        setRefreshKey((prev) => prev + 1);
+      }
+    } catch (error) {
+      console.error("שגיאה בשכפול הטופס:", error);
+      alert("שגיאה בשכפול הטופס");
+    }
   };
 
-  const created = await formsApi.create(duplicatedForm);
-  if (created) {
-setRefreshKey(prev => prev + 1);
-}
-} catch (error) {
-  console.error("שגיאה בשכפול הטופס:", error);
-  alert("שגיאה בשכפול הטופס");
-}
-};
-
-return (
-  <div className="mx-auto">
-    <h1 className="text-2xl font-semibold text-primary mb-6">{t("forms")}</h1>
-    <div className="flex gap-2 mb-2">
-      <Button variant="outline" onClick={() => setIsAdvancedOpen(true)}>
-        {t('advanced_search', 'חיפוש מתקדם')}
+  const CustomAddButton = useMemo(
+    () => (
+      <Button variant="outline" onClick={() => navigate("/create-form")}>
+        <Plus className="w-4 h-4 mr-2" /> צור טופס חדש
       </Button>
+    ),
+    [navigate]
+  );
+
+  return (
+    <div className="mx-auto">
+      <h1 className="text-2xl font-semibold text-primary mb-6">{t("forms")}</h1>
+      <DataTable<Form>
+        data={[]}
+        key={refreshKey}
+        fetchData={wrappedFetchData}
+        addData={(data) => formsApi.create(data)}
+        updateData={(data) => formsApi.update({ ...data, id: data._id })}
+        columns={columns}
+        columnOrder={columnOrder}
+        searchable
+        showAdvancedSearch
+        onAdvancedSearchChange={setAdvancedFilters}
+        initialAdvancedFilters={advancedFilters}
+        showAddButton={[{ name: "numberOfRegistrations", defaultValue: "0" }]}
+        customAddButton={CustomAddButton}
+        isPagination
+        actions={actions}
+        defaultPageSize={10}
+        idField="_id"
+        extraFilters={advancedFilters}
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        onRowClick={(form) => {
+          if (form && form.code && form._id) {
+            navigate(`/forms/${form.code}/dashboard`);
+          } else {
+            console.warn("Form row is missing code or _id", form);
+          }
+        }}
+        showActionColumn={true}
+        showEditButton={true}
+        showDeleteButton={true}
+        showDuplicateButton={true}
+      />
     </div>
-    <AdvancedSearchModal
-      open={isAdvancedOpen}
-      onClose={() => setIsAdvancedOpen(false)}
-      columns={columns}
-      onApply={(filters) => {
-        console.log('Advanced search filters:', filters);
-        setAdvancedFilters(filters);
-      }}
-      initialFilters={advancedFilters}
-    />
-    <DataTable<Form>
-      data={[]}
-      key={refreshKey}
-      fetchData={wrappedFetchData}
-      addData={(data) => formsApi.create(data)}
-      updateData={(data) => formsApi.update({ ...data, id: data._id })}
-      columns={columns}
-      columnOrder={columnOrder}
-      searchable
-      //@ts-ignore
-      showAddButton={[{ name: "numberOfRegistrations", defaultValue: "0" }]}
-      isPagination
-      actions={actions}
-      defaultPageSize={10}
-      idField="_id"
-      extraFilters={advancedFilters}
-      rowSelection={rowSelection}
-      onRowSelectionChange={setRowSelection}
-      onRowClick={(form) => {
-        if (form && form.code && form._id) {
-          navigate(`/forms/${form.code}/dashboard`);
-        } else {
-          console.warn('Form row is missing code or _id', form);
-        }
-      }}
-    />
-  </div>
-);
+  );
 }

@@ -22,11 +22,26 @@ export interface ExpandedContentProps<TData> {
   handleEdit?: (row: Partial<TData>) => void;
 }
 
+export interface ColumnMeta {
+  hidden?: boolean;
+  isDate?: boolean;
+  excludeFromSearch?: boolean;
+  editable?: boolean;
+  fieldType?: string;
+  options?: any;
+}
+
 export interface DataTableProps<TData> {
-  columns: ColumnDef<TData>[];
+  columns: ColumnDef<TData, any>[];
   data: TData[];
-  fetchData: (params?: ApiQueryParams, rawDataOnly?: boolean, organizationId?: string) => Promise<ApiResponse<TData> | MutationResponse<TData[]>>;
-  updateData: (data: Partial<TData> & { id: string | number }) => Promise<MutationResponse<TData>>;
+  fetchData: (
+    params?: ApiQueryParams,
+    rawDataOnly?: boolean,
+    organizationId?: string
+  ) => Promise<ApiResponse<TData> | MutationResponse<TData[]>>;
+  updateData: (
+    data: Partial<TData> & { id: string | number }
+  ) => Promise<MutationResponse<TData>>;
   deleteData?: (id: string | number) => Promise<MutationResponse<TData>>;
   onRowClick?: (row: TData) => void;
   extraFilters?: Record<string, any>;
@@ -37,18 +52,28 @@ export interface DataTableProps<TData> {
   onColumnOrderChange?: (columnOrder: string[]) => void;
   stickyColumnCount?: number;
   onRowSelectionChange?: (selection: RowSelectionState) => void;
-  renderExpandedContent?: (props: { handleSave: (data: Partial<TData>) => Promise<void> }) => React.ReactNode;
+  renderExpandedContent?: (props: {
+    handleSave: (data: Partial<TData>) => Promise<void>;
+  }) => React.ReactNode;
   addData?: any;
   searchable?: boolean;
+  showAdvancedSearch?: boolean;
+  onAdvancedSearchChange?: (filters: Record<string, any>) => void;
+  initialAdvancedFilters?: Record<string, any>;
   isPagination?: boolean;
-  showAddButton?: boolean;
+  showAddButton?: boolean | Array<{ name: string; defaultValue: string }>;
+  customAddButton?: React.ReactNode;
+  showActionColumn?: boolean;
+  showEditButton?: boolean;
+  showDeleteButton?: boolean;
+  showDuplicateButton?: boolean;
   actions?: any;
   initialData?: any;
   rowSelection?: any;
   enableColumnReordering?: boolean;
   columnOrder?: string[];
   [key: string]: any;
-  visibleRows?: (rows: TData[]) => void
+  visibleRows?: (rows: TData[]) => void;
 }
 
 export interface TableAction<TData> {

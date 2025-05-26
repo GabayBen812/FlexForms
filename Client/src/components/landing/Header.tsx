@@ -8,7 +8,7 @@ export default function Header() {
         <div className="flex items-center justify-between h-16 md:h-20">
           <div className="shrink-0 mr-4">
             <Link to="/">
-              <img src={logo} className="h-8" alt="FlexForms Logo" />
+              <img src={logo} className="h-8" alt="Paradise Logo" />
             </Link>
           </div>
           <nav className="flex-grow text-right">

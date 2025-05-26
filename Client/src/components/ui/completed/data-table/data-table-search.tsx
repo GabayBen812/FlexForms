@@ -2,25 +2,29 @@
 import React from "react";
 import { Input } from "@/components/ui/Input";
 import { useTranslation } from "react-i18next";
-import { Search } from "lucide-react";
+import { Table } from "@tanstack/react-table";
 
-interface DataTableSearchProps {
+interface DataTableSearchProps<TData> {
+  table: Table<TData>;
   globalFilter: string;
-  setGlobalFilter: React.Dispatch<React.SetStateAction<string>>;
+  setGlobalFilter: (value: string) => void;
 }
 
-export const DataTableSearch = ({
+export function DataTableSearch<TData>({
+  table,
   globalFilter,
   setGlobalFilter,
-}: DataTableSearchProps) => {
+}: DataTableSearchProps<TData>) {
   const { t } = useTranslation();
+
   return (
-    <Input
-      placeholder={t("search")}
-      value={globalFilter ?? ""}
-      icon={<Search className="text-secondary" />}
-      onChange={(e) => setGlobalFilter(e.target.value)}
-      className="max-w-sm min-w-64"
-    />
+    <div className="flex items-center">
+      <Input
+        placeholder={t("search...")}
+        value={globalFilter ?? ""}
+        onChange={(event) => setGlobalFilter(event.target.value)}
+        className="h-8 w-[150px] lg:w-[250px]"
+      />
+    </div>
   );
-};
+}

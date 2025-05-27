@@ -27,6 +27,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AdvancedSearchModal } from "./AdvancedSearchModal";
+import { DataTablePaginationControls } from "./data-table-pagination-controls";
 
 const globalFilterFn: FilterFn<any> = (row, columnId, filterValue) => {
   const search = String(filterValue).toLowerCase();
@@ -357,16 +358,17 @@ export function DataTable<TData>({
         <Table className="border-collapse border-spacing-0 text-right">
           <DataTableHeader
             table={table}
-            actions={showActionColumn ? [] : null}
+            actions={showActionColumn ? actions : null}
             enableColumnReordering={enableColumnReordering}
             stickyColumnCount={stickyColumnCount}
             selectedRowCount={selectedRowCount}
             enableRowSelection={!!onRowSelectionChange}
+            isPagination={isPagination}
           />
           <DataTableBody<TData>
             columns={columns}
             table={table}
-            actions={actions}
+            actions={showActionColumn ? actions : null}
             stickyColumnCount={stickyColumnCount}
             renderExpandedContent={wrappedRenderExpandedContent}
             specialRow={specialRow}

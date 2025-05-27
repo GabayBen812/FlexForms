@@ -190,7 +190,6 @@ export default function Forms() {
         initialAdvancedFilters={advancedFilters}
         showAddButton={[{ name: "numberOfRegistrations", defaultValue: "0" }]}
         customAddButton={CustomAddButton}
-        isPagination
         actions={actions}
         defaultPageSize={10}
         idField="_id"
@@ -208,6 +207,7 @@ export default function Forms() {
         showEditButton={true}
         showDeleteButton={true}
         showDuplicateButton={true}
+        isPagination={false}
       />
     </div>
   );

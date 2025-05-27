@@ -180,6 +180,10 @@
   "organization_name_updated": "שם הארגון עודכן",
   "card_owner_email": "אימייל בעל הכרטיס",
   "card_owner_name": "שם בעל הכרטיס",
-  "low_profile_code": "קוד Low Profile",
-  "service": "שירות"
+  "last4digits": "4 ספרות אחרונות",
+  "amount_paid": "סכום ששולם",
+  "payment_date": "תאריך תשלום",
+  "low_profile_code": "קוד תשלום",
+  "service": "שירות",
+  "showing": "כמות"
 }

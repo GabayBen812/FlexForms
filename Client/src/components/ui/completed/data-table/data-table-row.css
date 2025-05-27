@@ -1,0 +1,53 @@
+.data-table-row:hover {
+  background-color: #f5f7fa !important;
+}
+
+.data-table-row:hover .data-table-row-cell {
+  background-color: #f5f7fa !important;
+}
+
+/* Prevent unwanted horizontal scroll */
+.data-table-row,
+.data-table-row-cell,
+.table,
+.table-wrapper {
+  overflow-x: hidden !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Remove unwanted scroll and spacing for table and wrappers, but allow cell padding */
+.table, .table-wrapper, table, tbody, tr {
+  margin: 0 !important;
+  border-spacing: 0 12px !important; /* Add vertical gap between rows */
+  border-collapse: separate !important;
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  table-layout: auto !important;
+  overflow-x: hidden !important;
+  padding: 0 !important;
+}
+
+/* Restore nice padding for cells and headers */
+.data-table-row-cell, th, td {
+  padding: 1rem 1.5rem !important;
+}
+
+/* Remove global max-width, keep ellipsis and nowrap */
+th, td, .data-table-row-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Optional: max-width utility for specific columns */
+.max-width-300 {
+  max-width: 300px;
+}
+
+/* Ensure the blank pagination cell is always white */
+.data-table-row-cell:last-child {
+  background: white !important;
+} 

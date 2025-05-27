@@ -23,6 +23,7 @@ import { DataTableLoading } from "./data-table-loading";
 import { GetDirection } from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
+import "./data-table-row.css";
 
 interface BaseData {
   id?: string | number;
@@ -131,122 +132,117 @@ const RowComponent = React.memo(function RowComponent<T>({
     <>
       <TableRow
         key={row.id}
-        id={row.id}
-        className={`${
-          isExpanded ? "relative z-[51] pointer-events-none" : ""
-        } border-b-4 border-background group cursor-pointer transition-colors h-[3.75rem]`}
-        onClick={() => (onRowClick ? onRowClick(row) : row.toggleExpanded())}
+        data-state={row.getIsSelected() && "selected"}
+        className="transition-colors cursor-pointer data-table-row"
+        style={{ width: "100%", backgroundColor: "white" }}
       >
-        {/* First render the selection checkbox if it exists */}
-        {row
-          .getVisibleCells()
-          .filter((cell) => cell.column.id === "select")
-          .map((cell, index) => (
+        {row.getVisibleCells().map((cell, cellIndex) => {
+          const isFirst = cellIndex === 0;
+          const isLast = cellIndex === row.getVisibleCells().length - 1;
+          const effectiveStickyColumnCount = stickyColumnCount ?? 0;
+          const isSticky = cellIndex < effectiveStickyColumnCount;
+          const stickyBg = "white";
+
+          let stickyStyles: React.CSSProperties = {};
+          if (isSticky) {
+            const columnsBefore = row
+              .getVisibleCells()
+              .slice(0, cellIndex)
+              .map((cell) => cell.column);
+            const rightOffset = columnsBefore.reduce(
+              (sum, col) => sum + (col.getSize?.() ?? 0),
+              0
+            );
+
+            stickyStyles = {
+              position: "sticky",
+              right: `${rightOffset}px`,
+              zIndex: 20 - cellIndex,
+              backgroundColor: stickyBg,
+            };
+          }
+
+          // Border radius: rightmost for RTL, leftmost for LTR
+          const roundedClass = direction
+            ? (isFirst ? "rounded-r-lg" : "")
+            : (isLast ? "rounded-l-lg" : "");
+
+          // Render the first cell
+          if (cellIndex === 0) {
+            return (
+              <React.Fragment key={cell.id}>
+                <TableCell
+                  style={{
+                    ...stickyStyles,
+                    width: cell.column.getSize(),
+                    maxWidth: cell.column.getSize(),
+                    padding: "1rem 1.5rem",
+                  }}
+                  className={`text-center data-table-row-cell ${roundedClass}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onRowClick) {
+                      onRowClick(row);
+                    }
+                  }}
+                >
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
+                {showActionColumn && (
+                  <TableCell className="text-center data-table-row-cell">
+                    {showEditButton && (
+                      <Button variant="ghost" size="icon" onClick={e => handleActionClick(e, "edit")}> 
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {showDeleteButton && (
+                      <Button variant="ghost" size="icon" onClick={e => handleActionClick(e, "delete")}> 
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {showDuplicateButton && (
+                      <Button variant="ghost" size="icon" onClick={e => handleActionClick(e, "duplicate")}> 
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </TableCell>
+                )}
+              </React.Fragment>
+            );
+          }
+          // Skip rendering the second cell if showActionColumn is true (to keep columns aligned)
+          if (showActionColumn && cellIndex === 1) return null;
+          // Render the rest of the cells
+          return (
             <TableCell
               key={cell.id}
-              className={`bg-white text-primary text-base font-normal border-b-4 border-background px-4 transition-colors text-center group-hover:bg-muted ${firstColumnRounding}`}
-              style={{ textAlign: "center" }}
+              style={{
+                ...stickyStyles,
+                width: cell.column.getSize(),
+                maxWidth: cell.column.getSize(),
+                padding: "1rem 1.5rem",
+              }}
+              className={`text-center data-table-row-cell ${roundedClass}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onRowClick) {
+                  onRowClick(row);
+                }
+              }}
             >
-              {renderCellContent(cell)}
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
             </TableCell>
-          ))}
-
-        {/* Then render the action buttons */}
-        {showActionColumn && (
-          <TableCell
-            className={`bg-white transition-colors group-hover:bg-muted border-b-4 border-background text-center whitespace-nowrap`}
-            style={{ width: "120px", textAlign: "center" }}
-          >
-            <div className="flex items-center justify-center gap-1">
-              {showEditButton && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
-                  onClick={(e) => handleActionClick(e, "edit")}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-              )}
-              {showDeleteButton && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 hover:text-destructive"
-                  onClick={(e) => handleActionClick(e, "delete")}
-                >
-                  <Trash className="h-3.5 w-3.5" />
-                </Button>
-              )}
-              {showDuplicateButton && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
-                  onClick={(e) => handleActionClick(e, "duplicate")}
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                </Button>
-              )}
-            </div>
-          </TableCell>
-        )}
-
-        {/* Finally render all other cells except the selection checkbox */}
-        {row
-          .getVisibleCells()
-          .filter((cell) => cell.column.id !== "select")
-          .map((cell, index) => {
-            const stickyBg = "white";
-            const effectiveStickyColumnCount = stickyColumnCount ?? 0;
-            const isSticky = index < effectiveStickyColumnCount;
-
-            let stickyStyles: React.CSSProperties = {};
-
-            if (isSticky) {
-              const columnsBefore = table
-                .getVisibleFlatColumns()
-                .slice(0, index);
-              const rightOffset = columnsBefore.reduce(
-                (sum, col) => sum + (col.getSize?.() ?? 0),
-                0
-              );
-
-              stickyStyles = {
-                position: "sticky",
-                right: `${rightOffset}px`,
-                zIndex: 25 - index,
-                backgroundColor: stickyBg,
-                textAlign: "center",
-              };
-            }
-
-            return (
-              <TableCell
-                className={`bg-white text-primary text-base font-normal border-b-4 border-background px-4 transition-colors text-center group-hover:bg-muted ${
-                  cell.column.id === "clubName"
-                    ? "whitespace-normal break-words"
-                    : "whitespace-nowrap"
-                }`}
-                key={cell.id}
-                style={{
-                  ...stickyStyles,
-                  textAlign: "center",
-                  ...(cell.column.id === "clubName"
-                    ? {
-                        minWidth: "160px",
-                        maxWidth: "900px",
-                        width: "850px",
-                        whiteSpace: "normal",
-                        wordBreak: "break-word",
-                      }
-                    : {}),
-                }}
-              >
-                {renderCellContent(cell)}
-              </TableCell>
-            );
-          })}
+          );
+        })}
+        {/* Add empty cell for pagination space */}
+        <TableCell
+          className="data-table-row-cell"
+          style={{
+            width: "150px",
+            padding: 0,
+            background: "white",
+          }}
+        />
       </TableRow>
 
       {renderExpandedContent && (

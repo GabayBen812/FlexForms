@@ -180,6 +180,9 @@
   "type_and_comma": "Type option and press comma to add...",
   "card_owner_email": "Card Owner Email",
   "card_owner_name": "Card Owner Name",
+  "last4digits": "Last 4 Digits",
+  "amount_paid": "Amount Paid",
+  "payment_date": "Payment Date",
   "low_profile_code": "Low Profile Code",
   "service": "Service"
 }

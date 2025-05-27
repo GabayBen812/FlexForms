@@ -41,9 +41,9 @@ export default function FormRegistration() {
   if (!form) return <div className="p-6">{t("loading_form")}</div>;
 
   const dynamicFields: FieldConfig[] = [
-    { name: "fullName", label: t("full_name"), type: "text", isRequired: true },
-    { name: "email", label: t("email"), type: "email", isRequired: true },
-    { name: "phone", label: t("phone"), type: "text", isRequired: true },
+    // { name: "fullName", label: t("full_name"), type: "text", isRequired: true },
+    // { name: "email", label: t("email"), type: "email", isRequired: true },
+    // { name: "phone", label: t("phone"), type: "text", isRequired: true },
     ...(form.fields || [])
       .filter((f): f is FieldConfig => !!f.name && !!f.label)
       .map((f) => ({

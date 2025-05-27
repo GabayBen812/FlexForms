@@ -6,6 +6,7 @@ import { TableAction } from "@/types/ui/data-table-types";
 import Pagination from "./Pagination";
 import { useTranslation } from "react-i18next";
 import React from "react";
+import { DataTablePaginationControls } from "./data-table-pagination-controls";
 
 interface DataTableHeaderProps<T> {
   table: Table<T>;
@@ -15,6 +16,7 @@ interface DataTableHeaderProps<T> {
   stickyColumnCount?: number;
   selectedRowCount?: number;
   enableRowSelection?: boolean;
+  isPagination?: boolean;
 }
 
 function DataTableHeader<T>({
@@ -25,6 +27,7 @@ function DataTableHeader<T>({
   selectedRowCount,
   enableRowSelection,
   onColumnOrderChange,
+  isPagination,
 }: DataTableHeaderProps<T>) {
   const direction = GetDirection();
   const firstColumnRounding = direction ? "rounded-r-lg" : "rounded-l-lg";
@@ -177,7 +180,7 @@ function DataTableHeader<T>({
               <TableHead
                 key={header.id}
                 className={`bg-primary-foreground text-white text-center ${
-                  isFirst && firstColumnRounding
+                  isFirst && direction ? "rounded-r-lg" : direction ? "" : isFirst ? "rounded-l-lg" : ""
                 }`}
                 style={{
                   width: header.getSize(),
@@ -251,6 +254,25 @@ function DataTableHeader<T>({
               </TableHead>
             );
           })}
+          {/* Pagination controls in header */}
+          {isPagination && (
+            <TableHead
+              className="bg-primary-foreground text-white text-center"
+              style={{
+                backgroundColor: "var(--datatable-header)",
+                borderTopLeftRadius: direction ? "0.5rem" : undefined,
+                borderBottomLeftRadius: direction ? "0.5rem" : undefined,
+                borderTopRightRadius: !direction ? "0.5rem" : undefined,
+                borderBottomRightRadius: !direction ? "0.5rem" : undefined,
+                padding: 0,
+                width: "150px",
+                maxWidth: "150px",
+              }}
+              colSpan={2}
+            >
+              <DataTablePaginationControls table={table} isPagination={isPagination} />
+            </TableHead>
+          )}
         </TableRow>
       ))}
     </TableHeader>

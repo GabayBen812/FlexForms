@@ -543,8 +543,20 @@ export default function DynamicForm({
               )}
             </div>
           </div>
+          
         );
+        
       })}
+            <div className="flex justify-end mt-4 gap-2" data-cy="form-actions">
+        {extraButtons}
+       
+       <Button loading={isSubmitting} type="submit" data-cy="submit-button"
+       className="bg-primary hover:bg-primary/90 shadow-lg text-lg px-6 py-6"
+       >
+        {mode === "registration" && <Send className="!w-5 !h-5 mr-2" />}
+        {mode === "registration" ? t("submit_registration") : t("create")}
+      </Button>
+      </div>
     </form>
   );
 }

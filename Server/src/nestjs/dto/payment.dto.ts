@@ -1,10 +1,21 @@
 export class CreatePaymentDto {
-    userId!: string;
     organizationId!: string;
     formId!: string;
     amount!: number;
-    method!: string;
+    service!: string;
     status?: 'paid' | 'failed' | 'pending';
-    transactionId?: string;
-  }
+    lowProfileCode?: string;
+    cardDetails?: {
+        cardOwnerName: string;
+        cardOwnerEmail: string;
+        last4Digits: string;
+        expiryMonth: string;
+        expiryYear: string;
+        token: string;
+    };
+    invoice?: {
+        id: string;
+        originalDocumentUrl: string;
+    };
+}
   

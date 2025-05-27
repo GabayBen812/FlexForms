@@ -25,7 +25,7 @@ export class FormService {
   async create(data: Partial<Form>, user: UserFromRequest) {
     const code = await this.generateUniqueCode();
     const organizationId = new Types.ObjectId(user.organizationId);
-  
+    console.log(data, "data")
     return this.model.create({
       ...data,
       code,

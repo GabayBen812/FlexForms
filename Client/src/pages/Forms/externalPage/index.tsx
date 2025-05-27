@@ -5,6 +5,8 @@ import { Form } from "@/types/forms/Form";
 import { UserRegistration } from "@/types/forms/UserRegistration";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
+import axios from "axios";
+import { createPaymentSession } from '@/api/services/paymentService';
 import DynamicForm, { FieldConfig } from "@/components/forms/DynamicForm";
 
 const formsApi = createApiService<Form>("/forms", {
@@ -24,6 +26,9 @@ export default function FormRegistration() {
   const navigate = useNavigate();
   const [form, setForm] = useState<Form | null>(null);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [showPayment, setShowPayment] = useState(false);
+  const [iframeUrl, setIframeUrl] = useState<string | undefined | null>('');
+
 
   useEffect(() => {
     if (code) {
@@ -81,28 +86,57 @@ export default function FormRegistration() {
       <h1 className="text-3xl font-bold text-primary">{form.title}</h1>
       <p className="text-gray-600">{form.description || t("no_description")}</p>
 
-      <DynamicForm
-        mode="registration"
-        fields={dynamicFields}
-        validationSchema={validationSchema}
-        onSubmit={async (data) => {
-          try {
-            const { fullName, email, phone, ...rest } = data;
-            await registrationApi.create({
-              formId: form._id,
-              organizationId: form.organizationId,
-              fullName,
-              email,
-              phone,
-              additionalData: rest,
-            });
-            navigate(`/forms/${code}/registration/success`);
-          } catch (err) {
-            console.error("❌ Error submitting form:", err);
-            setStatus("error");
-          }
-        }}
-      />
+      {!showPayment ? (
+        <DynamicForm
+          mode="registration"
+          fields={dynamicFields}
+          validationSchema={validationSchema}
+          onSubmit={async (data) => {
+            try {
+              const { fullName, email, phone, ...rest } = data;
+              const formData = {
+                formId: form._id,
+                organizationId: form.organizationId,
+                fullName,
+                email,
+                phone,
+                additionalData: rest,
+              };
+
+              
+              if (form.paymentSum) {
+                const paymentData = await createPaymentSession({ amount: form.paymentSum, description: form.title, dataString: JSON.stringify(formData) });
+                const urlData = (await axios.post(paymentData.iframeUrl)).data
+                console.log(paymentData.iframeUrl)
+                console.log(urlData)
+                const params = new URLSearchParams(urlData);
+                const url = params.get("url");
+                console.log(url, "url")
+                setIframeUrl(url);
+                setShowPayment(true);
+              } else {
+                await registrationApi.create(formData);
+                navigate(`/forms/${code}/registration/success`);
+              }
+            } catch (err) {
+              console.error("❌ Error submitting form:", err);
+              setStatus("error");
+            }
+          }}
+        />
+      ) : (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">{t("payment_required")}</h2>
+          {iframeUrl && (
+            <iframe
+              src={iframeUrl}
+              className="w-full max-w-3xl h-[600px]"
+              frameBorder="0"
+              allowTransparency={true}
+            />
+          )}
+        </div>
+      )}
 
       {status === "success" && (
         <p className="text-green-600">{t("registration_success")}</p>

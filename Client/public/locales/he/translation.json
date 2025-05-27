@@ -155,6 +155,8 @@
   "tags": "תגיות",
   "enabled": "פעיל",
   "description": "תיאור",
+  "payment_sum": "סכום לתשלום",
+  "payment_required": "נדרש תשלום",
   "name": "שם",
   "key": "מפתח",
   "feature_flags": "הגדרות ארגון",

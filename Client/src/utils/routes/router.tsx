@@ -25,6 +25,8 @@ import { Navigate } from "react-router-dom";
 import AdminDashboard from '@/pages/Admin';
 import RegistrationSuccess from '@/pages/Forms/externalPage/RegistrationSuccess';
 import FormSettings from "@/components/forms/FormSettings";
+import PaymentError from "@/pages/Payment/Error"
+import PaymentSuccess from "@/pages/Payment/Success"
 import Rooms from "@/pages/Rooms";
 import { DoorOpen } from "lucide-react";
 
@@ -156,4 +158,15 @@ export const router = createBrowserRouter([
     element: <RegistrationSuccess />,
     handle: { showInSidebar: false },
   },
+  {
+    path: "/payment/error",
+    element: <PaymentError />,
+    handle: { showInSidebar: false },
+  },
+  {
+    path: "/payment/success",
+    element: <PaymentSuccess />,
+    handle: { showInSidebar: false },
+  },
+
 ]);

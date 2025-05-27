@@ -16,6 +16,18 @@ export class Organization {
 
   @Prop({ type: [Types.ObjectId], ref: 'FeatureFlag', default: [] })
   featureFlagIds!: Types.ObjectId[];
+  
+  @Prop()
+  cardcomTerminalNumber?: string;
+
+  @Prop()
+  cardcomUsername?: string;
+
+  @Prop({ type: Object })
+  greenInvoiceCredentials?: {
+    apiKey: string,
+    secret: string
+  };
 }
 
 export const OrganizationSchema = SchemaFactory.createForClass(Organization);

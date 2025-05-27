@@ -258,25 +258,28 @@ export default function DynamicForm({
           : t("add_x", { x: t(headerKey) })}
       </h2>
 
+
       <div className="grid grid-cols-2 gap-4 border-b pb-4" data-cy="form-header-fields">
         {fields
-          .filter((f) => f.name === "title" || f.name === "description")
+          .filter((f) => f.name === "title" || f.name === "description" || f.name === "paymentSum")
           .map((field) => (
             <div key={field.name} className="flex flex-col" data-cy={`form-header-field-${field.name}`}>
               <label className="text-sm font-medium" data-cy={`form-header-label-${field.name}`}>
                 {t(field.label)}
               </label>
               <Input 
-                type="text" 
+                type={field.name === "paymentSum" ? "number" : "text"} 
                 {...register(field.name)} 
                 data-cy={`form-header-input-${field.name}`}
               />
             </div>
           ))}
+
       </div>
 
+
       {fields.map((field, i) => {
-        if (field.name === "title" || field.name === "description") return null;
+        if (field.name === "title" || field.name === "description" || field.name === "paymentSum") return null;
 
         return (
           <div 

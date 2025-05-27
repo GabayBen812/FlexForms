@@ -10,6 +10,9 @@ export class CreateFormDto {
   @IsString()
   description?: string;
 
+  @IsOptional()
+  paymentSum?: number | undefined;
+
   @Type(() => Types.ObjectId)
   organizationId!: Types.ObjectId;
 

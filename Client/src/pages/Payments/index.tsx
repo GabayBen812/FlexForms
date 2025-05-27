@@ -82,7 +82,6 @@ export default function Payments() {
         columns={columns}
         actions={actions}
         searchable
-        showAddButton
         showAdvancedSearch
         onAdvancedSearchChange={setAdvancedFilters}
         initialAdvancedFilters={advancedFilters}

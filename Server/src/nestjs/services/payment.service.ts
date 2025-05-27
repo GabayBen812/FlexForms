@@ -43,7 +43,7 @@ export class PaymentService {
         ProductName: description,
         SuccessRedirectUrl: "https://www.paradise-erp.com/payment/success",
         ErrorRedirectUrl: "https://www.paradise-erp.com/payment/error",
-        IndicatorUrl: `https://www.paradise-erp.com/payments/cardcom/callback?dataString=${dataString}&description=${description}`,
+        IndicatorUrl: `https://flexforms-production.up.railway.app/payments/cardcom/callback?dataString=${dataString}&description=${description}`,
       };
 
       // Build the iframe URL with query parameters

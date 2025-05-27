@@ -16,11 +16,26 @@ import apiClient from "@/api/utils/apiClient";
 
 export type Payment = {
   id: string;
-  payerName: string;
-  payerEmail: string;
   amount: number;
-  date: string;
+  service: string;
+  status: string;
+  lowProfileCode?: string;
+  cardDetails?: {
+    cardOwnerName: string;
+    cardOwnerEmail: string;
+    last4Digits: string;
+    expiryMonth: string;
+    expiryYear: string;
+    token: string;
+  };
+  invoice?: {
+    id: string;
+    originalDocumentUrl: string;
+  };
   formId: string;
+  organizationId: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 const paymentsApi = createApiService<Payment>("/payments", {
@@ -36,15 +51,12 @@ export default function Payments() {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   const columns: ColumnDef<Payment>[] = [
-    { accessorKey: "payerName", header: t("payer_name") },
-    { accessorKey: "payerEmail", header: t("payer_email") },
+    { accessorKey: "cardDetails.cardOwnerName", header: t("card_owner_name") },
+    { accessorKey: "cardDetails.cardOwnerEmail", header: t("card_owner_email") },
     { accessorKey: "amount", header: t("amount") },
-    {
-      accessorKey: "date",
-      header: t("date"),
-      meta: { isDate: true },
-    },
-    { accessorKey: "formId", header: t("form") },
+    { accessorKey: "status", header: t("status") },
+    { accessorKey: "service", header: t("service") },
+    { accessorKey: "createdAt", header: t("created_at") },
   ];
 
   const actions: TableAction<Payment>[] = [
@@ -76,7 +88,20 @@ export default function Payments() {
       <DataTable<Payment>
         data={[]}
         updateData={async () => Promise.resolve({} as any)}
-        fetchData={paymentsApi.fetchAll}
+        fetchData={async (params) => {
+          const res = await paymentsApi.fetchAll(params);
+          if (Array.isArray(res.data)) {
+            return {
+              ...res,
+              data: res.data.map((item: any) => ({
+                ...item,
+                id: item._id,
+                cardDetails: item.cardDetails || {},
+              })),
+            };
+          }
+          return res;
+        }}
         addData={paymentsApi.create}
         deleteData={paymentsApi.delete}
         columns={columns}

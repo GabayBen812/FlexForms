@@ -177,5 +177,9 @@
   "total_rows": "Total Rows",
   "selected": "Selected",
   "multiple_selection_enabled": "Multiple selection enabled",
-  "type_and_comma": "Type option and press comma to add..."
+  "type_and_comma": "Type option and press comma to add...",
+  "card_owner_email": "Card Owner Email",
+  "card_owner_name": "Card Owner Name",
+  "low_profile_code": "Low Profile Code",
+  "service": "Service"
 }

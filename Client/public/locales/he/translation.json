@@ -177,5 +177,9 @@
   "multiple_selection_enabled": "המשתמש יוכל לבחור יותר מאפשרות אחת",
   "select_options_for_field": "בחר אפשרויות בחירה לשדה",
   "add_multiselect_field": "הוסף שדה בחירה מרובה",
-  "organization_name_updated": "שם הארגון עודכן"
+  "organization_name_updated": "שם הארגון עודכן",
+  "card_owner_email": "אימייל בעל הכרטיס",
+  "card_owner_name": "שם בעל הכרטיס",
+  "low_profile_code": "קוד Low Profile",
+  "service": "שירות"
 }

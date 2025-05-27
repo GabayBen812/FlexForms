@@ -323,12 +323,13 @@ export default function DynamicForm({
           : t("add_x", { x: t(headerKey) })}
       </h2>
 
+
       <div
         className="grid grid-cols-2 gap-4 border-b pb-4"
         data-cy="form-header-fields"
       >
         {fields
-          .filter((f) => f.name === "title" || f.name === "description")
+          .filter((f) => f.name === "title" || f.name === "description" || f.name === "paymentSum")
           .map((field) => (
             <div
               key={field.name}
@@ -341,17 +342,19 @@ export default function DynamicForm({
               >
                 {t(field.label)}
               </label>
-              <Input
-                type="text"
-                {...register(field.name)}
+              <Input 
+                type={field.name === "paymentSum" ? "number" : "text"} 
+                {...register(field.name)} 
                 data-cy={`form-header-input-${field.name}`}
               />
             </div>
           ))}
+
       </div>
 
+
       {fields.map((field, i) => {
-        if (field.name === "title" || field.name === "description") return null;
+        if (field.name === "title" || field.name === "description" || field.name === "paymentSum") return null;
 
         return (
           <div

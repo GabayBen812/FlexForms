@@ -15,6 +15,7 @@ export default function CreateForm() {
   const [formFields, setFormFields] = useState<FieldConfig[]>([
     { name: "title", label: t("form_title"), type: "text", isRequired: true },
     { name: "description", label: t("form_description"), type: "text", isRequired: false },
+    { name: "paymentSum", label: t("payment_sum"), type: "number", isRequired: false },
   ]);
 
    useEffect(() => {
@@ -64,15 +65,17 @@ export default function CreateForm() {
   }, [formFields, t]);
 
   const handleSubmit = async (data: any) => {
-    const { title, description, ...rest } = data;
+    console.log(data)
+    const { title, description, paymentSum, ...rest } = data;
 
     const payload = {
       title,
       description,
+      paymentSum,
       isActive: true,
       organizationId: organization_id,
       fields: formFields
-        .filter((f) => f.name !== "title" && f.name !== "description")
+        .filter((f) => f.name !== "title" && f.name !== "description" && f.name !== "paymentSum")
         .map((f) => ({
           name: f.name,
           label: f.label,

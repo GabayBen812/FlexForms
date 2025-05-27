@@ -11,6 +11,9 @@ export class Form {
   @Prop()
   description?: string;
 
+  @Prop()
+  paymentSum?: number;
+
   @Prop({ type: Types.ObjectId, ref: 'Organization', required: true })
   organizationId!: Types.ObjectId;
 

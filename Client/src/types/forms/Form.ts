@@ -8,6 +8,7 @@ export type Form = {
   organizationId: string;
   isActive: boolean;
   code: number;
+  paymentSum?: number;
   createdAt: Date;
   createdBy: string;
   updatedAt: Date;

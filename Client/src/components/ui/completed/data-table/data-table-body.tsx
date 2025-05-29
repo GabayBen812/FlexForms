@@ -164,8 +164,12 @@ const RowComponent = React.memo(function RowComponent<T>({
 
           // Border radius: rightmost for RTL, leftmost for LTR
           const roundedClass = direction
-            ? (isFirst ? "rounded-r-lg" : "")
-            : (isLast ? "rounded-l-lg" : "");
+            ? isFirst
+              ? "rounded-r-lg"
+              : ""
+            : isLast
+            ? "rounded-l-lg"
+            : "";
 
           // Render the first cell
           if (cellIndex === 0) {
@@ -191,17 +195,29 @@ const RowComponent = React.memo(function RowComponent<T>({
                 {showActionColumn && (
                   <TableCell className="text-center data-table-row-cell">
                     {showEditButton && (
-                      <Button variant="ghost" size="icon" onClick={e => handleActionClick(e, "edit")}> 
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => handleActionClick(e, "edit")}
+                      >
                         <Pencil className="w-4 h-4" />
                       </Button>
                     )}
                     {showDeleteButton && (
-                      <Button variant="ghost" size="icon" onClick={e => handleActionClick(e, "delete")}> 
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => handleActionClick(e, "delete")}
+                      >
                         <Trash className="w-4 h-4" />
                       </Button>
                     )}
                     {showDuplicateButton && (
-                      <Button variant="ghost" size="icon" onClick={e => handleActionClick(e, "duplicate")}> 
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => handleActionClick(e, "duplicate")}
+                      >
                         <Copy className="w-4 h-4" />
                       </Button>
                     )}
@@ -234,15 +250,6 @@ const RowComponent = React.memo(function RowComponent<T>({
             </TableCell>
           );
         })}
-        {/* Add empty cell for pagination space */}
-        <TableCell
-          className="data-table-row-cell"
-          style={{
-            width: "150px",
-            padding: 0,
-            background: "white",
-          }}
-        />
       </TableRow>
 
       {renderExpandedContent && (
@@ -276,26 +283,14 @@ function DataTableBody<T extends BaseData>({
   showDeleteButton,
   showDuplicateButton,
 }: DataTableBodyProps<T>) {
+  const { t } = useTranslation();
+
   const rows = table.getRowModel().rows;
   const hasData = rows.length > 0;
   const showAddRow = specialRow === "add";
 
-  const renderCellContent = (cell: any) => {
-    const value = cell.getValue();
-
-    // Check if the column is explicitly marked as a date
-    const isDateColumn = cell.column.columnDef?.meta?.isDate;
-
-    // If column is marked as date or value matches date pattern
-    if (isDateColumn || isDateString(value)) {
-      return formatDateValue(value);
-    }
-
-    return flexRender(cell.column.columnDef.cell, cell.getContext());
-  };
-
   return (
-    <TableBody className="before:content-['@'] before:block before:h-[10px] before:invisible">
+    <TableBody>
       {showAddRow && (
         <DataTableBodyRowExpanded
           isExpanded={true}
@@ -311,11 +306,9 @@ function DataTableBody<T extends BaseData>({
       {isLoading ? (
         <DataTableLoading colSpan={columns.length + (actions ? 1 : 0)} />
       ) : hasData ? (
-        table
-          .getRowModel()
-          .rows.map((row) => (
-            <RowComponent<T>
-              key={row.id}
+        table.getRowModel().rows.map((row) => (
+          <React.Fragment key={row.id}>
+            <RowComponent
               row={row}
               table={table}
               actions={actions}
@@ -323,15 +316,26 @@ function DataTableBody<T extends BaseData>({
               renderExpandedContent={renderExpandedContent}
               isExpanded={row.getIsExpanded()}
               columns={columns}
-              handleSave={handleSave}
               handleEdit={handleEdit}
+              handleSave={handleSave}
               onRowClick={onRowClick}
               showActionColumn={showActionColumn}
               showEditButton={showEditButton}
               showDeleteButton={showDeleteButton}
               showDuplicateButton={showDuplicateButton}
             />
-          ))
+            {row.getIsExpanded() && renderExpandedContent && (
+              <DataTableBodyRowExpanded
+                // @ts-ignore
+                row={row}
+                colSpan={columns.length + (showActionColumn ? 1 : 0)}
+                renderExpandedContent={renderExpandedContent}
+                // @ts-ignore
+                handleEdit={handleEdit}
+              />
+            )}
+          </React.Fragment>
+        ))
       ) : (
         <NoResultsRow colSpan={columns.length + (actions ? 1 : 0)} />
       )}

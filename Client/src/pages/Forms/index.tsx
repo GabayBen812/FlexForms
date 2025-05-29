@@ -52,6 +52,28 @@ export default function Forms() {
   const columns: ColumnDef<Form>[] = [
     selectionColumn,
     {
+      accessorKey: "title",
+      header: t("form_title"),
+      cell: ({ row }) => {
+        console.log("Title cell data:", row.original.title); // Debug log
+        return <div className="w-full text-center">{row.original.title}</div>;
+      },
+      size: 250,
+    },
+    {
+      accessorKey: "description",
+      header: t("form_description"),
+      cell: ({ row }) => (
+        <div className="w-full text-center">{row.original.description}</div>
+      ),
+      size: 300,
+    },
+    {
+      accessorKey: "actions",
+      header: t("actions"),
+      size: 300,
+    },
+    {
       accessorKey: "numberOfRegistrations",
       header: t("number_of_registrations", "מספר נרשמים"),
       cell: ({ row }) => (
@@ -61,32 +83,15 @@ export default function Forms() {
       ),
       size: 120,
     },
-    {
-      accessorKey: "description",
-      header: t("form_description"),
-      cell: ({ row }) => (
-        <div className="w-full text-center">{row.getValue("description")}</div>
-      ),
-      size: 300,
-    },
-    {
-      accessorKey: "title",
-      header: t("form_title"),
-      cell: ({ row }) => (
-        <div className="w-full text-center">{row.getValue("title")}</div>
-      ),
-      size: 250,
-    },
   ];
 
   const columnOrder = [
     "select",
+    "actions",
     "title",
     "description",
     "numberOfRegistrations",
   ];
-
-  const actions: TableAction<Form>[] = [{ label: t("delete"), type: "delete" }];
 
   const fetchData = useCallback(
     async (params: any) => {
@@ -118,11 +123,33 @@ export default function Forms() {
     [organization?._id, advancedFilters]
   );
   const wrappedFetchData = async (params: any) => {
-    if (!organization?._id) return Promise.resolve({ status: 200, data: [] });
-    const response = await formsApi.fetchAll(params, false, organization._id);
+    if (!organization?._id)
+      return Promise.resolve({ status: 200, data: [], totalCount: 0 });
+
+    // Ensure pageSize is included in the request
+    const pageSize = params.pageSize || 10;
+    const page = params.page || 1;
+
+    console.log("Fetching with params:", { ...params, pageSize, page }); // Debug log
+
+    const response = await formsApi.fetchAll(
+      {
+        ...params,
+        pageSize,
+        page,
+        organizationId: organization._id,
+      },
+      false,
+      organization._id
+    );
+
     const forms: Form[] = Array.isArray(response.data)
       ? response.data.filter(Boolean)
       : [];
+
+    console.log("Fetched forms:", forms); // Debug log
+
+    // Get registration counts for the current page of forms only
     const formIds = forms.map((f) => f._id).join(",");
     if (formIds) {
       try {
@@ -135,13 +162,21 @@ export default function Forms() {
             Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
           },
         });
-        setRegistrationCounts(res.data.data || {});
+        setRegistrationCounts((prev) => ({
+          ...prev,
+          ...res.data.data,
+        }));
       } catch (err) {
         console.error("שגיאה בשליפת מספר נרשמים:", err);
       }
     }
 
-    return response;
+    // Return proper pagination data
+    return {
+      status: 200,
+      data: forms,
+      totalCount: "totalCount" in response ? response.totalCount : forms.length,
+    };
   };
   const handleDuplicateForm = async (form: Form) => {
     try {
@@ -190,7 +225,6 @@ export default function Forms() {
         initialAdvancedFilters={advancedFilters}
         showAddButton={[{ name: "numberOfRegistrations", defaultValue: "0" }]}
         customAddButton={CustomAddButton}
-        actions={actions}
         defaultPageSize={10}
         idField="_id"
         extraFilters={advancedFilters}
@@ -207,6 +241,7 @@ export default function Forms() {
         showEditButton={true}
         showDeleteButton={true}
         showDuplicateButton={true}
+        isLazyLoading={true}
         isPagination={false}
       />
     </div>

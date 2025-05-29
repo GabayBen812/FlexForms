@@ -55,7 +55,7 @@ export default function Users() {
         showAdvancedSearch
         onAdvancedSearchChange={setAdvancedFilters}
         initialAdvancedFilters={advancedFilters}
-        isPagination
+        isPagination={false}
         defaultPageSize={10}
         idField="_id"
         extraFilters={advancedFilters}

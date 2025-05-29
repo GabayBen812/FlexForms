@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AdvancedSearchModal } from "./AdvancedSearchModal";
 import { DataTablePaginationControls } from "./data-table-pagination-controls";
+import { DataTableLoading } from "./data-table-loading";
 
 const globalFilterFn: FilterFn<any> = (row, columnId, filterValue) => {
   const search = String(filterValue).toLowerCase();
@@ -79,10 +80,12 @@ export function DataTable<TData>({
   columnOrder,
   onColumnOrderChange,
   visibleRows,
+  isLazyLoading = false,
 }: DataTableProps<TData> & { extraFilters?: Record<string, any> }) {
   const [tableData, setTableData] = useState<TData[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [hasMore, setHasMore] = useState<boolean>(true);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState<string>("");
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
@@ -193,7 +196,7 @@ export function DataTable<TData>({
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: isLazyLoading ? undefined : getPaginationRowModel(),
     meta: {
       handleAdd,
       handleEdit: handleUpdate,
@@ -201,37 +204,71 @@ export function DataTable<TData>({
     },
   });
   const selectedRowCount = table.getSelectedRowModel?.().rows.length ?? 0;
-  const loadData = async () => {
+  const loadData = async (isLoadingMore: boolean = false) => {
+    if (!fetchData || isLoading) return;
+    if (isLoadingMore && !hasMore) return;
+
     setIsLoading(true);
     try {
-      const params: ApiQueryParams = {
-        page: pagination.pageIndex + 1,
+      const queryParams: ApiQueryParams = {
+        page:
+          isLazyLoading && isLoadingMore
+            ? Math.ceil(tableData.length / pagination.pageSize) + 1
+            : 1,
         pageSize: pagination.pageSize,
-        search: globalFilter || undefined,
+        sortBy: sorting.length > 0 ? sorting[0].id : undefined,
+        sortOrder:
+          sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : undefined,
+        search: globalFilter,
+        ...advancedFilters,
         ...extraFilters,
       };
 
-      if (sorting.length > 0) {
-        const sortColumn = sorting[0];
-        params.sortField = String(sortColumn.id);
-        params.sortDirection = sortColumn.desc ? "desc" : "asc";
-      }
+      console.log("Fetching data with params:", queryParams);
 
-      const response = await fetchData(params);
+      const response = await fetchData(queryParams);
+      const newData = response.data || [];
+      let total = 0;
 
       if ("totalCount" in response) {
-        // This is an ApiResponse<TData>
-        setTableData(response.data || []);
-        setTotalCount(response.totalCount || 0);
+        total = response.totalCount;
       } else {
-        // This is a MutationResponse<TData>
-        setTableData(response.data ? response.data : []);
-        setTotalCount(0);
+        total = newData.length;
       }
+
+      console.log("Received data:", {
+        newDataLength: newData.length,
+        total,
+        isLoadingMore,
+        currentDataLength: tableData.length,
+      });
+
+      if (isLazyLoading && isLoadingMore) {
+        setTableData((prev) => [...prev, ...newData]);
+        setHasMore(
+          newData.length === pagination.pageSize &&
+            tableData.length + newData.length < total
+        );
+      } else {
+        setTableData(newData);
+        setHasMore(
+          newData.length === pagination.pageSize && newData.length < total
+        );
+      }
+
+      setTotalCount(total);
     } catch (error) {
       console.error("Failed to fetch data:", error);
+      toast.error(t("error"));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    console.log("handleLoadMore called", { hasMore, isLoading });
+    if (isLazyLoading && hasMore && !isLoading) {
+      loadData(true);
     }
   };
 
@@ -241,13 +278,15 @@ export function DataTable<TData>({
   );
 
   useEffect(() => {
-    loadData();
+    if (!isLazyLoading || tableData.length === 0) {
+      loadData(false);
+    }
   }, [
-    pagination.pageIndex,
-    pagination.pageSize,
     sorting,
     globalFilter,
-    memoizedExtraFilters,
+    advancedFilters,
+    extraFilters,
+    pagination.pageSize,
   ]);
 
   useEffect(() => {
@@ -355,35 +394,61 @@ export function DataTable<TData>({
       )}
 
       <div className="rounded-lg">
-        <Table className="border-collapse border-spacing-0 text-right">
-          <DataTableHeader
-            table={table}
-            actions={showActionColumn ? actions : null}
-            enableColumnReordering={enableColumnReordering}
-            stickyColumnCount={stickyColumnCount}
-            selectedRowCount={selectedRowCount}
-            enableRowSelection={!!onRowSelectionChange}
-            isPagination={isPagination}
-          />
-          <DataTableBody<TData>
-            columns={columns}
-            table={table}
-            actions={showActionColumn ? actions : null}
-            stickyColumnCount={stickyColumnCount}
-            renderExpandedContent={wrappedRenderExpandedContent}
-            specialRow={specialRow}
-            setSpecialRow={setSpecialRow}
-            handleSave={handleAdd}
-            handleEdit={handleUpdate}
-            isLoading={isLoading}
-            onRowClick={wrappedOnRowClick}
-            showActionColumn={showActionColumn}
-            showEditButton={showEditButton}
-            showDeleteButton={showDeleteButton}
-            showDuplicateButton={showDuplicateButton}
-          />
-        </Table>
+        <div
+          className="overflow-auto"
+          style={{ height: "calc(100vh - 250px)" }}
+          onScroll={(e) => {
+            const target = e.target as HTMLElement;
+            const scrollPosition = target.scrollTop + target.clientHeight;
+            const scrollThreshold = target.scrollHeight - 50;
+
+            if (scrollPosition >= scrollThreshold) {
+              if (isLazyLoading && !isLoading) {
+                handleLoadMore();
+              }
+            }
+          }}
+        >
+          <Table className="border-collapse border-spacing-0 text-right relative">
+            <DataTableHeader
+              table={table}
+              actions={showActionColumn ? actions : null}
+              enableColumnReordering={enableColumnReordering}
+              stickyColumnCount={stickyColumnCount}
+              selectedRowCount={selectedRowCount}
+              enableRowSelection={!!onRowSelectionChange}
+              isPagination={isPagination}
+            />
+            <DataTableBody<TData>
+              columns={columns}
+              table={table}
+              actions={showActionColumn ? actions : null}
+              stickyColumnCount={stickyColumnCount}
+              renderExpandedContent={wrappedRenderExpandedContent}
+              specialRow={specialRow}
+              setSpecialRow={setSpecialRow}
+              handleSave={handleAdd}
+              handleEdit={handleUpdate}
+              isLoading={isLoading}
+              onRowClick={wrappedOnRowClick}
+              showActionColumn={showActionColumn}
+              showEditButton={showEditButton}
+              showDeleteButton={showDeleteButton}
+              showDuplicateButton={showDuplicateButton}
+            />
+          </Table>
+          {isLoading && (
+            <div className="w-full py-4 flex justify-center">
+              <DataTableLoading
+                colSpan={columns.length + (showActionColumn ? 1 : 0)}
+              />
+            </div>
+          )}
+        </div>
       </div>
+      {isPagination && !isLazyLoading && (
+        <DataTablePaginationControls table={table} />
+      )}
     </div>
   );
 }

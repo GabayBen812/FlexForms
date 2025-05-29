@@ -52,7 +52,10 @@ export default function Payments() {
 
   const columns: ColumnDef<Payment>[] = [
     { accessorKey: "cardDetails.cardOwnerName", header: t("card_owner_name") },
-    { accessorKey: "cardDetails.cardOwnerEmail", header: t("card_owner_email") },
+    {
+      accessorKey: "cardDetails.cardOwnerEmail",
+      header: t("card_owner_email"),
+    },
     { accessorKey: "amount", header: t("amount") },
     { accessorKey: "status", header: t("status") },
     { accessorKey: "service", header: t("service") },
@@ -110,7 +113,7 @@ export default function Payments() {
         showAdvancedSearch
         onAdvancedSearchChange={setAdvancedFilters}
         initialAdvancedFilters={advancedFilters}
-        isPagination
+        isPagination={false}
         defaultPageSize={10}
         idField="id"
         extraFilters={advancedFilters}

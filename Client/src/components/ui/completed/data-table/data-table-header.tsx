@@ -175,12 +175,23 @@ function DataTableHeader<T>({
             if (index === 1 && actions !== null) {
               return null;
             }
-
+            const lastIndex = headerGroup.headers.length - 1;
+            const isLast = index === lastIndex;
             return (
               <TableHead
                 key={header.id}
                 className={`bg-primary-foreground text-white text-center ${
-                  isFirst && direction ? "rounded-r-lg" : direction ? "" : isFirst ? "rounded-l-lg" : ""
+                  isFirst && direction
+                    ? "rounded-r-lg"
+                    : isFirst && !direction
+                    ? "rounded-l-lg"
+                    : ""
+                } ${
+                  isLast && direction
+                    ? "rounded-l-lg"
+                    : isLast && !direction
+                    ? "rounded-r-lg"
+                    : ""
                 }`}
                 style={{
                   width: header.getSize(),
@@ -270,7 +281,10 @@ function DataTableHeader<T>({
               }}
               colSpan={2}
             >
-              <DataTablePaginationControls table={table} isPagination={isPagination} />
+              <DataTablePaginationControls
+                table={table}
+                isPagination={isPagination}
+              />
             </TableHead>
           )}
         </TableRow>

@@ -45,7 +45,7 @@ export default function clubs() {
         showAdvancedSearch
         onAdvancedSearchChange={setAdvancedFilters}
         initialAdvancedFilters={advancedFilters}
-        isPagination
+        isPagination={false}
         defaultPageSize={10}
         //@ts-ignore
         idField="_id"

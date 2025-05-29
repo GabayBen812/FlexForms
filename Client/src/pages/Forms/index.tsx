@@ -286,7 +286,7 @@ export default function Forms() {
         initialAdvancedFilters={advancedFilters}
         showAddButton={[{ name: "numberOfRegistrations", defaultValue: "0" }]}
         customAddButton={CustomAddButton}
-        defaultPageSize={10}
+        defaultPageSize={250}
         idField="_id"
         extraFilters={advancedFilters}
         rowSelection={rowSelection}

@@ -227,9 +227,14 @@ export function DataTable<TData>({
       console.log("Fetching data with params:", queryParams);
 
       const response = await fetchData(queryParams);
-      const newData = response.data || [];
+      // Handle nested response structure
       //@ts-ignore
-      let total = response.totalCount || 0;
+      const newData = Array.isArray(response.data)
+        ? response.data
+        : //@ts-ignore
+          response.data?.data || [];
+      //@ts-ignore
+      let total = response.data?.totalCount || 0;
 
       console.log("Debug hasMore values:", {
         isLazyLoading,

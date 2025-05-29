@@ -38,7 +38,7 @@ export default function Login() {
     }
 
     // Wait for the cookie to be set before refetching user data
-    await new Promise(res => setTimeout(res, 200));
+    await new Promise((res) => setTimeout(res, 200));
     await queryClient.invalidateQueries({ queryKey: ["user"] });
     await queryClient.refetchQueries({ queryKey: ["user"] });
 

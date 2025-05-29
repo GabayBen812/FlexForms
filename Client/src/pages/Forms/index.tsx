@@ -7,9 +7,11 @@ import { createApiService } from "@/api/utils/apiFactory";
 import { Form } from "@/types/forms/Form";
 import { TableAction } from "@/types/ui/data-table-types";
 import { useCallback, useEffect, useState, useMemo } from "react";
-import { Copy, Plus } from "lucide-react";
+import { Copy, Plus, CheckCircle2, XCircle } from "lucide-react";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
 import apiClient from "@/api/apiClient";
 
 const formsApi = createApiService<Form>("/forms");
@@ -18,6 +20,7 @@ export default function Forms() {
   const { t } = useTranslation();
   const { organization } = useOrganization();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
     {}
   );
@@ -29,22 +32,18 @@ export default function Forms() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const selectionColumn: ColumnDef<Form, any> = {
-    accessorKey: "select",
-    header: ({ table }) => (
-      <input
-        type="checkbox"
-        checked={table.getIsAllPageRowsSelected()}
-        onChange={table.getToggleAllPageRowsSelectedHandler()}
-        onClick={(e) => e.stopPropagation()}
-      />
-    ),
+    id: "select",
+    enableSorting: false,
+    header: () => null,
     cell: ({ row }) => (
-      <input
-        type="checkbox"
-        checked={row.getIsSelected()}
-        onChange={row.getToggleSelectedHandler()}
-        onClick={(e) => e.stopPropagation()}
-      />
+      <div className="flex justify-center">
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(checked) => row.toggleSelected(!!checked)}
+          onClick={(e) => e.stopPropagation()}
+          aria-label="Select row"
+        />
+      </div>
     ),
     size: 40,
   };
@@ -123,60 +122,91 @@ export default function Forms() {
     [organization?._id, advancedFilters]
   );
   const wrappedFetchData = async (params: any) => {
-    if (!organization?._id)
-      return Promise.resolve({ status: 200, data: [], totalCount: 0 });
+    if (!organization?._id) {
+      console.log("No organization ID, returning empty data");
+      return Promise.resolve({
+        status: 200,
+        data: [],
+        totalCount: 0,
+        totalPages: 0,
+      });
+    }
 
     // Ensure pageSize is included in the request
     const pageSize = params.pageSize || 10;
     const page = params.page || 1;
 
-    console.log("Fetching with params:", { ...params, pageSize, page }); // Debug log
+    console.log("Fetching forms with params:", {
+      ...params,
+      pageSize,
+      page,
+      organizationId: organization._id,
+    });
 
-    const response = await formsApi.fetchAll(
-      {
-        ...params,
-        pageSize,
-        page,
-        organizationId: organization._id,
-      },
-      false,
-      organization._id
-    );
+    try {
+      const response = await formsApi.fetchAll(
+        {
+          ...params,
+          pageSize,
+          page,
+          organizationId: organization._id,
+        },
+        false,
+        organization._id
+      );
 
-    const forms: Form[] = Array.isArray(response.data)
-      ? response.data.filter(Boolean)
-      : [];
+      console.log("API Response:", response);
 
-    console.log("Fetched forms:", forms); // Debug log
+      // Handle both ApiResponse and MutationResponse types
+      const forms = Array.isArray(response.data)
+        ? response.data
+        : //@ts-ignore
+          response.data?.data || [];
 
-    // Get registration counts for the current page of forms only
-    const formIds = forms.map((f) => f._id).join(",");
-    if (formIds) {
-      try {
-        const res = await apiClient.get<{
-          status: number;
-          data: Record<string, number>;
-        }>("/registrations/count-by-form-ids", {
-          params: { formIds },
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-          },
-        });
-        setRegistrationCounts((prev) => ({
-          ...prev,
-          ...res.data.data,
-        }));
-      } catch (err) {
-        console.error("שגיאה בשליפת מספר נרשמים:", err);
+      console.log("Processed forms:", forms);
+
+      // Get registration counts for the current page of forms only
+      const formIds = forms.map((f) => f._id).join(",");
+      if (formIds) {
+        try {
+          const res = await apiClient.get<{
+            status: number;
+            data: Record<string, number>;
+          }>("/registrations/count-by-form-ids", {
+            params: { formIds },
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            },
+          });
+          setRegistrationCounts((prev) => ({
+            ...prev,
+            ...res.data.data,
+          }));
+        } catch (err) {
+          console.error("Error fetching registration counts:", err);
+        }
       }
-    }
 
-    // Return proper pagination data
-    return {
-      status: 200,
-      data: forms,
-      totalCount: "totalCount" in response ? response.totalCount : forms.length,
-    };
+      // Return in the format expected by DataTable
+      return {
+        //@ts-ignore
+        status: response.status || 200,
+        //@ts-ignore
+        data: forms,
+        //@ts-ignore
+        totalCount: response.totalCount || forms.length,
+        //@ts-ignore
+        totalPages: response.totalPages || Math.ceil(forms.length / pageSize),
+      };
+    } catch (error) {
+      console.error("Error fetching forms:", error);
+      return {
+        status: 500,
+        data: [],
+        totalCount: 0,
+        totalPages: 0,
+      };
+    }
   };
   const handleDuplicateForm = async (form: Form) => {
     try {
@@ -199,10 +229,40 @@ export default function Forms() {
     }
   };
 
+  const handleDelete = async (id: string): Promise<any> => {
+    try {
+      const response = await formsApi.delete(id);
+      if (response.status === 200) {
+        setRefreshKey((prev) => prev + 1); // Refresh the table
+        toast({
+          title: t("form_deleted_successfully"),
+          description: t("form_deleted_description"),
+          variant: "success",
+        });
+        return response;
+      } else {
+        toast({
+          title: t("error_deleting_form"),
+          description: t("error_deleting_form_description"),
+          variant: "destructive",
+        });
+        return response;
+      }
+    } catch (error) {
+      console.error("Error deleting form:", error);
+      toast({
+        title: t("error_deleting_form"),
+        description: t("error_deleting_form_description"),
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   const CustomAddButton = useMemo(
     () => (
       <Button variant="outline" onClick={() => navigate("/create-form")}>
-        <Plus className="w-4 h-4 mr-2" /> צור טופס חדש
+        <Plus className="w-4 h-4 mr-2" /> {t("create_new_form")}
       </Button>
     ),
     [navigate]
@@ -217,6 +277,7 @@ export default function Forms() {
         fetchData={wrappedFetchData}
         addData={(data) => formsApi.create(data)}
         updateData={(data) => formsApi.update({ ...data, id: data._id })}
+        deleteData={handleDelete}
         columns={columns}
         columnOrder={columnOrder}
         searchable
@@ -238,11 +299,11 @@ export default function Forms() {
           }
         }}
         showActionColumn={true}
-        showEditButton={true}
+        showEditButton={false}
         showDeleteButton={true}
         showDuplicateButton={true}
-        isLazyLoading={true}
         isPagination={false}
+        isLazyLoading={true}
       />
     </div>
   );

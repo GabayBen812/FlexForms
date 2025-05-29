@@ -1,7 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/api/apiClient";
 import { User } from "@/types/users/user";
-import { LoginCredentials, MutationResponse, LoginResponse } from "@/types/api/auth";
+import {
+  LoginCredentials,
+  MutationResponse,
+  LoginResponse,
+} from "@/types/api/auth";
 import { fetchUser } from "@/api/users/fetchUser";
 import { login } from "@/api/auth";
 import { toast } from "sonner";
@@ -16,7 +20,11 @@ export function useAuth() {
     retry: false,
   });
 
-  const loginMutation = useMutation<MutationResponse<LoginResponse>, Error, LoginCredentials>({
+  const loginMutation = useMutation<
+    MutationResponse<LoginResponse>,
+    Error,
+    LoginCredentials
+  >({
     mutationFn: login,
     onSuccess: (data) => {
       if (data.data) {

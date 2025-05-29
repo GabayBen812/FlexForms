@@ -168,7 +168,7 @@ export default function clubs() {
             stickyColumnCount={3}
             searchable
             showAddButton
-            isPagination
+            isPagination={false}
             defaultPageSize={465}
             visibleRows={setCurrentVisibleRows}
             //@ts-ignore

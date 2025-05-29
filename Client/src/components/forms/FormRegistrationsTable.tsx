@@ -19,7 +19,9 @@ interface Props {
 
 export default function FormRegistrationsTable({ form }: Props) {
   const { t } = useTranslation();
-  const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>({});
+  const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
+    {}
+  );
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const { state } = useSidebar();
   const sidebarIsCollapsed = state === "collapsed";
@@ -50,9 +52,13 @@ export default function FormRegistrationsTable({ form }: Props) {
               page: String(page ?? 1),
               pageSize: String(pageSize ?? 10),
             };
-            const res = await registrationsApi.customRequest("get", "/registrations", {
-              params: allParams,
-            }) as { status: number; data: UserRegistration[]; total: number };
+            const res = (await registrationsApi.customRequest(
+              "get",
+              "/registrations",
+              {
+                params: allParams,
+              }
+            )) as { status: number; data: UserRegistration[]; total: number };
             setRegistrations(res.data);
             return res;
           }}
@@ -63,7 +69,9 @@ export default function FormRegistrationsTable({ form }: Props) {
           columns={getColumns(
             t,
             form.fields || [],
-            registrations.some(r => r.additionalData && r.additionalData.paymentDetails)
+            registrations.some(
+              (r) => r.additionalData && r.additionalData.paymentDetails
+            )
           )}
           idField="_id"
           defaultPageSize={10}
@@ -73,7 +81,7 @@ export default function FormRegistrationsTable({ form }: Props) {
           initialAdvancedFilters={advancedFilters}
           actions={actions}
           extraFilters={advancedFilters}
-          isPagination
+          isPagination={false}
         />
       </div>
     </div>
@@ -101,17 +109,20 @@ function getColumns(
         {
           accessorKey: "additionalData.paymentDetails.cardOwnerName",
           header: t("card_owner_name"),
-          cell: ({ row }) => row.original.additionalData?.paymentDetails?.cardOwnerName || "-",
+          cell: ({ row }) =>
+            row.original.additionalData?.paymentDetails?.cardOwnerName || "-",
         },
         {
           accessorKey: "additionalData.paymentDetails.last4Digits",
           header: t("last4digits"),
-          cell: ({ row }) => row.original.additionalData?.paymentDetails?.last4Digits || "-",
+          cell: ({ row }) =>
+            row.original.additionalData?.paymentDetails?.last4Digits || "-",
         },
         {
           accessorKey: "additionalData.paymentDetails.amountPaid",
           header: t("amount_paid"),
-          cell: ({ row }) => row.original.additionalData?.paymentDetails?.amountPaid ?? "-",
+          cell: ({ row }) =>
+            row.original.additionalData?.paymentDetails?.amountPaid ?? "-",
         },
         {
           accessorKey: "additionalData.paymentDetails.paymentDate",
@@ -119,13 +130,16 @@ function getColumns(
           meta: { isDate: true },
           cell: ({ row }) =>
             row.original.additionalData?.paymentDetails?.paymentDate
-              ? dayjs(row.original.additionalData?.paymentDetails?.paymentDate).format("DD/MM/YYYY")
+              ? dayjs(
+                  row.original.additionalData?.paymentDetails?.paymentDate
+                ).format("DD/MM/YYYY")
               : "-",
         },
         {
           accessorKey: "additionalData.paymentDetails.lowProfileCode",
           header: t("low_profile_code"),
-          cell: ({ row }) => row.original.additionalData?.paymentDetails?.lowProfileCode || "-",
+          cell: ({ row }) =>
+            row.original.additionalData?.paymentDetails?.lowProfileCode || "-",
         },
       ]
     : [];

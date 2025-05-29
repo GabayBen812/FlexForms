@@ -61,6 +61,7 @@ export interface DataTableProps<TData> {
   onAdvancedSearchChange?: (filters: Record<string, any>) => void;
   initialAdvancedFilters?: Record<string, any>;
   isPagination?: boolean;
+  isLazyLoading?: boolean;
   showAddButton?: boolean | Array<{ name: string; defaultValue: string }>;
   customAddButton?: React.ReactNode;
   showActionColumn?: boolean;

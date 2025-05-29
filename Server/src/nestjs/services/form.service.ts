@@ -113,4 +113,34 @@ export class FormService {
   async findByCode(@Query("code") code: string) {
     return this.model.findOne({ code: Number(code) }).exec();
   }
+
+  async delete(id: string) {
+    try {
+      // Validate if the ID is a valid MongoDB ObjectId
+      if (!Types.ObjectId.isValid(id)) {
+        console.log("Invalid ObjectId format:", id);
+        throw new Error("Invalid form ID format");
+      }
+
+      console.log("Attempting to delete form with ID:", id);
+
+      // First check if form exists
+      const form = await this.model.findById(id).exec();
+      console.log("Found form:", form);
+
+      if (!form) {
+        console.log("Form not found");
+        throw new Error("Form not found");
+      }
+
+      // Delete the form
+      const result = await this.model.findByIdAndDelete(id).exec();
+      console.log("Delete result:", result);
+
+      return result;
+    } catch (error) {
+      console.error("Error deleting form:", error);
+      throw error;
+    }
+  }
 }

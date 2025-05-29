@@ -228,32 +228,28 @@ export function DataTable<TData>({
 
       const response = await fetchData(queryParams);
       const newData = response.data || [];
-      let total = 0;
+      //@ts-ignore
+      let total = response.totalCount || 0;
 
-      if ("totalCount" in response) {
-        total = response.totalCount;
-      } else {
-        total = newData.length;
-      }
-
-      console.log("Received data:", {
-        newDataLength: newData.length,
-        total,
+      console.log("Debug hasMore values:", {
+        isLazyLoading,
         isLoadingMore,
-        currentDataLength: tableData.length,
+        newDataLength: newData.length,
+        currentTableDataLength: tableData.length,
+        total,
+        queryPage: queryParams.page,
+        wouldHaveMore: isLoadingMore
+          ? tableData.length + newData.length < total
+          : newData.length < total,
       });
 
       if (isLazyLoading && isLoadingMore) {
         setTableData((prev) => [...prev, ...newData]);
-        setHasMore(
-          newData.length === pagination.pageSize &&
-            tableData.length + newData.length < total
-        );
+        const newTotal = tableData.length + newData.length;
+        setHasMore(newTotal < total);
       } else {
         setTableData(newData);
-        setHasMore(
-          newData.length === pagination.pageSize && newData.length < total
-        );
+        setHasMore(newData.length < total);
       }
 
       setTotalCount(total);

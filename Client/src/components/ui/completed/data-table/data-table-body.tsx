@@ -81,6 +81,7 @@ const RowComponent = React.memo(function RowComponent<T>({
   showDuplicateButton,
 }: RowComponentProps<T>) {
   const direction = GetDirection();
+  const { t } = useTranslation();
   const firstColumnRounding = direction
     ? "rounded-r-lg px-8"
     : "rounded-l-lg px-8";
@@ -109,9 +110,11 @@ const RowComponent = React.memo(function RowComponent<T>({
       case "delete":
         const meta = table.options.meta as any;
         // @ts-ignore
-        if (meta?.handleDelete && row.original.id) {
-          // @ts-ignore
-          meta.handleDelete(row.original.id || row.original._id);
+        if (meta?.handleDelete && (row.original.id || row.original._id)) {
+          if (window.confirm(t("confirm_delete"))) {
+            // @ts-ignore
+            meta.handleDelete(row.original.id || row.original._id);
+          }
         }
         break;
       case "duplicate":

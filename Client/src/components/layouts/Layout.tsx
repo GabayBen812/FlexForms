@@ -1,8 +1,8 @@
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layouts/Sidebar/Sidebar";
 import { GetDirection } from "@/lib/i18n";
-// import { Toaster } from "@/components/ui/toaster";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+// import { Toaster } from "@/components/ui/sonner";
 import Topbar from "./Topbar/Topbar";
 interface LayoutProps {
   children: React.ReactNode;

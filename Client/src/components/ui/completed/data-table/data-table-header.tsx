@@ -6,6 +6,7 @@ import { TableAction } from "@/types/ui/data-table-types";
 import Pagination from "./Pagination";
 import { useTranslation } from "react-i18next";
 import React from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DataTablePaginationControls } from "./data-table-pagination-controls";
 
 interface DataTableHeaderProps<T> {
@@ -219,7 +220,7 @@ function DataTableHeader<T>({
                     className={`flex flex-col justify-center items-center gap-1 ${
                       header.column.getCanSort() && "cursor-pointer select-none"
                     } ${isFirst && "px-8"}
-                    whitespace-normal text-balance text-center`}
+    whitespace-normal text-balance text-center`}
                     onClick={header.column.getToggleSortingHandler()}
                     style={{
                       width: "100%",
@@ -232,19 +233,28 @@ function DataTableHeader<T>({
                       header.column.columnDef.header,
                       header.getContext()
                     )}
+
                     {header.column.getCanSort() &&
                       (header.column.getIsSorted() === "asc" ? (
                         <ChevronUp className="h-4 w-4" />
                       ) : header.column.getIsSorted() === "desc" ? (
                         <ChevronDown className="h-4 w-4" />
                       ) : null)}
-                    {isFirst &&
-                      enableRowSelection &&
-                      selectedRowCount !== undefined && (
-                        <div className="text-xs text-white mt-1">
+
+                    {isFirst && enableRowSelection && (
+                      <div className="flex items-center justify-center gap-2 mt-1">
+                        <Checkbox
+                          checked={table.getIsAllPageRowsSelected()}
+                          onCheckedChange={(value) =>
+                            table.toggleAllPageRowsSelected(!!value)
+                          }
+                          className="border-white"
+                        />
+                        <span className="text-xs text-white">
                           {selectedRowCount} {t("selected")}
-                        </div>
-                      )}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {enableColumnReordering && (

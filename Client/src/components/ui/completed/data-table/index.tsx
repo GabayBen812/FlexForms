@@ -138,27 +138,52 @@ export function DataTable<TData>({
     }
   };
 
+  // const handleUpdate = async (row: Row<TData>, data: Partial<TData>) => {
+  //   if (!idField) return;
+
+  //   const id = row.original[idField] as string | number;
+  //   const updatedData = { ...data, id };
+
+  //   try {
+  //     await updateData(updatedData);
+  //     loadData();
+  //   } catch (error) {
+  //     console.error("Failed to update data:", error);
+  //     toast.error(t("error"));
+  //   }
+  // };
+
   const handleUpdate = async (row: Row<TData>, data: Partial<TData>) => {
-    if (!idField) return;
+  if (!idField) return;
 
-    const id = row.original[idField] as string | number;
-    const updatedData = { ...data, id };
+  const id = row.original[idField] as string | number;
+  const updatedData = { ...data, id };
 
-    try {
-      await updateData(updatedData);
-      loadData();
-    } catch (error) {
-      console.error("Failed to update data:", error);
-      toast.error(t("error"));
-    }
-  };
+  try {
+    await updateData(updatedData);
+
+    // Update only the relevant row in tableData
+    setTableData((prev) =>
+      prev.map((item) =>
+        (item as TData)[idField] === id
+          ? { ...item, ...updatedData }
+          : item
+      )
+    );
+
+    toast.success(t("updated_successfully"));
+  } catch (error) {
+    console.error("Failed to update data:", error);
+    toast.error(t("error"));
+  }
+};
   const handleDeleteData = async (id: string | number) => {
     if (!deleteData || !idField) return;
 
     try {
       setIsLoading(true);
       await deleteData(id);
-      await loadData(); // Refresh the table data
+      await loadData(); 
       toast.success(t("deleted_successfully"));
     } catch (error) {
       console.error("Failed to delete data:", error);

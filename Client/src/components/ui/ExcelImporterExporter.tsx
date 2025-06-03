@@ -170,9 +170,12 @@ export default function ExcelImporterExporter({
           <Button
             onClick={handleExport}
             variant="default"
-            className="bg-green-500 hover:bg-green-600"
+            style={{
+    backgroundColor: color,
+    color: "white",
+  }}
           >
-            {t("export_to_excel")}
+            {t("export_to_excel_file")}
           </Button>
         )}
       </div>

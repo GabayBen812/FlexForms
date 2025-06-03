@@ -31,7 +31,7 @@
 }
 
 /* Restore nice padding for cells and headers */
-.data-table-row-cell, th, td {
+.data-table-row-cell {
   padding: 1rem 1.5rem !important;
 }
 

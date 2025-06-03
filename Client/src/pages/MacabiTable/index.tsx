@@ -1,5 +1,11 @@
 import { useTranslation } from "react-i18next";
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  flexRender,
+} from "@tanstack/react-table";
 import DataTable from "@/components/ui/completed/data-table";
 import { useOrganization } from "@/hooks/useOrganization";
 import { createApiService } from "@/api/utils/apiFactory";
@@ -13,11 +19,14 @@ import { InlineEditPopup } from "@/components/InlineEditPopup";
 import { getClubColumns } from "@/columns/macabiClubColumns";
 import ExcelImporterExporter from "@/components/ui/ExcelImporterExporter";
 import apiClient from "@/api/apiClient";
+import CustomClubTable from "@/components/CustomClubTable";
+import { useToast } from "@/hooks/use-toast";
 
 const usersApi = createApiService<MacabiClub>("/clubs");
 
 export default function clubs() {
   const { t } = useTranslation();
+   const { toast } = useToast();
   const { organization } = useOrganization();
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
     {}
@@ -38,6 +47,7 @@ export default function clubs() {
   const sidebarIsCollapsed = state === "collapsed";
   const [excelData, setExcelData] = useState<MacabiClub[]>([]);
   const [currentVisibleRows, setCurrentVisibleRows] = useState<any[]>([]);
+  const [clubsData, setClubsData] = useState<MacabiClub[]>([]);
   const columns = getClubColumns(t);
 
   const visibleColumns = columns
@@ -47,6 +57,19 @@ export default function clubs() {
       if (column.id === "select") {
         return column;
       }
+
+      useEffect(() => {
+        if (!organization?._id) return;
+
+        usersApi.fetchAll({ pageSize: 1000 }, false, organization._id)
+            .then((res) => {
+            setClubsData(res.data);
+            setCurrentVisibleRows(res.data);
+          })
+          .catch((err) => {
+            console.error("Failed to fetch clubs:", err);
+          });
+      }, [organization?._id]);
 
       return {
         ...column,
@@ -84,6 +107,18 @@ export default function clubs() {
       };
     });
 
+    const table = useReactTable({
+      data: clubsData,
+      columns: visibleColumns,
+      state: {
+        rowSelection,
+      },
+      onRowSelectionChange: setRowSelection,
+      getCoreRowModel: getCoreRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+    });
+
+
   const [columnOrder, setColumnOrder] = useState<string[]>(
     //@ts-ignore
     () => visibleColumns.map((col) => col.id ?? col.accessorKey) as string[]
@@ -97,6 +132,38 @@ export default function clubs() {
       fieldMap[header] = accessor;
     }
   });
+
+const handleEditCellSave = async (newValue) => {
+  const columnId = editingCell.columnId;
+  const rowData = editingCell.rowData;
+
+  const updatedRow = {
+    ...rowData,
+    [columnId]: newValue,
+  };
+
+  try {
+    await usersApi.update({
+      ...updatedRow,
+      id: updatedRow._id,
+    });
+
+    setClubsData((prev) =>
+      prev.map((row) => (row._id === updatedRow._id ? updatedRow : row))
+    );
+    toast({
+      title: t("changes_updated_successfully"),
+      description: t("changes_updated_successfully"),
+      variant: "success",
+    });
+    
+
+  } catch (error) {
+    console.error("Failed to update row", error);
+  }
+
+  setEditingCell(null);
+};
 
   const handleExcelSave = async (newData: Record<string, any>[]) => {
     for (const newclub of newData) {
@@ -138,14 +205,14 @@ export default function clubs() {
               setExcelData(data);
             }}
           />
-        </div>
+          </div>
         <div
           className="overflow-x-auto w-full"
           style={{
             maxWidth: `calc(100vw - ${sidebarIsCollapsed ? "100px" : "18rem"})`,
           }}
         >
-          <DataTable<MacabiClub>
+          {/* <DataTable<MacabiClub>
             fetchData={(params) => {
               if (!organization?._id)
                 return Promise.resolve({ status: 200, data: [] });
@@ -178,7 +245,15 @@ export default function clubs() {
             showAdvancedSearch
             onAdvancedSearchChange={setAdvancedFilters}
             initialAdvancedFilters={advancedFilters}
-          />
+          /> */}
+          <CustomClubTable
+            table={table}
+            columns={visibleColumns}
+            data={clubsData}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
+            editingCell={editingCell}
+            setEditingCell={setEditingCell} onEditCell={undefined}/>
           {editingCell && (
             <InlineEditPopup
               value={editingCell.value}
@@ -186,19 +261,7 @@ export default function clubs() {
               position={editingCell.position}
               options={editingCell.options}
               onClose={() => setEditingCell(null)}
-              onSave={(newValue) => {
-                const columnId = editingCell.columnId;
-                const rowData = editingCell.rowData;
-                const updatedRow = {
-                  ...rowData,
-                  [columnId]: newValue,
-                };
-                editingCell.table?.options?.meta?.handleEdit(
-                  editingCell.table.getRow(editingCell.rowIndex),
-                  { [columnId]: newValue }
-                );
-                setEditingCell(null);
-              }}
+              onSave= {handleEditCellSave}
             />
           )}
         </div>

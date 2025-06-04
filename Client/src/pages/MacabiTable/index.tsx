@@ -154,6 +154,7 @@ const handleEditCellSave = async (newValue) => {
     toast({
       title: t("changes_updated_successfully"),
       description: t("changes_updated_successfully"),
+      duration: 1000,
       variant: "success",
     });
     
@@ -212,48 +213,16 @@ const handleEditCellSave = async (newValue) => {
             maxWidth: `calc(100vw - ${sidebarIsCollapsed ? "100px" : "18rem"})`,
           }}
         >
-          {/* <DataTable<MacabiClub>
-            fetchData={(params) => {
-              if (!organization?._id)
-                return Promise.resolve({ status: 200, data: [] });
-              return usersApi.fetchAll(params, false, organization._id);
-            }}
-            updateData={(updatedRow) => {
-              console.log("updatedRow", updatedRow);
-              return usersApi.update({
-                ...updatedRow,
-                //@ts-ignore
-                id: updatedRow._id,
-              });
-            }}
-            enableColumnReordering={true}
-            columnOrder={columnOrder}
-            onColumnOrderChange={setColumnOrder}
-            columns={visibleColumns}
-            rowSelection={rowSelection}
-            onRowSelectionChange={setRowSelection}
-            stickyColumnCount={3}
-            searchable
-            showAddButton
-            isPagination={false}
-            defaultPageSize={465}
-            visibleRows={setCurrentVisibleRows}
-            //@ts-ignore
-            idField="_id"
-            extraFilters={advancedFilters}
-            onRowClick={() => {}}
-            showAdvancedSearch
-            onAdvancedSearchChange={setAdvancedFilters}
-            initialAdvancedFilters={advancedFilters}
-          /> */}
+          <div className="max-h-[calc(100vh-15rem)] overflow-auto relative">
           <CustomClubTable
             table={table}
-            columns={visibleColumns}
-            data={clubsData}
-            rowSelection={rowSelection}
-            onRowSelectionChange={setRowSelection}
-            editingCell={editingCell}
-            setEditingCell={setEditingCell} onEditCell={undefined}/>
+            // columns={visibleColumns}
+            // data={clubsData}
+            // rowSelection={rowSelection}
+            // onRowSelectionChange={setRowSelection}
+            // editingCell={editingCell}
+            setEditingCell={setEditingCell}/>
+            </div>
           {editingCell && (
             <InlineEditPopup
               value={editingCell.value}

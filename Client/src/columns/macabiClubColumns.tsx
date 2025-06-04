@@ -4,19 +4,22 @@ import { selectionColumn } from "./selectionColumns";
 import { FieldType } from "@/types/ui/data-table-types";
 
 export function getClubColumns(t: (key: string) => string): ColumnDef<MacabiClub>[] {
-  return [ selectionColumn,
+  return [ 
+  selectionColumn,
    
     {
       accessorKey: "clubName",
       header: t("club_name"),
+      size: 140,
       meta: { 
-        className: 'w-[800px] max-w-[800px] break-words whitespace-normal',
+        className: 'w-[140px] max-w-[140px] break-words whitespace-normal',
         fieldType: "TEXT",
          editable: false },
     },
     {
       accessorKey: "clubNumber",
       header: t("club_number"),
+      size: 80,
       meta: { fieldType: "TEXT", editable: false },
     },
     {

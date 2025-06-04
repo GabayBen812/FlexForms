@@ -18,7 +18,7 @@ export default function CustomClubTable({
  
 return (
    <div className="relative">
-    <table className="min-w-full table-fixed border border-gray-300 club-table">
+    <table className="min-w-full table-fixed border border-gray-300 club-table" style={{ cursor: "pointer" }}>
       <thead className="bg-gray-300 sticky top-0 z-50">
       
         {table.getHeaderGroups().map((headerGroup) => (

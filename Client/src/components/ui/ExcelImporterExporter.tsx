@@ -159,6 +159,9 @@ export default function ExcelImporterExporter({
               backgroundColor: color,
               color: "white",
               marginRight: "10px",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
             }}
           >
             {t("read_from_excel_file")}
@@ -171,11 +174,15 @@ export default function ExcelImporterExporter({
             onClick={handleExport}
             variant="default"
             style={{
-    backgroundColor: color,
-    color: "white",
-  }}
+            backgroundColor: color,
+            color: "white",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
           >
             {t("export_to_excel_file")}
+            <Download className="w-5 h-5" />
           </Button>
         )}
       </div>

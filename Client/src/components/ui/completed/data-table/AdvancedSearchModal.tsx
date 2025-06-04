@@ -66,12 +66,23 @@ export function AdvancedSearchModal<T = any>({ open, onClose, columns, onApply, 
                 );
               })}
           </div>
+           
           <DialogFooter className="flex gap-2 justify-end">
+            <Button type="button" variant="ghost" 
+              onClick={() => {
+                    setFilters({});
+                    onApply({});
+                    onClose();
+                  }}
+              className="rounded-lg px-4 py-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
+              >
+                {t("remove_filter", " הסר סינון")}
+              </Button>
             <Button type="button" variant="outline" onClick={handleReset} className="rounded-lg px-4 py-2">
               {t("reset", "אפס")}
             </Button>
             <Button type="submit" className="rounded-lg px-4 py-2">
-              {t("apply", "החל")}
+              {t("apply_filtering", "החל סינון")}
             </Button>
           </DialogFooter>
         </form>

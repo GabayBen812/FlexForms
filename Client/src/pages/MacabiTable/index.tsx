@@ -95,7 +95,7 @@ export default function clubs() {
       };
     });
 
-// useEffects
+  // useEffects
 
     useEffect(() => {
     if (!organization?._id) return;
@@ -112,15 +112,40 @@ export default function clubs() {
       }, [organization?._id]);
 
       useEffect(() => {
-      if (!searchTerm) {
-        setClubsData(allClubs);
-      } else {
-        const filtered = allClubs.filter((club) =>
-      club?.clubName?.toLowerCase()?.includes(searchTerm.toLowerCase())
-    );
-        setClubsData(filtered);
-      }
-    }, [searchTerm, allClubs]);
+  if (!searchTerm && Object.keys(advancedFilters).length === 0) {
+    setClubsData(allClubs);
+  } else {
+    const filtered = allClubs.filter((club) => {
+      // Simple search by club name
+      const matchesSearchTerm = searchTerm
+        ? club?.clubName?.toLowerCase()?.includes(searchTerm.toLowerCase())
+        : true;
+
+      // Advanced filters
+      const matchesAdvancedFilters = Object.entries(advancedFilters).every(
+        ([key, value]) => {
+          if (!value) return true; // Skip empty filters
+          
+          const clubValue = club[key as keyof MacabiClub];
+          if (clubValue === undefined) return false;
+          
+          // Handle different data types
+          if (typeof clubValue === 'string') {
+            return clubValue.toLowerCase().includes(value.toLowerCase());
+          } else if (typeof clubValue === 'number') {
+            return clubValue.toString().includes(value);
+          }
+          return true;
+        }
+      );
+
+      return matchesSearchTerm && matchesAdvancedFilters;
+    });
+
+    setClubsData(filtered);
+  }
+}, [searchTerm, advancedFilters, allClubs]);
+
 
     const table = useReactTable({
       data: clubsData,
@@ -133,11 +158,6 @@ export default function clubs() {
       getSortedRowModel: getSortedRowModel(),
     });
 
-
-  const [columnOrder, setColumnOrder] = useState<string[]>(
-    //@ts-ignore
-    () => visibleColumns.map((col) => col.id ?? col.accessorKey) as string[]
-  );
   const fieldMap: Record<string, string> = {};
   columns.forEach((col) => {
     //@ts-ignore
@@ -222,7 +242,7 @@ const handleEditCellSave = async (newValue) => {
             }}
           />
           </div>
-          <div className="mb-3">
+          <div className="mb-3 flex items-center gap-4 flex-wrap">
             <input
               type="text"
               value={searchTerm}
@@ -230,7 +250,23 @@ const handleEditCellSave = async (newValue) => {
               placeholder={t("search_by_name", "חיפוש לפי שם עמותה")}
               className="border border-gray-300 rounded px-4 py-2 w-full max-w-sm"
             />
-          </div>
+          <Button variant="outline" onClick={() => setIsAdvancedOpen(true)}
+            style={{
+            backgroundColor: "#2977ff",
+            color: "white",
+            }}>
+          {t("advanced_search", "חיפוש מתקדם")}
+          </Button>
+          <AdvancedSearchModal
+            open={isAdvancedOpen}
+            onClose={() => setIsAdvancedOpen(false)}
+            onApply={(filters) => {
+            setAdvancedFilters(filters);
+            setIsAdvancedOpen(false);
+          }}
+          columns={columns}
+        />
+        </div>
         <div
           className="overflow-x-auto w-full"
           style={{
@@ -240,11 +276,6 @@ const handleEditCellSave = async (newValue) => {
           <div className="max-h-[calc(100vh-15rem)] overflow-auto relative">
           <CustomClubTable
             table={table}
-            // columns={visibleColumns}
-            // data={clubsData}
-            // rowSelection={rowSelection}
-            // onRowSelectionChange={setRowSelection}
-            // editingCell={editingCell}
             setEditingCell={setEditingCell}/>
             </div>
           {editingCell && (

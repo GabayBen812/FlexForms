@@ -10,7 +10,7 @@ export function getClubColumns(t: (key: string) => string): ColumnDef<MacabiClub
     {
       accessorKey: "clubName",
       header: t("club_name"),
-      size: 140,
+      size: 200,
       meta: { 
         className: 'w-[140px] max-w-[140px] break-words whitespace-normal',
         fieldType: "TEXT",
@@ -19,12 +19,13 @@ export function getClubColumns(t: (key: string) => string): ColumnDef<MacabiClub
     {
       accessorKey: "clubNumber",
       header: t("club_number"),
-      size: 80,
+      size: 150,
       meta: { fieldType: "TEXT", editable: false },
     },
     {
       accessorKey: "serviceAgreementDate",
       header: t("תאריך הסכם שירותים"),
+      
       meta: { fieldType: "TEXT", editable: true },
     },
     {
@@ -124,7 +125,10 @@ export function getClubColumns(t: (key: string) => string): ColumnDef<MacabiClub
     {
       accessorKey: "generalNotes",
       header: t("הערות כלליות"),
-      meta: { fieldType: "TEXT", editable: true },
+      
+      meta: { 
+        className: 'w-[140px] max-w-[140px] break-words whitespace-normal',
+        fieldType: "TEXT", editable: true },
     },
     {
       accessorKey: "supportRequest",

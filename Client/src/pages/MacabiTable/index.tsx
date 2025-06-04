@@ -48,6 +48,8 @@ export default function clubs() {
   const [excelData, setExcelData] = useState<MacabiClub[]>([]);
   const [currentVisibleRows, setCurrentVisibleRows] = useState<any[]>([]);
   const [clubsData, setClubsData] = useState<MacabiClub[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [allClubs, setAllClubs] = useState<MacabiClub[]>([]);
   const columns = getClubColumns(t);
 
   const visibleColumns = columns
@@ -57,20 +59,6 @@ export default function clubs() {
       if (column.id === "select") {
         return column;
       }
-
-      useEffect(() => {
-        if (!organization?._id) return;
-
-        usersApi.fetchAll({ pageSize: 1000 }, false, organization._id)
-            .then((res) => {
-            setClubsData(res.data);
-            setCurrentVisibleRows(res.data);
-          })
-          .catch((err) => {
-            console.error("Failed to fetch clubs:", err);
-          });
-      }, [organization?._id]);
-
       return {
         ...column,
         cell: (info: any) => {
@@ -106,6 +94,33 @@ export default function clubs() {
         },
       };
     });
+
+// useEffects
+
+    useEffect(() => {
+    if (!organization?._id) return;
+
+    usersApi.fetchAll({ pageSize: 1000 }, false, organization._id)
+    .then((res) => {
+      setClubsData(res.data);
+      setAllClubs(res.data);
+      setCurrentVisibleRows(res.data);
+      })
+      .catch((err) => {
+      console.error("Failed to fetch clubs:", err);
+      });
+      }, [organization?._id]);
+
+      useEffect(() => {
+      if (!searchTerm) {
+        setClubsData(allClubs);
+      } else {
+        const filtered = allClubs.filter((club) =>
+      club?.clubName?.toLowerCase()?.includes(searchTerm.toLowerCase())
+    );
+        setClubsData(filtered);
+      }
+    }, [searchTerm, allClubs]);
 
     const table = useReactTable({
       data: clubsData,
@@ -206,6 +221,15 @@ const handleEditCellSave = async (newValue) => {
               setExcelData(data);
             }}
           />
+          </div>
+          <div className="mb-3">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={t("search_by_name", "חיפוש לפי שם עמותה")}
+              className="border border-gray-300 rounded px-4 py-2 w-full max-w-sm"
+            />
           </div>
         <div
           className="overflow-x-auto w-full"

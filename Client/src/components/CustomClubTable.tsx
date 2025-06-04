@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { flexRender } from "@tanstack/react-table";
 
 export default function CustomClubTable({
@@ -6,13 +6,17 @@ export default function CustomClubTable({
   setEditingCell,
 }) {
    const stickyCount = 3;
-   const stickyOffsets = table.getVisibleLeafColumns()
-      .slice(0, stickyCount).reduce((acc, col, i) => {
-        const prev = acc[i - 1] || 0;
-        acc[i] = prev + (i > 0 ? table.getVisibleLeafColumns()[i - 1].getSize() : 0);
-        return acc;
-      }, []);
- return (
+ 
+  const stickyOffsets = useMemo(() => {
+  const columns = table.getVisibleLeafColumns();
+  const offsets = [0];
+  for (let i = 1; i < stickyCount; i++) {
+    offsets.push(offsets[i - 1] + columns[i - 1].getSize());
+  }
+  return offsets;
+}, [table.getVisibleLeafColumns().map(col => col.getSize()).join(",")]);
+ 
+return (
    <div className="relative">
     <table className="min-w-full table-fixed border border-gray-300 club-table">
       <thead className="bg-gray-300 sticky top-0 z-50">
@@ -24,12 +28,14 @@ export default function CustomClubTable({
                 return (
               <th
                 key={header.id}
-                className={`px-4 py-3 text-left ${
+                className={`px-4 py-3 text-center align-middle whitespace-normal break-words ${
                       isSticky ? "sticky z-20 bg-gray-300" : ""
                     }`}
                     style={{
                       right: isSticky ? stickyOffsets[headerIndex] : "auto",
                       width: header.column.getSize(),
+                      minWidth: header.column.getSize(),
+                      maxWidth: header.column.getSize(),
                     }}
               >
                 {flexRender(
@@ -55,18 +61,20 @@ export default function CustomClubTable({
               return (
                 <td
                   key={cell.id}
-                  className={`px-2 py-0 ${
+                  className={`px-2 py-0 text-center align-middle ${
                       meta?.className || ""
                     } ${isSticky ? "sticky z-10" : ""}`}
                     style={{
                       right: isSticky ? stickyOffsets[cellIndex] : "auto",
                       width: cell.column.getSize(),
-                       backgroundColor: isSticky
+                      minWidth: cell.column.getSize(),
+                      maxWidth: cell.column.getSize(),
+                      backgroundColor: isSticky
                         ? isEven
-                        ? "#e5e7eb" 
-                        : "#f3f4f6"
+                          ? "#e5e7eb"
+                          : "#f3f4f6"
                         : undefined,
-                                }}
+                    }}
                   onClick={(e) => {
                     if (!isEditable) return;
                     const rect = e.currentTarget.getBoundingClientRect();

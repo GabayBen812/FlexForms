@@ -11,7 +11,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { createApiService } from "@/api/utils/apiFactory";
 import { MacabiClub } from "@/types/macabiClub/macabiClub";
 import { FieldType } from "@/types/ui/data-table-types";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -20,6 +20,7 @@ import { getClubColumns } from "@/columns/macabiClubColumns";
 import ExcelImporterExporter from "@/components/ui/ExcelImporterExporter";
 import apiClient from "@/api/apiClient";
 import CustomClubTable from "@/components/CustomClubTable";
+import { StatCard } from "@/components/ui/StatCard"
 import { useToast } from "@/hooks/use-toast";
 import { Trash2 } from "lucide-react";
 
@@ -159,6 +160,32 @@ export default function clubs() {
       getSortedRowModel: getSortedRowModel(),
     });
 
+const activeClubs = useMemo(() => {
+  
+    return clubsData.filter((club) => club.activeStatus === "פעיל");
+  }, [clubsData]);
+
+  const countSupllier = useMemo(() => {
+    return activeClubs.filter(
+      (club) => club["supportRequest"] === "יש"
+    ).length;
+  }, [activeClubs]);
+
+  const countSupllierComplete = useMemo(() => {
+    return activeClubs.filter(
+      (club) => club["supportRequest"] === "הושלם"
+    ).length;
+  }, [activeClubs]);
+
+  const countRightManagment = useMemo(() => {
+    return activeClubs.filter(
+      (club) => club["management2025"] === "יש"
+    ).length;
+  }, [activeClubs]);
+
+  const percent = (count: number) =>
+    activeClubs.length > 0 ? Math.round((count / activeClubs.length) * 100) + "%" : "0%";
+
     const selectedRows = table.getSelectedRowModel().rows;
 
 
@@ -251,28 +278,32 @@ const handleDeleteSelectedRows = async () => {
 
   return (
     <div className="mx-auto">
-      <h1 className="text-2xl font-semibold text-primary mb-6">{t("clubs")}</h1>
       <div className="overflow-x-auto">
-        <div className="flex gap-2 mb-2">
-          <ExcelImporterExporter
-            title={t("import_excel_title", "ייבוא קובץ מועדונים")}
-            subtitle={t("import_excel_subtitle", "אנא וודא שהעמודות תואמות לשדות" )}
-            fields={columns
-              .map((col) => ({
-                visual_name: col.header?.toString?.() || "",
-                technical_name: col.accessorKey || col.id || "",
-              }))
-              .slice(1, -1)}
-            onlyImport={false}
-            onlyExport={false}
-            excelData={currentVisibleRows}
-            onSave={(data) => {
-              handleExcelSave(data);
-              setExcelData(data);
-            }}
+        <div className="flex flex-wrap justify-center gap-4 mb-6">
+          <StatCard
+            count={countSupllier}
+            percent={percent(countSupllier)}
+            label="בקשות שהוגשו"
+            color="orange"
           />
-          </div>
-          <div className="mb-3 flex items-center gap-4 flex-wrap">
+          <StatCard
+            count={countSupllierComplete}
+            percent={percent(countSupllierComplete)}
+            label="בקשות שהושלמו"
+            color="green"
+          />
+          <StatCard
+            count={countRightManagment}
+            percent={percent(countRightManagment)}
+            label="ניהול תקין 2025"
+            color="red"
+          />
+        </div>
+          <div className="bg-white shadow rounded-md px-4 py-3 mb-4 flex items-center justify-between flex-wrap gap-3">
+          <div className="flex gap-3 items-center ">
+            <h4 className="flex items-center gap-1">
+            {t("total_rows")}: <span>{table.getRowCount()}</span>
+           </h4>
             <input
               type="text"
               value={searchTerm}
@@ -308,6 +339,28 @@ const handleDeleteSelectedRows = async () => {
           {t("delete_selected_rows", "מחק שורות נבחרות")}
           <Trash2 className="w-4 h-4 mr-2" />
         </Button>
+        </div>
+        <div className="flex gap-2">
+          
+        <ExcelImporterExporter
+            title={t("import_excel_title", "ייבוא קובץ מועדונים")}
+            subtitle={t("import_excel_subtitle", "אנא וודא שהעמודות תואמות לשדות" )}
+            fields={columns
+              .map((col) => ({
+                visual_name: col.header?.toString?.() || "",
+                technical_name: col.accessorKey || col.id || "",
+              }))
+              .slice(1, -1)}
+            onlyImport={false}
+            onlyExport={false}
+            excelData={currentVisibleRows}
+            onSave={(data) => {
+              handleExcelSave(data);
+              setExcelData(data);
+            }}
+          />
+          
+        </div>
         </div>
         <div
           className="overflow-x-auto w-full"

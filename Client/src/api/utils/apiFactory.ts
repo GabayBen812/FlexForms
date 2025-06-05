@@ -155,7 +155,17 @@ export const createApiService = <T>(
         return handleApiError(error);
       }
     },
+    deleteMany: async (ids: (string | number)[]): Promise<MutationResponse<null>> => {
+      try {
+        const url = `${baseUrl}`;
+        const response = await apiClient.delete<null>(url, { data: { ids } });
 
+        return { status: response.status, data: response.data };
+      } catch (error) {
+        return handleApiError(error);
+      }
+    } ,
+    
     customRequest: async <R = any>(
       method: "get" | "post" | "put" | "delete" | "patch",
       route: string,

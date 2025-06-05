@@ -48,16 +48,16 @@ export class ClubService {
   findByOrganization(organizationId: string) {
     return this.model.find({ organizationId }).exec();
   }
+
   async findByOrganizationPaginated(organizationId: string, skip = 0, limit = 10) {
     const objectId = new Types.ObjectId(organizationId);
-  const result = await this.model
+    const result = await this.model
     .find({ organizationId: objectId })
     .skip(skip)
     .limit(limit)
     .exec();
 
-  console.log('Clubs found:', result);
-  return result;
+    return result;
   }
 
  async updateClub(id: string, updateData: Partial<ClubDocument> & { id?: string }) {
@@ -72,6 +72,12 @@ export class ClubService {
   }
   console.log('Final fields before update:', fields);
   return this.model.findByIdAndUpdate(id, fields, { new: true }).exec();
+}
+
+async deleteMany(ids: (string | number)[]) {
+  const objectIds = ids.map(id => new Types.ObjectId(id));
+  const result = await this.model.deleteMany({ _id: { $in: objectIds } });
+  return { deletedCount: result.deletedCount };
 }
  
 }

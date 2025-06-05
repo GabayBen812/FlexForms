@@ -21,6 +21,7 @@ import ExcelImporterExporter from "@/components/ui/ExcelImporterExporter";
 import apiClient from "@/api/apiClient";
 import CustomClubTable from "@/components/CustomClubTable";
 import { useToast } from "@/hooks/use-toast";
+import { Trash2 } from "lucide-react";
 
 const usersApi = createApiService<MacabiClub>("/clubs");
 
@@ -111,7 +112,7 @@ export default function clubs() {
       });
       }, [organization?._id]);
 
-      useEffect(() => {
+  useEffect(() => {
   if (!searchTerm && Object.keys(advancedFilters).length === 0) {
     setClubsData(allClubs);
   } else {
@@ -157,6 +158,9 @@ export default function clubs() {
       getCoreRowModel: getCoreRowModel(),
       getSortedRowModel: getSortedRowModel(),
     });
+
+    const selectedRows = table.getSelectedRowModel().rows;
+
 
   const fieldMap: Record<string, string> = {};
   columns.forEach((col) => {
@@ -206,15 +210,45 @@ const handleEditCellSave = async (newValue) => {
       try {
         if (newclub._id) {
           await usersApi.update({ ...newclub, id: newclub._id });
+          setClubsData((prev) =>
+          prev.map((club) => (club._id === newclub._id ? { ...club, ...newclub } : club))
+        );
         } else {
           newclub.organizationId = organization?._id;
-          await usersApi.create(newclub);
+        const response = await usersApi.create(newclub);
+        const createdClub = response.data; 
+        if (createdClub) {
+          setClubsData((prev) => [...prev, createdClub]);
         }
+       }
       } catch (error) {
         console.error("Failed to import row", newclub, error);
       }
     }
   };
+
+const handleDeleteSelectedRows = async () => {
+  const idsToDelete = selectedRows.map((row) => row.original._id);
+
+  try {
+    await usersApi.deleteMany(idsToDelete);
+    setClubsData((prev) => prev.filter((row) => !idsToDelete.includes(row._id)));
+    setRowSelection({});
+
+    toast({
+      title: t("rows_deleted_successfully", "השורות נמחקו בהצלחה"),
+      variant: "success",
+      duration: 1000,
+    });
+  } catch (error) {
+    console.error("Failed to delete rows", error);
+    toast({
+      title: t("error_deleting_rows", "שגיאה במחיקת שורות"),
+      variant: "destructive",
+    });
+  }
+};
+
   return (
     <div className="mx-auto">
       <h1 className="text-2xl font-semibold text-primary mb-6">{t("clubs")}</h1>
@@ -222,14 +256,10 @@ const handleEditCellSave = async (newValue) => {
         <div className="flex gap-2 mb-2">
           <ExcelImporterExporter
             title={t("import_excel_title", "ייבוא קובץ מועדונים")}
-            subtitle={t(
-              "import_excel_subtitle",
-              "אנא וודא שהעמודות תואמות לשדות"
-            )}
+            subtitle={t("import_excel_subtitle", "אנא וודא שהעמודות תואמות לשדות" )}
             fields={columns
               .map((col) => ({
                 visual_name: col.header?.toString?.() || "",
-                //@ts-ignore
                 technical_name: col.accessorKey || col.id || "",
               }))
               .slice(1, -1)}
@@ -266,6 +296,18 @@ const handleEditCellSave = async (newValue) => {
           }}
           columns={columns}
         />
+        <Button variant="destructive"
+          onClick={handleDeleteSelectedRows}
+          disabled={selectedRows.length === 0}
+          className={
+          selectedRows.length === 0
+          ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+          : "bg-red-600 hover:bg-red-700 text-white"
+          }
+        >
+          {t("delete_selected_rows", "מחק שורות נבחרות")}
+          <Trash2 className="w-4 h-4 mr-2" />
+        </Button>
         </div>
         <div
           className="overflow-x-auto w-full"

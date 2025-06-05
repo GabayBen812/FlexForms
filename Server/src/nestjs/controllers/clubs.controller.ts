@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query, Param, Put, Req, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, Param, Put, Req, UseGuards, Delete } from '@nestjs/common';
 import { ClubService } from '../services/clubs.service';
 import { CreateClubDto , UpdateClubDto} from '../dto/club.dto';
 import { Types } from 'mongoose';
@@ -48,6 +48,15 @@ export class ClubController {
 async updateClub(@Param('id') id: string, @Body() updateData: UpdateClubDto){
   console.log('Update data:', id, updateData);
   return this.service.updateClub(id, updateData);
+}
+
+@Delete()
+async deleteMany(@Body('ids') ids: (string | number)[]) {
+  console.log('Delete request for IDs:', ids);
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return { status: 400, message: 'No IDs provided for deletion' };
+  }
+  return this.service.deleteMany(ids);
 }
 
 }

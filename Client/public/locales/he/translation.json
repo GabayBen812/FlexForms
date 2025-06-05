@@ -34,6 +34,7 @@
   "form_created_success": "הטופס נוצר בהצלחה",
   "form_updated_success": "הטופס עודכן בהצלחה",
   "form_deleted_success": "הטופס נמחק בהצלחה",
+  "rows_deleted_successfully": "השורות נמחקו בהצלחה",
   "field_required": "שדה זה הוא חובה",
   "form_settings": "הגדרות טופס",
   "select_field_type": "בחר סוג שדה",

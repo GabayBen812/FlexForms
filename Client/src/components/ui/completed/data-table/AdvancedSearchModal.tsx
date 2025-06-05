@@ -33,7 +33,7 @@ export function AdvancedSearchModal<T = any>({ open, onClose, columns, onApply, 
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl w-full rounded-2xl p-8 bg-white dark:bg-zinc-900 shadow-xl">
+      <DialogContent className="max-w-4xl w-full rounded-2xl p-8 bg-white dark:bg-zinc-900 shadow-xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold mb-2 text-zinc-900 dark:text-zinc-100">
             {t("advanced_search", "חיפוש מתקדם")}

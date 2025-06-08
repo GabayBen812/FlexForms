@@ -185,5 +185,6 @@
   "amount_paid": "Amount Paid",
   "payment_date": "Payment Date",
   "low_profile_code": "Low Profile Code",
-  "service": "Service"
+  "service": "Service",
+  "edit_club": "Edit Club"
 }

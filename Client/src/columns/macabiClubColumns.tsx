@@ -2,11 +2,33 @@ import { ColumnDef } from "@tanstack/react-table";
 import { MacabiClub } from "@/types/macabiClub/macabiClub";
 import { selectionColumn } from "./selectionColumns"; 
 import { FieldType } from "@/types/ui/data-table-types";
+import { Pencil } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-export function getClubColumns(t: (key: string) => string): ColumnDef<MacabiClub>[] {
+export function getClubColumns(t: (key: string) => string
+,
+  onEdit: (row: MacabiClub) => void
+): ColumnDef<MacabiClub>[] {
   return [ 
   selectionColumn,
-   
+  
+    {
+      id: "edit",
+      header: "#", 
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onEdit(row.original)}
+          title={t("edit_club")}
+        >
+          <Pencil  className="w-4 h-4" />
+        </Button>
+      ),
+      size: 70,
+      meta: { className: "text-center", editable: false },
+    },
+
     {
       accessorKey: "clubName",
       header: t("club_name"),
@@ -14,7 +36,7 @@ export function getClubColumns(t: (key: string) => string): ColumnDef<MacabiClub
       meta: { 
         className: 'w-[140px] max-w-[140px] break-words whitespace-normal',
         fieldType: "TEXT",
-         editable: false },
+        editable: false },
     },
     {
       accessorKey: "clubNumber",

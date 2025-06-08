@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 import { InlineEditPopup } from "@/components/InlineEditPopup";
 import { getClubColumns } from "@/columns/macabiClubColumns";
+import { EditClubDialog } from "@/components/EditClubDialog";
 import ExcelImporterExporter from "@/components/ui/ExcelImporterExporter";
 import apiClient from "@/api/apiClient";
 import CustomClubTable from "@/components/CustomClubTable";
@@ -52,13 +53,21 @@ export default function clubs() {
   const [clubsData, setClubsData] = useState<MacabiClub[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [allClubs, setAllClubs] = useState<MacabiClub[]>([]);
-  const columns = getClubColumns(t);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingRow, setEditingRow] = useState<MacabiClub | null>(null);
+  
+  
+  const handleEditRow = (row: MacabiClub) => {
+    setEditingRow(row);
+    setIsEditDialogOpen(true);
+  };
 
+  const columns = getClubColumns(t, handleEditRow);
   const visibleColumns = columns
     //@ts-ignore
     .filter((col) => !col.meta?.hidden)
     .map((column) => {
-      if (column.id === "select") {
+      if (column.id === "select" || column.id === "edit") {
         return column;
       }
       return {
@@ -276,6 +285,29 @@ const handleDeleteSelectedRows = async () => {
   }
 };
 
+ const handleDialogSave = async (data: MacabiClub) => {
+    try {
+      await usersApi.update({
+        ...data,
+        id: data._id,
+      });
+
+      setClubsData(prev =>
+        prev.map(row => (row._id === data._id ? data : row))
+      );
+      
+      toast({
+        title: t("changes_updated_successfully"),
+        description: t("changes_updated_successfully"),
+        duration: 1000,
+        variant: "success",
+      });
+    } catch (error) {
+      console.error("Failed to update row", error);
+    }
+  };
+
+
   return (
     <div className="mx-auto">
       <div className="overflow-x-auto">
@@ -383,6 +415,13 @@ const handleDeleteSelectedRows = async () => {
               onSave= {handleEditCellSave}
             />
           )}
+          <EditClubDialog
+            open={isEditDialogOpen}
+            onClose={() => setIsEditDialogOpen(false)}
+            rowData={editingRow}
+            columns={columns}
+            onSave={handleDialogSave}
+          />
         </div>
       </div>
     </div>

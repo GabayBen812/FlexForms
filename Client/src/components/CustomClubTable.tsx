@@ -5,13 +5,15 @@ export default function CustomClubTable({
   table ,
   setEditingCell,
 }) {
-   const stickyCount = 3;
+   const stickyCount = 4;
  
   const stickyOffsets = useMemo(() => {
   const columns = table.getVisibleLeafColumns();
-  const offsets = [0];
-  for (let i = 1; i < stickyCount; i++) {
-    offsets.push(offsets[i - 1] + columns[i - 1].getSize());
+  const offsets = [];
+  let offset = 0;
+  for (let i = 0; i < stickyCount; i++) {
+    offsets.push(offset);
+    offset += columns[i].getSize();
   }
   return offsets;
 }, [table.getVisibleLeafColumns().map(col => col.getSize()).join(",")]);
@@ -24,7 +26,7 @@ return (
         {table.getHeaderGroups().map((headerGroup) => (
           <tr key={headerGroup.id}>
             {headerGroup.headers.map((header, headerIndex) => {
-              const isSticky = headerIndex < 3;
+              const isSticky = headerIndex < stickyCount;
                 return (
               <th
                 key={header.id}
@@ -53,7 +55,7 @@ return (
           <tr key={row.id} className={`${row.index % 2 === 0 ? "bg-gray-70" : "bg-white"}`}>
             {row.getVisibleCells().map((cell, cellIndex) => {
               const meta = cell.column.columnDef.meta;
-              const isSticky = cellIndex < 3;
+              const isSticky = cellIndex < stickyCount;
               const isEven = row.index % 2 === 0;
               const isEditable = meta?.editable;
               const value = cell.getValue();

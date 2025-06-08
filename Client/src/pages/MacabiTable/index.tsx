@@ -18,12 +18,13 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { InlineEditPopup } from "@/components/InlineEditPopup";
 import { getClubColumns } from "@/columns/macabiClubColumns";
 import { EditClubDialog } from "@/components/EditClubDialog";
+import { AdvancedUpdateDialog } from "@/components/AdvancedUpdateDialog";
 import ExcelImporterExporter from "@/components/ui/ExcelImporterExporter";
 import apiClient from "@/api/apiClient";
 import CustomClubTable from "@/components/CustomClubTable";
 import { StatCard } from "@/components/ui/StatCard"
 import { useToast } from "@/hooks/use-toast";
-import { Trash2 } from "lucide-react";
+import { Trash2, TrendingUp } from "lucide-react";
 
 const usersApi = createApiService<MacabiClub>("/clubs");
 
@@ -55,6 +56,9 @@ export default function clubs() {
   const [allClubs, setAllClubs] = useState<MacabiClub[]>([]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<MacabiClub | null>(null);
+  const [isAdvancedUpdateOpen, setIsAdvancedUpdateOpen] = useState(false);
+  const [selectedField, setSelectedField] = useState<string | null>(null);
+  const [updateValue, setUpdateValue] = useState<any>("");
   
   
   const handleEditRow = (row: MacabiClub) => {
@@ -208,6 +212,7 @@ const activeClubs = useMemo(() => {
     }
   });
 
+// handle funcions
 const handleEditCellSave = async (newValue) => {
   const columnId = editingCell.columnId;
   const rowData = editingCell.rowData;
@@ -272,14 +277,14 @@ const handleDeleteSelectedRows = async () => {
     setRowSelection({});
 
     toast({
-      title: t("rows_deleted_successfully", "השורות נמחקו בהצלחה"),
+      title: t("rows_deleted_successfully"),
       variant: "success",
       duration: 1000,
     });
   } catch (error) {
     console.error("Failed to delete rows", error);
     toast({
-      title: t("error_deleting_rows", "שגיאה במחיקת שורות"),
+      title: t("error_deleting_rows"),
       variant: "destructive",
     });
   }
@@ -306,6 +311,39 @@ const handleDeleteSelectedRows = async () => {
       console.error("Failed to update row", error);
     }
   };
+
+  const handleBulkUpdate = async (field: string, value: any) => {
+  const selectedIds = selectedRows.map(row => row.original._id);
+  
+  try {
+    for (const id of selectedIds) {
+      await usersApi.update({
+        id,
+        [field]: value
+      });
+    }
+    setClubsData(prev => 
+      prev.map(club => 
+        selectedIds.includes(club._id) 
+          ? { ...club, [field]: value } 
+          : club
+      )
+    );
+    
+   toast({
+        title: t("changes_updated_successfully"),
+        description: t("changes_updated_successfully"),
+        duration: 1000,
+        variant: "success",
+      });
+  } catch (error) {
+    console.error("Bulk update failed", error);
+    toast({
+      title: t("update_failed"),
+      variant: "destructive",
+    });
+  }
+};
 
 
   return (
@@ -348,7 +386,7 @@ const handleDeleteSelectedRows = async () => {
             backgroundColor: "#2977ff",
             color: "white",
             }}>
-          {t("advanced_search", "חיפוש מתקדם")}
+          {t("advanced_search")}
           </Button>
           <AdvancedSearchModal
             open={isAdvancedOpen}
@@ -371,11 +409,31 @@ const handleDeleteSelectedRows = async () => {
           {t("delete_selected_rows", "מחק שורות נבחרות")}
           <Trash2 className="w-4 h-4 mr-2" />
         </Button>
+        <Button
+  variant="outline"
+  onClick={() => setIsAdvancedUpdateOpen(true)}
+  disabled={selectedRows.length === 0}
+  className={
+    selectedRows.length === 0
+      ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+      : "bg-[#2977ff] hover:bg-[#1e5fd1] text-white hover:text-white"
+  }
+>
+  {t("advanced_update")}
+  <TrendingUp className="w-4 h-4 mr-2" />
+</Button>
+          <AdvancedUpdateDialog
+            open={isAdvancedUpdateOpen}
+            onOpenChange={setIsAdvancedUpdateOpen}
+            columns={columns}
+            onUpdate={handleBulkUpdate}
+            selectedRowCount= {selectedRows.length}
+          />
         </div>
         <div className="flex gap-2">
           
         <ExcelImporterExporter
-            title={t("import_excel_title", "ייבוא קובץ מועדונים")}
+            title={t("import_excel_title", "ייבוא קובץ עמותות")}
             subtitle={t("import_excel_subtitle", "אנא וודא שהעמודות תואמות לשדות" )}
             fields={columns
               .map((col) => ({
@@ -397,7 +455,7 @@ const handleDeleteSelectedRows = async () => {
         <div
           className="overflow-x-auto w-full"
           style={{
-            maxWidth: `calc(100vw - ${sidebarIsCollapsed ? "100px" : "18rem"})`,
+            maxWidth: `calc(100vw - ${sidebarIsCollapsed ? "110px" : "18.5rem"})`,
           }}
         >
           <div className="max-h-[calc(100vh-15rem)] overflow-auto relative">

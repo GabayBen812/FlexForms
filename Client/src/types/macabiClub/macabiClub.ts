@@ -1,8 +1,5 @@
-enum Status {
-    Active = "active",
-    Inactive = "inactive",
-  }
-  export interface MacabiClub {
+
+export interface MacabiClub {
   name: string;
   number: string;
   serviceAgreementDate: string;

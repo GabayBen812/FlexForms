@@ -17,6 +17,7 @@ import Home from "@/pages/Home";
 import Forms from "@/pages/Forms";
 import Users from "@/pages/Users";
 import MacabiTable from "@/pages/MacabiTable";
+import Requests from "@/pages/Requests";
 import LandingPage from "@/pages/LandingPage";
 import CreateForm from "@/pages/Forms/createPage/createForm";
 import FormDetails from "@/pages/Forms/dashboardPage";
@@ -144,7 +145,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "requests",
-        element: <MacabiTable />,
+        element: <Requests />,
         handle: { title: "requests", icon: ClubsIcon, showInSidebar: true, featureFlag: "is_show_requests" },
       },
       {

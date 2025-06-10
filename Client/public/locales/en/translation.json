@@ -195,6 +195,10 @@
   "edit_club": "Edit Club",
   "add_club": "Add club",
   "add_new_club": "Add new club",
-  "club_created_successfully": "Club created successfully"
+  "club_created_successfully": "Club created successfully",
+  "submitted_by": "Submitted By",
+  "request_name": "Request name",
+  "request_type": "Request type",
+  "request_status": "Request status"
 
 }

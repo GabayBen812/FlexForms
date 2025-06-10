@@ -20,11 +20,10 @@ import { getClubColumns } from "@/columns/macabiClubColumns";
 import { EditClubDialog } from "@/components/EditClubDialog";
 import { AdvancedUpdateDialog } from "@/components/AdvancedUpdateDialog";
 import ExcelImporterExporter from "@/components/ui/ExcelImporterExporter";
-import apiClient from "@/api/apiClient";
 import CustomClubTable from "@/components/CustomClubTable";
 import { StatCard } from "@/components/ui/StatCard"
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, TrendingUp } from "lucide-react";
+import { CirclePlus, Search, Trash2, TrendingUp } from "lucide-react";
 
 const usersApi = createApiService<MacabiClub>("/clubs");
 
@@ -57,8 +56,7 @@ export default function clubs() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<MacabiClub | null>(null);
   const [isAdvancedUpdateOpen, setIsAdvancedUpdateOpen] = useState(false);
-  const [selectedField, setSelectedField] = useState<string | null>(null);
-  const [updateValue, setUpdateValue] = useState<any>("");
+  const [dialogMode, setDialogMode] = useState<"edit" | "create">("edit");
   
   
   const handleEditRow = (row: MacabiClub) => {
@@ -290,25 +288,29 @@ const handleDeleteSelectedRows = async () => {
   }
 };
 
- const handleDialogSave = async (data: MacabiClub) => {
+const handleDialogSave = async (data: MacabiClub) => {
     try {
-      await usersApi.update({
-        ...data,
-        id: data._id,
-      });
-
-      setClubsData(prev =>
-        prev.map(row => (row._id === data._id ? data : row))
-      );
+      if (dialogMode === "edit") {
+        // Existing update logic
+        await usersApi.update({ ...data, id: data._id });
+        setClubsData(prev => prev.map(row => (row._id === data._id ? data : row)));
+      } else {
+        // New create logic
+        data.organizationId = organization?._id;
+        const response = await usersApi.create(data);
+        const newClub = response.data;
+        setClubsData(prev => [...prev, newClub]);
+      }
       
       toast({
-        title: t("changes_updated_successfully"),
-        description: t("changes_updated_successfully"),
-        duration: 1000,
+        title: t(dialogMode === "edit" 
+          ? "changes_updated_successfully" 
+          : "club_created_successfully"),
         variant: "success",
+        duration: 1000,
       });
     } catch (error) {
-      console.error("Failed to update row", error);
+      console.error("Operation failed", error);
     }
   };
 
@@ -344,6 +346,16 @@ const handleDeleteSelectedRows = async () => {
     });
   }
 };
+
+const handleAddClubClick = () => {
+    setDialogMode("create");
+    setEditingRow({
+      activeStatus: "פעיל",
+      organizationId: organization?._id,
+    } as MacabiClub);
+    setIsEditDialogOpen(true);
+  };
+
 
 
   return (
@@ -382,12 +394,25 @@ const handleDeleteSelectedRows = async () => {
               className="border border-gray-300 rounded px-4 py-2 w-full max-w-sm"
             />
           <Button variant="outline" onClick={() => setIsAdvancedOpen(true)}
+          className="text-white hover:brightness-110"
             style={{
             backgroundColor: "#2977ff",
             color: "white",
             }}>
           {t("advanced_search")}
+          <Search className="w-4 h-4 mr-2" strokeWidth={2.5}/>
           </Button>
+          <Button 
+  variant="default"
+  onClick={handleAddClubClick}
+  className="text-white hover:brightness-110"
+  style={{
+    backgroundColor: "#1f5fd1",
+  }}
+>
+  {t("add_club")}
+  <CirclePlus className="w-4 h-4 mr-2" strokeWidth={2.5}/>
+</Button>
           <AdvancedSearchModal
             open={isAdvancedOpen}
             onClose={() => setIsAdvancedOpen(false)}
@@ -422,6 +447,7 @@ const handleDeleteSelectedRows = async () => {
   {t("advanced_update")}
   <TrendingUp className="w-4 h-4 mr-2" />
 </Button>
+
           <AdvancedUpdateDialog
             open={isAdvancedUpdateOpen}
             onOpenChange={setIsAdvancedUpdateOpen}
@@ -455,7 +481,7 @@ const handleDeleteSelectedRows = async () => {
         <div
           className="overflow-x-auto w-full"
           style={{
-            maxWidth: `calc(100vw - ${sidebarIsCollapsed ? "110px" : "18.5rem"})`,
+            maxWidth: `calc(100vw - ${sidebarIsCollapsed ? "110px" : "20rem"})`,
           }}
         >
           <div className="max-h-[calc(100vh-15rem)] overflow-auto relative">

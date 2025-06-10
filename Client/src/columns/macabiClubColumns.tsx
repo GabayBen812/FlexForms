@@ -25,7 +25,7 @@ export function getClubColumns(t: (key: string) => string
           <Pencil  className="w-4 h-4" />
         </Button>
       ),
-      size: 70,
+      size: 80,
       meta: { className: "text-center", editable: false },
     },
 

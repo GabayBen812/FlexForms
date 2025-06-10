@@ -192,5 +192,9 @@
   "payment_date": "Payment Date",
   "low_profile_code": "Low Profile Code",
   "service": "Service",
-  "edit_club": "Edit Club"
+  "edit_club": "Edit Club",
+  "add_club": "Add club",
+  "add_new_club": "Add new club",
+  "club_created_successfully": "Club created successfully"
+
 }

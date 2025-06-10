@@ -20,8 +20,17 @@ export function EditClubDialog({ open, onClose, rowData, columns, onSave }: Edit
   useEffect(() => {
     if (rowData) {
       setFormData({ ...rowData });
+    }else {
+      // Initialize with empty values for create mode
+      const emptyData = {} as MacabiClub;
+      columns.forEach(col => {
+        if (col.accessorKey) {
+          emptyData[col.accessorKey as keyof MacabiClub] = "";
+        }
+      });
+      setFormData(emptyData);
     }
-  }, [rowData]);
+  }, [rowData, columns]);
 
   const handleChange = (key: keyof MacabiClub, value: any) => {
     if (formData) {
@@ -42,7 +51,9 @@ export function EditClubDialog({ open, onClose, rowData, columns, onSave }: Edit
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto p-6">
         <DialogHeader style={{ position: "sticky", top: 0, zIndex: 5, backgroundColor: "white" }}>
-          <DialogTitle>{t("edit_club")} -  {formData.clubName}</DialogTitle>
+          <DialogTitle>{rowData?._id 
+              ? `${t("edit_club")} - ${rowData.clubName || ""}`
+              : t("add_new_club")}</DialogTitle>
         </DialogHeader>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">

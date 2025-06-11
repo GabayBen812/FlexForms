@@ -1,4 +1,4 @@
-import { IsString, IsOptional} from 'class-validator';
+import { IsString, IsOptional, IsMongoId} from 'class-validator';
 import { Type } from 'class-transformer';
 import { Types } from 'mongoose';
 
@@ -13,8 +13,9 @@ export class CreateRequestDto {
   @IsOptional()
   type?: string;
 
-  @Type(() => Types.ObjectId)
-  organizationId!: Types.ObjectId;
+@IsMongoId()
+@IsOptional() 
+organizationId?: string;
 
   @IsOptional()
   @IsString()

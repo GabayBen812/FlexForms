@@ -81,6 +81,8 @@ export function DataTable<TData>({
   onColumnOrderChange,
   visibleRows,
   isLazyLoading = false,
+  organazitionId,
+
 }: DataTableProps<TData> & { extraFilters?: Record<string, any> }) {
   const [tableData, setTableData] = useState<TData[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -110,12 +112,16 @@ export function DataTable<TData>({
     if (!addData || !idField) return;
     const tempId = `temp-${Date.now()}`;
     const optimisticData = { ...newData, id: tempId } as TData;
-
+     const dataToSend = {
+    ...newData,
+    organizationId: organazitionId, 
+  };
+  console.log("Data to send:", dataToSend);
     setTableData((prev) => [...prev, optimisticData]);
 
     setSpecialRow(null);
     try {
-      const response = await addData(newData);
+      const response = await addData(dataToSend);
 
       const createdItem = response.data;
       setTableData(

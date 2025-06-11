@@ -85,6 +85,7 @@ export default function Requests() {
             setRequests(result.data);
           return result;
         }}
+        addData={usersApi.create}
         columns={visibleColumns}
         searchable
         showAddButton
@@ -96,6 +97,7 @@ export default function Requests() {
         idField="_id"
         extraFilters={advancedFilters}
         onRowClick={(user) => {}}
+        organazitionId={organization?._id}
       />
     </div>
   );

@@ -98,13 +98,15 @@ export const createApiService = <T>(
     },
 
  create: async (data: Partial<T>): Promise<MutationResponse<T>> => {
+  console.log('Creating data:', data);
   try {
     const payload = includeOrgId
-      ? { ...data, organizationId: getUserOrganizationId() }
-      : data;
+  ? { ...data, organizationId: data.organizationId ?? getUserOrganizationId() }
+  : data;
 
     const { url, config } = resolveRoute(customRoutes.create, baseUrl);
     const method = (config?.method as any) || "post";
+    console.log("now data:", payload);
     const response = await apiClient.request<T>({
       method,
       url,

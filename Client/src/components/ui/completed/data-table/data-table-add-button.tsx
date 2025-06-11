@@ -48,7 +48,7 @@ export function DataTableAddButton({ showAddButton, onToggleAddRow, columns = []
         <Plus className="w-4 h-4 mr-2" /> הוסף
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg w-full">
+        <DialogContent className="max-w-lg w-full p-6">
           <DialogHeader>
             <DialogTitle>הוסף רשומה חדשה</DialogTitle>
           </DialogHeader>

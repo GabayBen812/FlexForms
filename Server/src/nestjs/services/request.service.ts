@@ -19,4 +19,29 @@ findByOrganization(organizationId: string) {
     organizationId: new Types.ObjectId(organizationId),
   }).exec();
 }
+
+ private async generateUniqueCode(): Promise<number> {
+    let code = 0;
+    let exists = true;
+
+    while (exists) {
+      code = Math.floor(100000 + Math.random() * 900000);
+      exists = !!(await this.model.exists({ code }));
+    }
+
+    return code;
+  }
+
+ async create(data: Partial<Request>) {
+   const code = await this.generateUniqueCode();
+ 
+   const { organizationId, ...rest } = data;
+ 
+   return this.model.create({
+     ...rest,
+     code,
+     organizationId: new Types.ObjectId(organizationId),
+   });
+ 
+}
 }

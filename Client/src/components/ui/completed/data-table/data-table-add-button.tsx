@@ -54,17 +54,34 @@ export function DataTableAddButton({ showAddButton, onToggleAddRow, columns = []
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             {dataColumns.map((col) => (
-              <div key={col.accessorKey}>
-                <label className="block mb-1 font-medium">{col.header}</label>
-                <Input
-                  name={col.accessorKey}
-                  value={form[col.accessorKey] || ""}
-                  onChange={handleChange}
-                  className="w-full"
-                  required
-                />
-              </div>
-            ))}
+  <div key={col.accessorKey}>
+    <label className="block mb-1 font-medium">{col.header}</label>
+    {col.cellType === "select" && col.options ? (
+      <select
+        name={col.accessorKey}
+        value={form[col.accessorKey] || ""}
+        onChange={handleChange}
+        className="w-full border rounded px-2 py-1"
+        required
+      >
+        <option value="">בחר</option>
+        {col.options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    ) : (
+      <Input
+        name={col.accessorKey}
+        value={form[col.accessorKey] || ""}
+        onChange={handleChange}
+        className="w-full"
+        required
+      />
+    )}
+  </div>
+))}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 ביטול

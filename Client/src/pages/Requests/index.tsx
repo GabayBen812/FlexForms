@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { request } from "node:http";
 
-const requestsApi = createApiService<Request>("/requests");
+const usersApi = createApiService<Request>("/requests");
 
 type RequestColumnMeta = { hidden?: boolean };
 
@@ -24,6 +24,12 @@ export default function Requests() {
   );
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [requests, setRequests] = useState<Request[]>([]);
+  const statusOptions = [
+  { value: "בעריכה", label: "בעריכה" },
+  { value: "הוגש", label: "הוגש" },
+  { value: "טופל", label: "טופל" },
+  { value: "נדחה", label: "נדחה" },
+];
 
   const columns: ColumnDef<Request, any>[] = [
     {
@@ -44,12 +50,22 @@ export default function Requests() {
     { accessorKey: "name", header: t("request_name") },
     { accessorKey: "submittedBy", header: t("submitted_by") },
     { accessorKey: "type", header: t("request_type") },
-    { accessorKey: "status", header: t("request_status") },
+   { 
+  accessorKey: "status",
+  header: t("request_status"),
+  cellType: "select",
+  options: statusOptions,
+  cell: ({ getValue }) => {
+    const value = getValue<string>();
+    const option = statusOptions.find(opt => opt.value === value);
+    return option ? option.label : value;
+  },
+  },
     
 
     { accessorKey: "organizationId", header: "", meta: { hidden: true } },
   ];
-  //@ts-ignore
+  
   const visibleColumns = columns.filter((col) => !col.meta?.hidden);
 
   return (
@@ -58,17 +74,17 @@ export default function Requests() {
       <DataTable<Request>
         data={requests}
         updateData={async () => Promise.resolve({} as any)}
-        // fetchData={async (params) => {
-        //   if (!organization?._id) return { status: 200, data: [] };
-        //   const result = await usersApi.fetchAll(
-        //     params,
-        //     false,
-        //     organization._id
-        //   );
-        //   if ("data" in result && Array.isArray(result.data))
-        //     setUsers(result.data);
-        //   return result;
-        // }}
+        fetchData={async (params) => {
+          if (!organization?._id) return { status: 200, data: [] };
+          const result = await usersApi.fetchAll(
+            { path: `organization/${organization._id}` },
+            false,
+            organization._id
+          );
+          if ("data" in result && Array.isArray(result.data))
+            setRequests(result.data);
+          return result;
+        }}
         columns={visibleColumns}
         searchable
         showAddButton

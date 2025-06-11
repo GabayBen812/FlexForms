@@ -5,6 +5,7 @@ import { UserModule } from './modules/user.module';
 import { AuthService } from './services/auth.service';
 import * as dotenv from 'dotenv';
 import { FormModule } from './modules/form.module';
+import { RequestModule } from './modules/request.moudle';
 import { AuthModule } from './modules/auth.module';
 import { OrganizationModule } from './modules/organization.module';
 import { PaymentModule } from './modules/payment.module';
@@ -19,6 +20,7 @@ dotenv.config();
     MongooseModule.forRoot((process.env.MONGODB_URI || '').trim()),
     AuthModule,
     FormModule,
+    RequestModule,
     UserModule,
     OrganizationModule,
     PaymentModule,

@@ -10,6 +10,7 @@ import { AdvancedSearchModal } from "@/components/ui/completed/data-table/Advanc
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { request } from "node:http";
+import { RequestDefinitionDialog } from "@/components/request-definition";
 
 const usersApi = createApiService<Request>("/requests");
 
@@ -19,6 +20,7 @@ export default function Requests() {
   const { t } = useTranslation();
   const { organization } = useOrganization();
   const navigate = useNavigate();
+  const [isRequestDefinitionOpen, setIsRequestDefinitionOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
     {}
   );
@@ -71,6 +73,22 @@ export default function Requests() {
   return (
     <div className="mx-auto">
       <h1 className="text-2xl font-semibold text-primary mb-6">{t("requests")}</h1>
+      <Button
+        variant="outline" 
+        onClick={() => setIsRequestDefinitionOpen(true)}
+        >
+          הגדר בקשה
+        </Button>
+        <RequestDefinitionDialog
+      open={isRequestDefinitionOpen}
+      onClose={() => setIsRequestDefinitionOpen(false)}
+      onSave={(data) => {
+        console.log("data to save:", data);
+        // כאן את יכולה לקרוא ל- PUT /organizations/:id/request-definitions
+        // ולשלוח את data כדי לעדכן את ההגדרות
+        setIsRequestDefinitionOpen(false);
+      }}
+    />
       <DataTable<Request>
         data={requests}
         updateData={async () => Promise.resolve({} as any)}

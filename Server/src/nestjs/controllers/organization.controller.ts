@@ -76,4 +76,19 @@ export class OrganizationController {
     }
     return this.organizationService.updateName(id, name);
   }
+
+@Get(':id/request-definitions')
+async getRequestDefinitions(@Param('id') id: string) {
+  const org = await this.organizationService.findById(id);
+  if (!org) throw new BadRequestException("Organization not found");
+  return org.requestDefinitions || {};
+}
+// עדכון
+@Put(':id/request-definitions')
+async updateRequestDefinitions(
+  @Param('id') id: string,
+  @Body() body: Record<string, any> // אפשר להחמיר עם טייפ מדויק יותר אם תרצי
+) {
+  return this.organizationService.updateRequestDefinitions(id, body);
+}
 }

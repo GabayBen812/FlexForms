@@ -75,4 +75,16 @@ export class OrganizationService {
       { new: true }
     ).exec();
   }
+
+  async updateRequestDefinitions(
+  orgId: string,
+  requestDefinitions: Record<string, any>
+) {
+  return this.model.findByIdAndUpdate(
+    orgId,
+    { requestDefinitions },
+    { new: true }
+  ).exec();
+}
+
 }

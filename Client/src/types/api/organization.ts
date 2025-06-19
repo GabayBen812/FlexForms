@@ -12,6 +12,16 @@ export interface Organization {
     accentColor?: string;
   };
   OrganizationRole?: string;
+  requestDefinitions?: Record<
+    string,
+    {
+      type: string;
+     fields: Record<string, {
+      type: string;
+      choices?: string[];
+    }>;
+    }
+  >;
 }
 
 export interface NewOrganizationPayload {

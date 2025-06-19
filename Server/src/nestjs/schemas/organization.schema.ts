@@ -28,6 +28,18 @@ export class Organization {
     apiKey: string,
     secret: string
   };
+
+  @Prop({ type: Object, default: {} })
+    requestDefinitions!: Record<
+      string,
+      {
+        type: string;
+        fields: Record<string, {
+          type: string;
+          choices?: string[];
+        }>;
+      }
+    >;
 }
 
 export const OrganizationSchema = SchemaFactory.createForClass(Organization);

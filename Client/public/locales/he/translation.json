@@ -209,5 +209,6 @@
   "error_deleting_form_description": "אירעה שגיאה בעת מחיקת הטופס, אנא נסה שנית",
   "add_club": "הוסף עמותה",
   "add_new_club": "הוסף עמותה חדשה",
-  "club_created_successfully": "העמותה נוצרה בהצלחה"
+  "club_created_successfully": "העמותה נוצרה בהצלחה",
+  "set_requests": "הגדר בקשות"
 }

@@ -32,19 +32,22 @@ export function RequestDefinitionDialog({ open, onClose, onSave }: RequestDefini
   const [requestType, setRequestType] = useState("");
   const [requestName, setRequestName] = useState("");
   const [fields, setFields] = useState<{ name: string; type: string; choices?: string[] }[]>([]);
+  const [rawChoices, setRawChoices] = useState<string[]>([]);
 
   useEffect(() => {
   if (!open) return;
 
   const fetchDefinitions = async () => {
-    const res = await usersApi.fetch(); // קורא ל־/organizations/find
+    const res = await usersApi.fetch(); 
     if (res?.data?.requestDefinitions) {
       const defs = res.data.requestDefinitions;
 
-      const types = Object.entries(defs).map(([id, def]) => ({
-        id,
-        name: def.type,
-      }));
+     const types = Object.entries(defs)
+  .map(([id, def]) => ({
+    id,
+    name: def.type,
+  }))
+  .filter((t) => t.name && t.name.trim() !== "");
     console.log("Request types fetched:", types);
       setRequestTypes(types);
       setRequestDefinitions(defs);
@@ -64,7 +67,6 @@ useEffect(() => {
 
     const def = requestDefinitions[requestType];
     if (def && def.fields) {
-      // def.fields כאן הוא אובייקט: שם השדה => { type, choices? }
       const newFields = Object.entries(def.fields).map(([fieldName, fieldDef]: [string, any]) => ({
         name: fieldName,
         type: fieldDef.type,
@@ -77,27 +79,36 @@ useEffect(() => {
   }, [requestType, requestDefinitions]);
 
   const handleAddField = () => {
-    setFields([...fields, ""]);
-  };
+  if (!requestType) return; // הגנה
+  setFields([...fields, { name: "", type: "FIELD_TEXT" }]);
+};
 
-  const handleFieldChange = (index: number, value: string) => {
-    const newFields = [...fields];
-    newFields[index] = value;
-    setFields(newFields);
-  };
 
   const handleSubmit = () => {
     const data = {
-      requestType,
       requestName,
+      requestType,
       fields,
     };
+  console.log("Submitting request definition:", data);
     onSave(data);
+    resetForm();
     onClose();
   };
 
+  const resetForm = () => {
+  setRequestType("");
+  setRequestName("");
+  setFields([]);
+};
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+   <Dialog open={open} onOpenChange={(value) => {
+        if (!value) {
+          resetForm(); 
+          onClose(); 
+        }
+      }}>
       <DialogContent className="max-w-lg p-6">
         <DialogHeader>
           <DialogTitle className="text-center text-2xl">
@@ -109,7 +120,7 @@ useEffect(() => {
           <select
             value={requestType}
             onChange={(e) => setRequestType(e.target.value)}
-            className="w-full border rounded p-2"
+            className="w-full border rounded px-3 py-3 text-base"
           >
             <option value="">{t("select_request_type", "בחר סוג בקשה")}</option>
             {requestTypes.map((type) => (
@@ -129,27 +140,70 @@ useEffect(() => {
           />
           )}
 
-          {fields.map((field, index) => (
-  <div key={index} className="flex justify-between items-center gap-4 border rounded p-2">
-    <input
-      type="text"
-      value={field.name}
-      onChange={(e) => {
-        const newFields = [...fields];
-        newFields[index].name = e.target.value;
-        setFields(newFields);
-      }}
-      placeholder={t("field_name", "שם שדה")}
-      className="flex-grow border rounded p-2"
-    />
-    <span className="ml-4 whitespace-nowrap text-gray-600">{field.type}</span>
+{fields.map((field, index) => (
+  <div key={index} className="flex flex-col gap-2 border rounded p-2">
+    <div className="flex items-center gap-4">
+      <input
+        type="text"
+        value={field.name}
+        onChange={(e) => {
+          const newFields = [...fields];
+          newFields[index].name = e.target.value;
+          setFields(newFields);
+        }}
+        placeholder={t("field_name", "שם שדה")}
+        className="flex-1 border rounded p-2"
+      />
+      <select
+        value={field.type}
+        onChange={(e) => {
+          const newFields = [...fields];
+          newFields[index].type = e.target.value;
+          if (e.target.value === "FIELD_SELECT" && !newFields[index].choices) {
+            newFields[index].choices = [];
+          }
+          if (e.target.value !== "FIELD_SELECT") {
+            delete newFields[index].choices;
+          }
+          setFields(newFields);
+        }}
+        className="w-40 border rounded p-2"
+      >
+        <option value="FIELD_TEXT">טקסט</option>
+        <option value="FIELD_NUMBER">מספר</option>
+        <option value="FIELD_DATE">תאריך</option>
+        <option value="FIELD_SELECT">בחירה</option>
+      </select>
+    </div>
+
+    {field.type === "FIELD_SELECT" && (
+      <textarea
+  value={rawChoices[index] ?? field.choices?.join("\n") ?? ""}
+  onChange={(e) => {
+    const newRaw = [...rawChoices];
+    newRaw[index] = e.target.value;
+    setRawChoices(newRaw);
+
+    const newFields = [...fields];
+    newFields[index].choices = e.target.value
+      .split("\n")
+      .map((opt) => opt.trim())
+      .filter(Boolean); 
+    setFields(newFields);
+  }}
+  placeholder={t("field_choices_placeholder", "כתוב אופציה חדשה בכל שורה")}
+  className="border rounded p-2 w-full resize-y"
+  rows={3}
+/>
+    )}
   </div>
 ))}
 
-          <Button
+         <Button
             type="button"
             variant="outline"
             onClick={handleAddField}
+            disabled={!requestType}
             className="flex items-center gap-2 mx-auto"
           >
             <Plus className="w-4 h-4" />

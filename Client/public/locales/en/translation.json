@@ -199,6 +199,7 @@
   "submitted_by": "Submitted By",
   "request_name": "Request name",
   "request_type": "Request type",
-  "request_status": "Request status"
+  "request_status": "Request status",
+  "set_requests": "Set Requests"
 
 }

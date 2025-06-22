@@ -121,13 +121,16 @@ export const createApiService = <T>(
 },
 
 
-    update: async (data: Partial<T> & { id: string | number }): Promise<MutationResponse<T>> => {
+   update: async (data: Partial<T> & { id: string | number; route?: string }): Promise<MutationResponse<T>> => {
+
       try {
         const payload = includeOrgId
           ? { ...data, organizationId: getUserOrganizationId() }
           : data;
 
-        const { url, config } = resolveRoute(customRoutes.update, `${baseUrl}/${data.id}`);
+        const endpoint = data.route ? `${baseUrl}/${data.id}/${data.route}` : `${baseUrl}/${data.id}`;
+        const { url, config } = resolveRoute(customRoutes.update, endpoint);
+
         const method = config?.method || "put";
 
         const response = await apiClient.request<T>({

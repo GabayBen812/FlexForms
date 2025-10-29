@@ -21,7 +21,7 @@ export default function Faqs() {
             <div>
               <h4 className="text-xl font-bold">האם הנתונים מאובטחים?</h4>
               <p className="text-slate-600">
-                Paradise פועלת לפי התקנים המחמירים ביותר בתחום אבטחת מידע.
+                Paradize פועלת לפי התקנים המחמירים ביותר בתחום אבטחת מידע.
               </p>
             </div>
             <div>

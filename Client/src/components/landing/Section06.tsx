@@ -11,7 +11,7 @@ export default function Section06() {
             <img src={testimonialSign} className="w-32 mb-4" alt="חתימה" />
             <p className="text-slate-700">
               “ אנחנו מבצעים גבייה באופן קבוע בפלטפורמה לקייטנות והחוגים בעירייה
-              שלנו - המערכת סופר פשוטה והצוות של Paradise עוזר לנו בצורה הכי
+              שלנו - המערכת סופר פשוטה והצוות של Paradize עוזר לנו בצורה הכי
               מקצועית שיש. ”
             </p>
           </div>

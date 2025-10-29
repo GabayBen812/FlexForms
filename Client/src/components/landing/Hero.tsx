@@ -17,14 +17,13 @@ export default function Hero() {
         <div className="pt-36 md:pt-40 md:pb-20">
           <div className="max-w-xl md:max-w-none text-center md:text-right md:w-[600px]">
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              Paradise - מערכת ניהול מתקדמת ומוכחת
+              Paradize - מערכת ניהול למוסדות חינוך
             </h1>
             <p className="text-lg text-blue-200 mb-8 leading-relaxed">
-              בניית טפסי הרשמה מעוצבים עם קריטריונים, חתימות דיגיטליות, חיבור
-              לסליקת אשראי, ומערכת CRM לניהול הרשומים
+              המערכת המתקדמת בישראל לניהול מלא של התלמידים, הילדים ורשומים במוסד החינוכי והלימודי שלך
               <br />
               <span className="text-3xl block mt-2">
-                כי Google Form זה פאסה!
+                בחינוך, כל יום הוא הזדמנות לגעת בעתיד
               </span>
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">

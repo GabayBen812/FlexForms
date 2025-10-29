@@ -41,8 +41,8 @@ export class PaymentService {
         CoinID: '1', // NIS
         SumToBill: amount.toString(),
         ProductName: description,
-        SuccessRedirectUrl: "https://www.paradise-erp.com/payment/success",
-        ErrorRedirectUrl: "https://www.paradise-erp.com/payment/error",
+        SuccessRedirectUrl: "https://www.Paradize-erp.com/payment/success",
+        ErrorRedirectUrl: "https://www.Paradize-erp.com/payment/error",
         IndicatorUrl: `https://flexforms-production.up.railway.app/payments/cardcom/callback?dataString=${dataString}&description=${description}`,
       };
 

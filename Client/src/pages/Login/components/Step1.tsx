@@ -43,7 +43,7 @@ function Step1() {
       onSubmit={handleSubmit}
     >
       <h1 className="font-semibold text-2xl text-center leading-tight">
-        Paradise
+        Paradize
         <br />
         <span className="text-sm font-normal text-gray-600">
           מערכת ניהול טפסים והרשמות דיגיטליות

@@ -29,10 +29,10 @@ async function bootstrap() {
       if (origin.endsWith(".vercel.app")) return callback(null, true);
       // Allow localhost for local dev
       if (origin === "http://localhost:5173") return callback(null, true);
-      // Allow paradise-erp.com
+      // Allow Paradize-erp.com
       if (
-        origin === "https://www.paradise-erp.com" ||
-        origin === "https://paradise-erp.com"
+        origin === "https://www.Paradize-erp.com" ||
+        origin === "https://Paradize-erp.com"
       )
         return callback(null, true);
       // Allow Firebase Storage

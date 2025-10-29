@@ -9,7 +9,7 @@ export default function Cta() {
             <p className="text-xl text-blue-200 font-semibold mb-2">
               למה אתם מחכים?
             </p>
-            <h2 className="text-3xl font-bold">הצטרפו ל-Paradise עוד היום</h2>
+            <h2 className="text-3xl font-bold">הצטרפו ל-Paradize עוד היום</h2>
           </div>
           <div className="flex gap-4">
             <Link

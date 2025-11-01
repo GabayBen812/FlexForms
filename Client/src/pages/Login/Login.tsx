@@ -16,7 +16,6 @@ export default function Login() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const auth = useContext(AuthContext);
   const queryClient = useQueryClient();
-  // const { t } = useTranslation();
 
   if (!auth) throw new Error("AuthContext must be used within an AuthProvider");
   const { isLoginLoading, login } = auth;
@@ -63,7 +62,7 @@ export default function Login() {
         </div>
         <div className="absolute w-full h-20 top-10 flex justify-center items-end">
           <div className="bg-blue-950 border-2 border-slate-400 rounded-lg p-3 flex items-center justify-center text-white gap-2">
-            <h1 className="text-2xl">FlexForm</h1>
+            <h1 className="text-2xl">Paradize</h1>
             <img src={logoNoBG} alt="logo" className="w-10" />
           </div>
         </div>

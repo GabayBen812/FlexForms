@@ -6,7 +6,7 @@ import { ApiQueryParams, ApiResponse } from "@/types/ui/data-table-types";
 import { MutationResponse } from "@/types/api/auth";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
 
@@ -23,37 +23,50 @@ export default function OrganizationsTable() {
   const columns: ColumnDef<Organization>[] = [
     { accessorKey: "name", header: t("organization_name") },
     { accessorKey: "description", header: t("organization_description") },
-    { accessorKey: "owner", header: t("organization_owner") },
+    {
+      accessorKey: "owner",
+      header: t("organization_owner"),
+      cell: ({ row }) => {
+        const owner = row.original.owner;
+        if (typeof owner === "object" && owner !== null) {
+          return (owner as any).name || (owner as any).email || String(owner);
+        }
+        return owner ? String(owner) : "";
+      },
+    },
   ];
 
-  async function fetchData(
-    params: ApiQueryParams
-  ): Promise<ApiResponse<Organization> | MutationResponse<Organization[]>> {
-    const mergedParams = { ...params, ...advancedFilters };
-    if (user?.role === "system_admin") {
-      const res = await fetchAllOrganizations(mergedParams);
-      const orgs: Organization[] = Array.isArray(res.data)
-        ? res.data.filter(Boolean)
-        : [];
-      return {
-        data: orgs,
-        totalCount: orgs.length,
-        totalPages: 1,
-      };
-    } else {
-      const res = await fetchOrganization(mergedParams.search);
-      const orgs: Organization[] = Array.isArray(res.data)
-        ? res.data.filter(Boolean)
-        : res.data
-        ? [res.data]
-        : [];
-      return {
-        data: orgs,
-        totalCount: orgs.length,
-        totalPages: 1,
-      };
-    }
-  }
+  const fetchData = useCallback(
+    async (
+      params: ApiQueryParams
+    ): Promise<ApiResponse<Organization> | MutationResponse<Organization[]>> => {
+      const mergedParams = { ...params, ...advancedFilters };
+      if (user?.role === "system_admin") {
+        const res = await fetchAllOrganizations(mergedParams);
+        const orgs: Organization[] = Array.isArray(res.data)
+          ? res.data.filter(Boolean)
+          : [];
+        return {
+          data: orgs,
+          totalCount: orgs.length,
+          totalPages: 1,
+        };
+      } else {
+        const res = await fetchOrganization(mergedParams.search);
+        const orgs: Organization[] = Array.isArray(res.data)
+          ? res.data.filter(Boolean)
+          : res.data
+          ? [res.data]
+          : [];
+        return {
+          data: orgs,
+          totalCount: orgs.length,
+          totalPages: 1,
+        };
+      }
+    },
+    [user?.role, advancedFilters]
+  );
 
   return (
     <div className="mx-auto">
@@ -61,7 +74,6 @@ export default function OrganizationsTable() {
         {t("organizations")}
       </h1>
       <DataTable<Organization>
-        data={[]}
         columns={columns}
         fetchData={fetchData}
         addData={noop}

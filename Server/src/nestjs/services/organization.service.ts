@@ -43,7 +43,8 @@ export class OrganizationService {
     });
 
     console.log('Constructed filter:', filter);
-    return this.model.find(filter).exec();
+    // Populate the owner field with user data
+    return this.model.find(filter).populate('owner', 'name email').exec();
   }
 
   async findById(id: string) {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   getCoreRowModel,
@@ -189,13 +189,13 @@ export function DataTable<TData>({
     try {
       setIsLoading(true);
       await deleteData(id);
-      await loadData(); 
+      await loadDataMemoized(); 
       toast.success(t("deleted_successfully"));
     } catch (error) {
       console.error("Failed to delete data:", error);
       toast.error(t("delete_failed"));
       // Refresh the table to ensure it's in sync
-      await loadData();
+      await loadDataMemoized();
     } finally {
       setIsLoading(false);
     }
@@ -235,72 +235,11 @@ export function DataTable<TData>({
     },
   });
   const selectedRowCount = table.getSelectedRowModel?.().rows.length ?? 0;
-  const loadData = async (isLoadingMore: boolean = false) => {
-    if (!fetchData || isLoading) return;
-    if (isLoadingMore && !hasMore) return;
-
-    setIsLoading(true);
-    try {
-      const queryParams: ApiQueryParams = {
-        page:
-          isLazyLoading && isLoadingMore
-            ? Math.ceil(tableData.length / pagination.pageSize) + 1
-            : 1,
-        pageSize: pagination.pageSize,
-        sortBy: sorting.length > 0 ? sorting[0].id : undefined,
-        sortOrder:
-          sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : undefined,
-        search: globalFilter,
-        ...advancedFilters,
-        ...extraFilters,
-      };
-
-      console.log("Fetching data with params:", queryParams);
-
-      const response = await fetchData(queryParams);
-      // Handle nested response structure
-      //@ts-ignore
-      const newData = Array.isArray(response.data)
-        ? response.data
-        : //@ts-ignore
-          response.data?.data || [];
-      //@ts-ignore
-      let total = response.data?.totalCount || 0;
-
-      console.log("Debug hasMore values:", {
-        isLazyLoading,
-        isLoadingMore,
-        newDataLength: newData.length,
-        currentTableDataLength: tableData.length,
-        total,
-        queryPage: queryParams.page,
-        wouldHaveMore: isLoadingMore
-          ? tableData.length + newData.length < total
-          : newData.length < total,
-      });
-
-      if (isLazyLoading && isLoadingMore) {
-        setTableData((prev) => [...prev, ...newData]);
-        const newTotal = tableData.length + newData.length;
-        setHasMore(newTotal < total);
-      } else {
-        setTableData(newData);
-        setHasMore(newData.length < total);
-      }
-
-      setTotalCount(total);
-    } catch (error) {
-      console.error("Failed to fetch data:", error);
-      toast.error(t("error"));
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleLoadMore = () => {
     console.log("handleLoadMore called", { hasMore, isLoading });
     if (isLazyLoading && hasMore && !isLoading) {
-      loadData(true);
+      loadDataMemoized(true);
     }
   };
 
@@ -309,16 +248,130 @@ export function DataTable<TData>({
     [JSON.stringify(extraFilters)]
   );
 
+  // Memoize advancedFilters to prevent infinite loops
+  const memoizedAdvancedFilters = useMemo(
+    () => advancedFilters,
+    [JSON.stringify(advancedFilters)]
+  );
+
+  // Track if initial load has happened
+  const hasLoadedRef = useRef(false);
+
+  // Use ref to track tableData length for lazy loading without causing re-renders
+  const tableDataLengthRef = useRef(0);
+
+  // Memoize loadData to prevent recreation on every render
+  const loadDataMemoized = useCallback(
+    async (isLoadingMore: boolean = false) => {
+      if (!fetchData || isLoading) return;
+      if (isLoadingMore && !hasMore) return;
+
+      setIsLoading(true);
+      try {
+        const queryParams: ApiQueryParams = {
+          page:
+            isLazyLoading && isLoadingMore
+              ? Math.ceil(tableDataLengthRef.current / pagination.pageSize) + 1
+              : 1,
+          pageSize: pagination.pageSize,
+          sortBy: sorting.length > 0 ? sorting[0].id : undefined,
+          sortOrder:
+            sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : undefined,
+          search: globalFilter,
+          ...memoizedAdvancedFilters,
+          ...memoizedExtraFilters,
+        };
+
+        console.log("Fetching data with params:", queryParams);
+
+        const response = await fetchData(queryParams);
+        // Handle nested response structure
+        //@ts-ignore
+        const newData = Array.isArray(response.data)
+          ? response.data
+          : //@ts-ignore
+            response.data?.data || [];
+        //@ts-ignore
+        let total = response.data?.totalCount || 0;
+
+        if (isLazyLoading && isLoadingMore) {
+          setTableData((prev) => {
+            const updated = [...prev, ...newData];
+            tableDataLengthRef.current = updated.length;
+            return updated;
+          });
+          const newTotal = tableDataLengthRef.current;
+          setHasMore(newTotal < total);
+        } else {
+          setTableData(newData);
+          tableDataLengthRef.current = newData.length;
+          setHasMore(newData.length < total);
+        }
+
+        setTotalCount(total);
+        hasLoadedRef.current = true;
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+        toast.error(t("error"));
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [
+      fetchData,
+      isLoading,
+      hasMore,
+      isLazyLoading,
+      pagination.pageSize,
+      sorting,
+      globalFilter,
+      memoizedAdvancedFilters,
+      memoizedExtraFilters,
+    ]
+  );
+
+  // Track previous values to detect actual changes
+  const prevDepsRef = useRef({
+    sorting: JSON.stringify(sorting),
+    globalFilter,
+    advancedFilters: JSON.stringify(memoizedAdvancedFilters),
+    extraFilters: JSON.stringify(memoizedExtraFilters),
+    pageSize: pagination.pageSize,
+  });
+
   useEffect(() => {
-    if (!isLazyLoading || tableData.length === 0) {
-      loadData(false);
+    const currentDeps = {
+      sorting: JSON.stringify(sorting),
+      globalFilter,
+      advancedFilters: JSON.stringify(memoizedAdvancedFilters),
+      extraFilters: JSON.stringify(memoizedExtraFilters),
+      pageSize: pagination.pageSize,
+    };
+
+    // Check if any dependency actually changed
+    const hasChanged = 
+      prevDepsRef.current.sorting !== currentDeps.sorting ||
+      prevDepsRef.current.globalFilter !== currentDeps.globalFilter ||
+      prevDepsRef.current.advancedFilters !== currentDeps.advancedFilters ||
+      prevDepsRef.current.extraFilters !== currentDeps.extraFilters ||
+      prevDepsRef.current.pageSize !== currentDeps.pageSize;
+
+    if (hasChanged || !hasLoadedRef.current) {
+      if (!isLazyLoading || tableDataLengthRef.current === 0) {
+        prevDepsRef.current = currentDeps;
+        loadDataMemoized(false);
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     sorting,
     globalFilter,
-    advancedFilters,
-    extraFilters,
+    memoizedAdvancedFilters,
+    memoizedExtraFilters,
     pagination.pageSize,
+    isLazyLoading,
+    // Note: loadDataMemoized is intentionally omitted to prevent infinite loops
+    // It's stable due to useCallback with proper dependencies
   ]);
 
   useEffect(() => {

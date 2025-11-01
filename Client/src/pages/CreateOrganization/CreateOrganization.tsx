@@ -31,7 +31,7 @@ function CreateOrganization() {
         {!isSuccess && (
           <div className="font-normal flex items-center bg-white py-12 px-4 rounded-lg min-w-[28rem] w-1/4 max-w-[36rem] aspect-square shadow-lg flex-col gap-6">
             <GalleryVerticalEnd className="size-8" />
-            <h1 className="font-medium text-2xl">יצירת חברה</h1>
+            <h1 className="font-medium text-2xl">יצירת ארגון</h1>
             <form
               className="flex flex-col items-center gap-6 w-3/4"
               onSubmit={onSubmit}
@@ -41,7 +41,7 @@ function CreateOrganization() {
                 name="companyName"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="שם החברה"
+                placeholder="שם הארגון"
               />
               {errorMessage && (
                 <p className="text-red-500 text-right font-normal">

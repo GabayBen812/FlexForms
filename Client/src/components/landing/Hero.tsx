@@ -17,10 +17,10 @@ export default function Hero() {
         <div className="pt-36 md:pt-40 md:pb-20">
           <div className="max-w-xl md:max-w-none text-center md:text-right md:w-[600px]">
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              Paradize - מערכת ניהול למוסדות חינוך
+              Paradize - מערכת ניהול למוסדות חינוך, ספורט וקהילה
             </h1>
             <p className="text-lg text-blue-200 mb-8 leading-relaxed">
-              המערכת המתקדמת בישראל לניהול מלא של התלמידים, הילדים ורשומים במוסד החינוכי והלימודי שלך
+              מערכת ניהול חכמה ומשולבת למוסדות חינוך וקהילה, לניהול כל התלמידים והתפעול במוסד החינוכי שלך.
               <br />
               <span className="text-3xl block mt-2">
                 בחינוך, כל יום הוא הזדמנות לגעת בעתיד

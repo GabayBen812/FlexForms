@@ -5,14 +5,27 @@ import Login from "@/pages/Login/Login";
 import { Layout } from "@/components/layouts/Layout";
 import HomeIcon from "@/assets/icons/HomeIcon";
 import ReportsIcon from "@/assets/icons/ReportsIcon";
-import CallsIcon from "@/assets/icons/CallsIcon";
+import TasksIcon from "@/assets/icons/TasksIcon";
+import MessagesIcon from "@/assets/icons/MessagesIcon";
+import EmplyeesIcon from "@/assets/icons/EmployeesIcon";
 import PaymentsIcon from "@/assets/icons/PaymentsIcon";
 import PeopleIcon from "@/assets/icons/PeopleIcon";
+import ScheduleIcon from "@/assets/icons/ScheduleIcon";
+import UserIcon from "@/assets/icons/UserIcon";
 import Settings from "@/pages/Settings/Settings";
 import OrganizationSettings from "@/pages/OrganizationSettings";
 import SettingsIcon from "@/assets/icons/SettingsIcon";
 import ClubsIcon from "@/assets/icons/ClubsIcon";
 import Payments from "@/pages/Payments";
+import KidsPage from "@/pages/KidsPage";
+import ParentsPage from "@/pages/ParentsPage";
+import MessagesPage from "@/pages/MessagesPage";
+import EmployeesPage from "@/pages/EmployeesPage";
+import TasksPage from "@/pages/TasksPage";
+import SchedulePage from "@/pages/SchedulePage";
+
+
+
 import Home from "@/pages/Home";
 import Forms from "@/pages/Forms";
 import Users from "@/pages/Users";
@@ -51,6 +64,26 @@ export const router = createBrowserRouter([
         path: "home",
         element: <Home />,
         handle: { title: "home", icon: HomeIcon, showInSidebar: true },
+      },
+      {
+        path: "kids",
+        element: <KidsPage />,
+        handle: {
+          title: "kids",
+          showInSidebar: true,
+          icon:PeopleIcon,
+          featureFlag: "IS_SHOW_KIDS"
+        },
+      },
+      {
+        path: "parents",
+        element: <ParentsPage />,
+        handle: {
+          title: "parents",
+          showInSidebar: true,
+          icon:PeopleIcon,
+          featureFlag: "IS_SHOW_PARENTS"
+        },
       },
       {
         path: "forms",
@@ -114,13 +147,13 @@ export const router = createBrowserRouter([
           title: "payments",
           icon: PaymentsIcon,
           showInSidebar: true,
-          featureFlag: "is_show_payments",
+          featureFlag: "IS_SHOW_PAYMENTS",
         },
       },
       {
         path: "users",
         element: <Users />,
-        handle: { title: "users", icon: PeopleIcon, showInSidebar: true },
+        handle: { title: "users", icon: UserIcon, showInSidebar: true },
       },
       {
         path: "clubs",
@@ -148,6 +181,57 @@ export const router = createBrowserRouter([
         element: <Requests />,
         handle: { title: "requests", icon: ClubsIcon, showInSidebar: true, featureFlag: "is_show_requests" },
       },
+      
+      {
+        path: "messages",
+        element: <MessagesPage />,
+        handle: {
+          title: "messages",
+          icon: MessagesIcon,
+          showInSidebar: true,
+          featureFlag: "is_show_messages"
+        },
+      },
+      {
+        path: "employees",
+        element: <EmployeesPage />,
+        handle: {
+          title: "employees",
+          icon: EmplyeesIcon,
+          showInSidebar: true,
+          featureFlag: "IS_SHOW_EMPLYESS"
+        },
+      },
+      {
+        path: "tasks",
+        element: <TasksPage />,
+        handle: {
+          title: "tasks",
+          icon: TasksIcon,
+          showInSidebar: true,
+          featureFlag: "IS_SHOW_TASKS"
+        },
+      },
+      {
+        path: "schedule",
+        element: <SchedulePage />,
+        handle: {
+          title: "schedule",
+          icon: ScheduleIcon,
+          showInSidebar: true,
+          featureFlag: "IS_SHOW_SCHEDULE"
+        },
+      },
+      {
+        path: "leads",
+        element: <OrganizationSettings />,
+        handle: {
+          title: "leads",
+          icon: SettingsIcon,
+          showInSidebar: true,
+          featureFlag: "IS_SHOW_LEADS"
+        },
+      },
       {
         path: "organization-settings",
         element: <OrganizationSettings />,
@@ -157,16 +241,8 @@ export const router = createBrowserRouter([
           showInSidebar: true,
         },
       },
-      {
-        path: "messages",
-        element: <OrganizationSettings />,
-        handle: {
-          title: "messages",
-          icon: SettingsIcon,
-          showInSidebar: true,
-          featureFlag: "is_show_messages"
-        },
-      },
+      
+      
       {
         path: "settings",
         element: <Settings />,

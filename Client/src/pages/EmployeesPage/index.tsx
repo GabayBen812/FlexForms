@@ -1,19 +1,16 @@
 import { useTranslation } from "react-i18next";
-import { useContext } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 
 import DataTable from "@/components/ui/completed/data-table";
-import DynamicForm, { FieldConfig } from "@/components/forms/DynamicForm";
-import { OrganizationsContext } from "@/contexts/OrganizationsContext";
+import { useOrganization } from "@/hooks/useOrganization";
 import { TableAction, ApiQueryParams } from "@/types/ui/data-table-types";
 import { createApiService } from "@/api/utils/apiFactory";
-import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
-import { Button } from "@/components/ui/button";
 import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
+import { Button } from "@/components/ui/button";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
 import { toast } from "sonner";
 
@@ -27,8 +24,6 @@ export interface Employee {
   email: string;
   idNumber?: string;
   organizationId: string;
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 const employeesApi = createApiService<Employee>("/employees", {
@@ -37,20 +32,20 @@ const employeesApi = createApiService<Employee>("/employees", {
 
 export default function EmployeesPage() {
   const { t } = useTranslation();
-  const { organization } = useContext(OrganizationsContext);
+  const { organization } = useOrganization();
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
     {}
   );
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const columns: ColumnDef<Employee>[] = [
     { accessorKey: "firstname", header: t("firstname") },
     { accessorKey: "lastname", header: t("lastname") },
-    { accessorKey: "address", header: t("address") || "Address" },
-    { accessorKey: "phone", header: t("phone") || "Phone" },
-    { accessorKey: "email", header: t("email") || "Email" },
-    { accessorKey: "idNumber", header: t("id") || "ID" },
+    { accessorKey: "address", header: t("address") },
+    { accessorKey: "phone", header: t("phone") },
+    { accessorKey: "email", header: t("email") },
+    { accessorKey: "idNumber", header: t("id") },
     { accessorKey: "organizationId", header: "", meta: { hidden: true } },
   ];
 
@@ -72,12 +67,14 @@ export default function EmployeesPage() {
       };
       const res = await employeesApi.create(newEmployee);
       if (res.status === 200 || res.data) {
-        toast.success(t("form_created_success") || "Employee created successfully");
-        // Table will refresh automatically via fetchData
+        toast.success(t("form_created_success"));
+        setIsAddDialogOpen(false);
+        // Trigger table refresh
+        setRefreshTrigger((prev) => prev + 1);
       }
     } catch (error) {
       console.error("Error creating employee:", error);
-      toast.error(t("error") || "Error creating employee");
+      toast.error(t("error"));
       throw error;
     }
   };
@@ -89,20 +86,10 @@ export default function EmployeesPage() {
       </h1>
       <DataTable<Employee>
         data={[]}
-        fetchData={async (params) => {
+        fetchData={(params) => {
           if (!organization?._id)
             return Promise.resolve({ status: 200, data: [] });
-          const res = await employeesApi.fetchAll(params, false, organization._id);
-          if (Array.isArray(res.data)) {
-            return {
-              ...res,
-              data: res.data.map((item: any) => ({
-                ...item,
-                id: item._id || item.id,
-              })),
-            };
-          }
-          return res;
+          return employeesApi.fetchAll(params, false, organization._id);
         }}
         addData={employeesApi.create}
         updateData={employeesApi.update}
@@ -119,6 +106,7 @@ export default function EmployeesPage() {
         idField="_id"
         extraFilters={advancedFilters}
         organazitionId={organization?._id}
+        refreshTrigger={refreshTrigger}
         customLeftButtons={
           <Button variant="outline" onClick={() => setIsAddDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" /> {t("add")}

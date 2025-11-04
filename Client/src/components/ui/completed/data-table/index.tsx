@@ -83,6 +83,8 @@ export function DataTable<TData>({
   visibleRows,
   isLazyLoading = false,
   organazitionId,
+  onRefreshReady,
+  refreshTrigger,
 
 }: DataTableProps<TData> & { extraFilters?: Record<string, any>; customLeftButtons?: React.ReactNode }) {
   const [tableData, setTableData] = useState<TData[]>([]);
@@ -380,6 +382,21 @@ export function DataTable<TData>({
       visibleRows(table.getRowModel().rows.map((row) => row.original));
     }
   }, [table.getRowModel().rows, visibleRows]);
+
+  // Expose refresh function to parent component
+  useEffect(() => {
+    if (onRefreshReady) {
+      onRefreshReady(() => loadDataMemoized(false));
+    }
+  }, [onRefreshReady, loadDataMemoized]);
+
+  // Trigger refresh when refreshTrigger changes
+  useEffect(() => {
+    if (refreshTrigger !== undefined && refreshTrigger > 0) {
+      loadDataMemoized(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshTrigger]);
 
   const toggleAddRow = () => {
     setSpecialRow((prev) => (prev === "add" ? null : "add"));

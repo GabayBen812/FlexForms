@@ -13,13 +13,13 @@ export default function WelcomeBanner() {
     <Card className="mb-6 shadow-none bg-transparent border-none">
       <CardHeader className="pb-2">
         <h2 className="text-2xl font-bold text-primary">
-          {t("welcome", "ברוך הבא")}
+          {t("welcome")}
           {user?.name ? `, ${user.name}` : ""}!
         </h2>
       </CardHeader>
       <CardContent>
         <div className="mt-2 text-sm text-muted-foreground">
-          {t("motivation", "מאחלים לך יום עבודה מוצלח ופורה!")}
+          {t("motivation")}
         </div>
       </CardContent>
     </Card>

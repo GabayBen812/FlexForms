@@ -10,8 +10,10 @@ import apiClient from "@/api/apiClient";
 import WelcomeBanner from "@/components/home/WelcomeBanner";
 import DashboardWidgets from "@/components/home/DashboardWidgets";
 import { createApiService } from "@/api/utils/apiFactory";
+import { useTranslation } from "react-i18next";
 
 export default function Home() {
+  const { t } = useTranslation();
   const { organization } = useContext(OrganizationsContext);
   const auth = useContext(AuthContext);
   const navigate = useNavigate();
@@ -130,65 +132,65 @@ export default function Home() {
   const allCards = [
     roomsFF && {
       key: "rooms",
-      title: "חדרים",
+      title: t("rooms"),
       value: roomsLoading ? "..." : rooms.length,
-      description: "מספר חדרים בארגון",
+      description: t("rooms_count_in_org"),
       onClick: () => navigate("/rooms"),
       icon: "DoorOpen",
     },
     formsFF && {
       key: "forms",
-      title: "טפסים",
+      title: t("forms"),
       value: formsLoading ? "..." : forms.length,
-      description: "מספר טפסים בארגון",
+      description: t("forms_count_in_org"),
       onClick: () => navigate("/forms"),
       icon: "FileText",
     },
     (usersFF || userRole === "admin" || userRole === "system_admin") && {
       key: "users",
-      title: "משתמשים",
+      title: t("users"),
       value: usersLoading ? "..." : users.length,
-      description: "משתמשים בארגון",
+      description: t("users_in_org"),
       onClick: () => navigate("/users"),
       icon: "Users",
     },
     paymentsFF && {
       key: "payments",
-      title: "תשלומים",
+      title: t("payments"),
       value: paymentsLoading ? "..." : payments.length,
-      description: "סך התשלומים בארגון",
+      description: t("total_payments_in_org"),
       onClick: () => navigate("/payments"),
       icon: "CreditCard",
     },
     kidsFF && {
       key: "kids",
-      title: "ילדים",
+      title: t("kids"),
       value: kidsLoading ? "..." : (Array.isArray(kids) ? kids.length : 0),
-      description: "מספר ילדים בארגון",
+      description: t("kids_count_in_org"),
       onClick: () => navigate("/kids"),
       icon: "PeopleIcon",
     },
     parentsFF && {
       key: "parents",
-      title: "הורים",
+      title: t("parents"),
       value: parentsLoading ? "..." : (Array.isArray(parents) ? parents.length : 0),
-      description: "מספר הורים בארגון",
+      description: t("parents_count_in_org"),
       onClick: () => navigate("/parents"),
       icon: "PeopleIcon",
     },
     employeesFF && {
       key: "employees",
-      title: "עובדים",
+      title: t("employees"),
       value: employeesLoading ? "..." : (Array.isArray(employees) ? employees.length : 0),
-      description: "מספר עובדים בארגון",
+      description: t("employees_count_in_org"),
       onClick: () => navigate("/employees"),
       icon: "EmployeesIcon",
     },
     tasksFF && {
       key: "tasks",
-      title: "משימות",
+      title: t("tasks"),
       value: tasksLoading ? "..." : (Array.isArray(tasks) ? tasks.length : 0),
-      description: "מספר משימות בארגון",
+      description: t("tasks_count_in_org"),
       onClick: () => navigate("/tasks"),
       icon: "TasksIcon",
     },

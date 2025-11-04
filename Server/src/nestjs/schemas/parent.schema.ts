@@ -1,10 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-export type KidDocument = Kid & Document;
+export type ParentDocument = Parent & Document;
 
 @Schema({ timestamps: false, versionKey: false })
-export class Kid {
+export class Parent {
   @Prop({ required: true })
   firstname!: string;
 
@@ -17,8 +17,8 @@ export class Kid {
   @Prop({ required: true })
   sex!: string;
 
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
-  linked_parents!: Types.ObjectId[];
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Kid' }], default: [] })
+  linked_kids!: Types.ObjectId[];
 
   @Prop()
   address?: string;
@@ -27,6 +27,6 @@ export class Kid {
   organizationId!: Types.ObjectId;
 }
 
-export const KidSchema = SchemaFactory.createForClass(Kid);
-KidSchema.set('collection', 'Kids');
+export const ParentSchema = SchemaFactory.createForClass(Parent);
+ParentSchema.set('collection', 'Parents');
 

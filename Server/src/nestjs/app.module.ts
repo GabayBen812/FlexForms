@@ -14,6 +14,8 @@ import { clubModule } from './modules/club.moudle';
 import { FeatureFlagModule } from './modules/feature-flag.module';
 import { RoomModule } from './modules/room.module';
 import { KidModule } from './modules/kid.module';
+import { ParentModule } from './modules/parent.module';
+import { EmployeeModule } from './modules/employee.module';
 import { HealthController } from './controllers/health.controller';
 dotenv.config();
 @Module({
@@ -29,7 +31,9 @@ dotenv.config();
     clubModule,
     FeatureFlagModule,
     RoomModule,
-    KidModule
+    KidModule,
+    ParentModule,
+    EmployeeModule
   ],
   controllers: [AuthController, HealthController],
   providers: [AuthService],

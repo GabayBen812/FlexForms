@@ -111,12 +111,12 @@ export default function Payments() {
       };
       const res = await paymentsApi.create(newPayment);
       if (res.status === 200 || res.data) {
-        toast.success(t("form_created_success") || "Payment created successfully");
+        toast.success(t("form_created_success"));
         // Table will refresh automatically via fetchData
       }
     } catch (error) {
       console.error("Error creating payment:", error);
-      toast.error(t("error") || "Error creating payment");
+      toast.error(t("error"));
       throw error;
     }
   };

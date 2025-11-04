@@ -26,13 +26,14 @@ export default function KidsPage() {
     {}
   );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const columns: ColumnDef<Kid>[] = [
     { accessorKey: "firstname", header: t("firstname") },
     { accessorKey: "lastname", header: t("lastname") },
     { accessorKey: "birthdate", header: t("birthdate") },
     { accessorKey: "sex", header: t("sex") },
-    { accessorKey: "address", header: t("address") || "Address" },
+    { accessorKey: "address", header: t("address") },
     { accessorKey: "linked_parents", header: t("linked_parents") },
     { accessorKey: "organizationId", header: "", meta: { hidden: true } },
   ];
@@ -56,12 +57,14 @@ export default function KidsPage() {
       };
       const res = await kidsApi.create(newKid);
       if (res.status === 200 || res.data) {
-        toast.success(t("form_created_success") || "Kid created successfully");
-        // Table will refresh automatically via fetchData
+        toast.success(t("form_created_success"));
+        setIsAddDialogOpen(false);
+        // Trigger table refresh
+        setRefreshTrigger((prev) => prev + 1);
       }
     } catch (error) {
       console.error("Error creating kid:", error);
-      toast.error(t("error") || "Error creating kid");
+      toast.error(t("error"));
       throw error;
     }
   };
@@ -93,6 +96,7 @@ export default function KidsPage() {
         idField="_id"
         extraFilters={advancedFilters}
         organazitionId={organization?._id}
+        refreshTrigger={refreshTrigger}
         customLeftButtons={
           <Button variant="outline" onClick={() => setIsAddDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" /> {t("add")}

@@ -30,10 +30,10 @@ export default function Requests() {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [requests, setRequests] = useState<Request[]>([]);
   const statusOptions = [
-  { value: "בעריכה", label: "בעריכה" },
-  { value: "הוגש", label: "הוגש" },
-  { value: "טופל", label: "טופל" },
-  { value: "נדחה", label: "נדחה" },
+  { value: "בעריכה", label: t("status_in_editing") },
+  { value: "הוגש", label: t("status_submitted") },
+  { value: "טופל", label: t("status_handled") },
+  { value: "נדחה", label: t("status_rejected") },
 ];
 
   const columns: ColumnDef<Request, any>[] = [

@@ -75,6 +75,8 @@ export interface DataTableProps<TData> {
   columnOrder?: string[];
   [key: string]: any;
   visibleRows?: (rows: TData[]) => void;
+  onRefreshReady?: (refreshFn: () => void) => void;
+  refreshTrigger?: number;
 }
 
 export interface TableAction<TData> {

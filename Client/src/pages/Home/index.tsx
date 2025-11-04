@@ -21,9 +21,13 @@ export default function Home() {
   }, []);
   // Feature flags
   const { isEnabled: roomsFF } = useFeatureFlag("ff_is_show_rooms");
-  const { isEnabled: paymentsFF } = useFeatureFlag("is_show_payments");
+  const { isEnabled: paymentsFF } = useFeatureFlag("IS_SHOW_PAYMENTS");
   const { isEnabled: usersFF } = useFeatureFlag("ff_is_show_users");
   const { isEnabled: formsFF } = useFeatureFlag("is_show_forms");
+  const { isEnabled: kidsFF } = useFeatureFlag("IS_SHOW_KIDS");
+  const { isEnabled: parentsFF } = useFeatureFlag("IS_SHOW_PARENTS");
+  const { isEnabled: employeesFF } = useFeatureFlag("IS_SHOW_EMPLYESS");
+  const { isEnabled: tasksFF } = useFeatureFlag("IS_SHOW_TASKS");
 
   const userRole = auth?.user?.role;
   const { data: rooms = [], isLoading: roomsLoading } = useQuery({
@@ -70,6 +74,58 @@ export default function Home() {
     enabled: formsFF && !!organization?._id,
   });
 
+  const { data: kids = [], isLoading: kidsLoading } = useQuery({
+    queryKey: ["kids", organization?._id],
+    queryFn: async () => {
+      const res = await apiClient.get("/kids", {
+        params: {
+          organizationId: organization?._id,
+        },
+      });
+      return res.data;
+    },
+    enabled: kidsFF && !!organization?._id,
+  });
+
+  const { data: parents = [], isLoading: parentsLoading } = useQuery({
+    queryKey: ["parents", organization?._id],
+    queryFn: async () => {
+      const res = await apiClient.get("/parents", {
+        params: {
+          organizationId: organization?._id,
+        },
+      });
+      return res.data;
+    },
+    enabled: parentsFF && !!organization?._id,
+  });
+
+  const { data: employees = [], isLoading: employeesLoading } = useQuery({
+    queryKey: ["employees", organization?._id],
+    queryFn: async () => {
+      const res = await apiClient.get("/employees", {
+        params: {
+          organizationId: organization?._id,
+        },
+      });
+      return res.data;
+    },
+    enabled: employeesFF && !!organization?._id,
+  });
+
+  const { data: tasks = [], isLoading: tasksLoading } = useQuery({
+    queryKey: ["tasks", organization?._id],
+    queryFn: async () => {
+      const res = await apiClient.get("/tasks", {
+        params: {
+          organizationId: organization?._id,
+        },
+      });
+      return res.data;
+    },
+    enabled: tasksFF && !!organization?._id,
+  });
+
   // Prepare all possible cards
   const allCards = [
     roomsFF && {
@@ -104,10 +160,42 @@ export default function Home() {
       onClick: () => navigate("/payments"),
       icon: "CreditCard",
     },
+    kidsFF && {
+      key: "kids",
+      title: "ילדים",
+      value: kidsLoading ? "..." : (Array.isArray(kids) ? kids.length : 0),
+      description: "מספר ילדים בארגון",
+      onClick: () => navigate("/kids"),
+      icon: "PeopleIcon",
+    },
+    parentsFF && {
+      key: "parents",
+      title: "הורים",
+      value: parentsLoading ? "..." : (Array.isArray(parents) ? parents.length : 0),
+      description: "מספר הורים בארגון",
+      onClick: () => navigate("/parents"),
+      icon: "PeopleIcon",
+    },
+    employeesFF && {
+      key: "employees",
+      title: "עובדים",
+      value: employeesLoading ? "..." : (Array.isArray(employees) ? employees.length : 0),
+      description: "מספר עובדים בארגון",
+      onClick: () => navigate("/employees"),
+      icon: "EmployeesIcon",
+    },
+    tasksFF && {
+      key: "tasks",
+      title: "משימות",
+      value: tasksLoading ? "..." : (Array.isArray(tasks) ? tasks.length : 0),
+      description: "מספר משימות בארגון",
+      onClick: () => navigate("/tasks"),
+      icon: "TasksIcon",
+    },
   ].filter(Boolean);
 
-  // Show up to 4 cards based on permissions
-  const visibleCards = allCards.slice(0, 4);
+  // Show all cards (removed the 4 card limit)
+  const visibleCards = allCards;
 
   return (
     <div className="min-h-screen w-full bg-muted/50 flex flex-col">

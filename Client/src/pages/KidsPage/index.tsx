@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { z } from "zod";
-import { useState, useCallback } from "react";
-import { Plus, Trash, Pencil } from "lucide-react";
+import { useState, useCallback, useMemo } from "react";
+import { Plus, Trash, Pencil, Settings } from "lucide-react";
 
 import DataTable from "@/components/ui/completed/data-table";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -13,6 +13,8 @@ import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
+import { TableFieldConfigDialog } from "@/components/ui/completed/dialogs/TableFieldConfigDialog";
+import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDateForEdit } from "@/lib/dateUtils";
@@ -29,6 +31,7 @@ export default function KidsPage() {
   );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isFieldConfigDialogOpen, setIsFieldConfigDialogOpen] = useState(false);
   const [editingKid, setEditingKid] = useState<Kid | null>(null);
   const [refreshFn, setRefreshFn] = useState<(() => void) | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -87,13 +90,13 @@ export default function KidsPage() {
 
   const columns: ColumnDef<Kid>[] = [
     selectionColumn,
-    { accessorKey: "firstname", header: t("firstname") },
-    { accessorKey: "lastname", header: t("lastname") },
-    { accessorKey: "birthdate", header: t("birthdate"), meta: { isDate: true } },
-    { accessorKey: "sex", header: t("sex") },
-    { accessorKey: "address", header: t("address") },
-    { accessorKey: "linked_parents", header: t("linked_parents") },
-    { accessorKey: "organizationId", header: "", meta: { hidden: true } },
+    { accessorKey: "firstname", header: t("firstname"), meta: { editable: true } },
+    { accessorKey: "lastname", header: t("lastname"), meta: { editable: true } },
+    { accessorKey: "birthdate", header: t("birthdate"), meta: { isDate: true, editable: true } },
+    { accessorKey: "sex", header: t("sex"), meta: { editable: true } },
+    { accessorKey: "address", header: t("address"), meta: { editable: true } },
+    { accessorKey: "linked_parents", header: t("linked_parents"), meta: { editable: false } }, // Complex field, not editable inline
+    { accessorKey: "organizationId", header: "", meta: { hidden: true, editable: false } },
     // Place selectionColumn as the last item so it renders at the right side of the table.
   ];
 
@@ -102,6 +105,16 @@ export default function KidsPage() {
     (col) => !col.meta?.hidden
   );
 
+  // Merge static columns with dynamic fields
+  const mergedColumns = useMemo(() => {
+    return mergeColumnsWithDynamicFields(
+      visibleColumns,
+      "kids",
+      organization,
+      t
+    );
+  }, [visibleColumns, organization, t]);
+
   const actions: TableAction<Kid>[] = [
     { label: t("edit"), type: "edit" },
     { label: t("delete"), type: "delete" },
@@ -109,11 +122,15 @@ export default function KidsPage() {
 
   const handleAddKid = async (data: any) => {
     try {
+      console.log("handleAddKid received data:", data);
       const newKid = {
         ...data,
         organizationId: organization?._id || "",
         linked_parents: data.linked_parents || [],
+        // Preserve dynamicFields if it exists
+        ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
       };
+      console.log("newKid to send:", newKid);
       const res = await kidsApi.create(newKid);
       if (res.status === 200 || res.data) {
         toast.success(t("form_created_success"));
@@ -135,7 +152,9 @@ export default function KidsPage() {
         ...data,
         id: editingKid._id,
         organizationId: organization?._id || "",
-        linked_parents: data.linked_parents || [],
+        linked_parents: data.linked_parents || editingKid.linked_parents || [],
+        // Preserve dynamicFields if they exist
+        ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
       };
       const res = await kidsApi.update(updatedKid);
       if (res.status === 200 || res.data) {
@@ -193,7 +212,7 @@ export default function KidsPage() {
         addData={kidsApi.create}
         updateData={kidsApi.update}
         deleteData={kidsApi.delete}
-        columns={visibleColumns}
+        columns={mergedColumns}
         actions={actions}
         searchable
         showAdvancedSearch
@@ -234,13 +253,20 @@ export default function KidsPage() {
             >
               <Trash className="w-4 h-4 mr-2" /> {t("delete")}
             </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsFieldConfigDialogOpen(true)}
+              className="bg-gray-500 hover:bg-gray-600 text-white border-gray-500 hover:border-gray-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+            >
+              <Settings className="w-4 h-4 mr-2" /> {t("configure_fields", "ערוך שדות דינאמיים")}
+            </Button>
           </div>
         }
       />
       <AddRecordDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
-        columns={visibleColumns}
+        columns={mergedColumns}
         onAdd={handleAddKid}
         excludeFields={["linked_parents", "organizationId"]}
         defaultValues={{
@@ -256,7 +282,7 @@ export default function KidsPage() {
             setEditingKid(null);
           }
         }}
-        columns={visibleColumns}
+        columns={mergedColumns}
         onAdd={handleAddKid}
         onEdit={handleEditKid}
         editMode={true}
@@ -266,11 +292,21 @@ export default function KidsPage() {
           birthdate: formatDateForEdit(editingKid.birthdate),
           sex: editingKid.sex,
           address: editingKid.address || "",
+          ...(editingKid.dynamicFields ? { dynamicFields: editingKid.dynamicFields } : {}),
         } : undefined}
         excludeFields={["linked_parents", "organizationId"]}
         defaultValues={{
           organizationId: organization?._id || "",
           linked_parents: editingKid?.linked_parents || [],
+        }}
+      />
+      <TableFieldConfigDialog
+        open={isFieldConfigDialogOpen}
+        onOpenChange={setIsFieldConfigDialogOpen}
+        entityType="kids"
+        organizationId={organization?._id || ""}
+        onSave={() => {
+          refreshFn?.();
         }}
       />
     </div>

@@ -31,3 +31,22 @@ export const removeFeatureFlagFromOrganization = async (orgId: string, featureFl
 export const updateOrganizationName = async (organizationId: string, name: string) => {
   return apiClient.put(`/organizations/${organizationId}`, { name });
 };
+
+export const fetchTableFieldDefinitions = async (organizationId: string): Promise<MutationResponse<Record<string, any>>> => {
+  const res = await apiClient.get(`/organizations/${organizationId}/table-field-definitions`);
+  return {
+    status: res.status,
+    data: res.data,
+  };
+};
+
+export const updateTableFieldDefinitions = async (
+  organizationId: string,
+  tableFieldDefinitions: Record<string, any>
+): Promise<MutationResponse<Organization>> => {
+  const res = await apiClient.put(`/organizations/${organizationId}/table-field-definitions`, tableFieldDefinitions);
+  return {
+    status: res.status,
+    data: res.data,
+  };
+};

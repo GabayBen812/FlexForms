@@ -513,7 +513,7 @@ export function DataTable<TData>({
             }
           }}
         >
-          <Table className="border-collapse border-spacing-0 text-right relative">
+          <Table className="border-collapse border-spacing-0 text-right relative" style={{ width: "max-content", minWidth: "100%" }}>
             <DataTableHeader
               table={table}
               actions={showActionColumn ? actions : null}

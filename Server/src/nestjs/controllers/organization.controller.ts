@@ -91,4 +91,19 @@ async updateRequestDefinitions(
 ) {
   return this.organizationService.updateRequestDefinitions(id, body);
 }
+
+@Get(':id/table-field-definitions')
+async getTableFieldDefinitions(@Param('id') id: string) {
+  const org = await this.organizationService.findById(id);
+  if (!org) throw new BadRequestException("Organization not found");
+  return org.tableFieldDefinitions || {};
+}
+
+@Put(':id/table-field-definitions')
+async updateTableFieldDefinitions(
+  @Param('id') id: string,
+  @Body() body: Record<string, any>
+) {
+  return this.organizationService.updateTableFieldDefinitions(id, body);
+}
 }

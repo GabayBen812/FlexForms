@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { z } from "zod";
-import { useState, useCallback } from "react";
-import { Plus, Trash, Pencil } from "lucide-react";
+import { useState, useCallback, useMemo } from "react";
+import { Plus, Trash, Pencil, Settings } from "lucide-react";
 
 import DataTable from "@/components/ui/completed/data-table";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -13,6 +13,8 @@ import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
+import { TableFieldConfigDialog } from "@/components/ui/completed/dialogs/TableFieldConfigDialog";
+import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDateForEdit } from "@/lib/dateUtils";
@@ -29,6 +31,7 @@ export default function ParentsPage() {
   );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isFieldConfigDialogOpen, setIsFieldConfigDialogOpen] = useState(false);
   const [editingParent, setEditingParent] = useState<Parent | null>(null);
   const [refreshFn, setRefreshFn] = useState<(() => void) | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -100,6 +103,16 @@ export default function ParentsPage() {
     (col) => !col.meta?.hidden
   );
 
+  // Merge static columns with dynamic fields
+  const mergedColumns = useMemo(() => {
+    return mergeColumnsWithDynamicFields(
+      visibleColumns,
+      "parents",
+      organization,
+      t
+    );
+  }, [visibleColumns, organization, t]);
+
   const actions: TableAction<Parent>[] = [
     { label: t("edit"), type: "edit" },
     { label: t("delete"), type: "delete" },
@@ -107,11 +120,15 @@ export default function ParentsPage() {
 
   const handleAddParent = async (data: any) => {
     try {
+      console.log("handleAddParent received data:", data);
       const newParent = {
         ...data,
         organizationId: organization?._id || "",
         linked_kids: data.linked_kids || [],
+        // Preserve dynamicFields if it exists
+        ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
       };
+      console.log("newParent to send:", newParent);
       const res = await parentsApi.create(newParent);
       if (res.status === 200 || res.data) {
         toast.success(t("form_created_success"));
@@ -191,7 +208,7 @@ export default function ParentsPage() {
         addData={parentsApi.create}
         updateData={parentsApi.update}
         deleteData={parentsApi.delete}
-        columns={visibleColumns}
+        columns={mergedColumns}
         actions={actions}
         searchable
         showAdvancedSearch
@@ -232,13 +249,20 @@ export default function ParentsPage() {
             >
               <Trash className="w-4 h-4 mr-2" /> {t("delete")}
             </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsFieldConfigDialogOpen(true)}
+              className="bg-gray-500 hover:bg-gray-600 text-white border-gray-500 hover:border-gray-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+            >
+              <Settings className="w-4 h-4 mr-2" /> {t("configure_fields", "ערוך שדות דינאמיים")}
+            </Button>
           </div>
         }
       />
       <AddRecordDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
-        columns={visibleColumns}
+        columns={mergedColumns}
         onAdd={handleAddParent}
         excludeFields={["linked_kids", "organizationId"]}
         defaultValues={{
@@ -254,7 +278,7 @@ export default function ParentsPage() {
             setEditingParent(null);
           }
         }}
-        columns={visibleColumns}
+        columns={mergedColumns}
         onAdd={handleAddParent}
         onEdit={handleEditParent}
         editMode={true}
@@ -264,11 +288,21 @@ export default function ParentsPage() {
           birthdate: formatDateForEdit(editingParent.birthdate),
           sex: editingParent.sex,
           address: editingParent.address || "",
+          ...(editingParent.dynamicFields ? { dynamicFields: editingParent.dynamicFields } : {}),
         } : undefined}
         excludeFields={["linked_kids", "organizationId"]}
         defaultValues={{
           organizationId: organization?._id || "",
           linked_kids: editingParent?.linked_kids || [],
+        }}
+      />
+      <TableFieldConfigDialog
+        open={isFieldConfigDialogOpen}
+        onOpenChange={setIsFieldConfigDialogOpen}
+        entityType="parents"
+        organizationId={organization?._id || ""}
+        onSave={() => {
+          refreshFn?.();
         }}
       />
     </div>

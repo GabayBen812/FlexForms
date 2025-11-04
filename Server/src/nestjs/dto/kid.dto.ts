@@ -54,5 +54,8 @@ export class UpdateKidDto {
   @IsString()
   @IsOptional()
   address?: string;
+
+  @IsOptional()
+  dynamicFields?: Record<string, any>;
 }
 

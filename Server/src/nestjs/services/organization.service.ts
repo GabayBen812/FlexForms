@@ -88,4 +88,15 @@ export class OrganizationService {
   ).exec();
 }
 
+  async updateTableFieldDefinitions(
+    orgId: string,
+    tableFieldDefinitions: Record<string, any>
+  ) {
+    return this.model.findByIdAndUpdate(
+      orgId,
+      { tableFieldDefinitions },
+      { new: true }
+    ).exec();
+  }
+
 }

@@ -54,9 +54,23 @@ export class KidService {
 
   async update(id: string, updateKidDto: UpdateKidDto): Promise<Kid | null> {
     const updateData: any = { ...updateKidDto };
+    
+    // Handle dynamicFields separately using dot notation to merge instead of replace
+    if (updateKidDto.dynamicFields && typeof updateKidDto.dynamicFields === 'object') {
+      const dynamicFieldsUpdate: any = {};
+      Object.keys(updateKidDto.dynamicFields).forEach(key => {
+        dynamicFieldsUpdate[`dynamicFields.${key}`] = updateKidDto.dynamicFields[key];
+      });
+      
+      // Remove dynamicFields from updateData and use dot notation instead
+      delete updateData.dynamicFields;
+      Object.assign(updateData, dynamicFieldsUpdate);
+    }
+    
     if (updateKidDto.linked_parents) {
       updateData.linked_parents = updateKidDto.linked_parents.map(parentId => new Types.ObjectId(parentId));
     }
+    
     return this.kidModel
       .findByIdAndUpdate(id, updateData, { new: true })
       .exec();

@@ -22,6 +22,18 @@ export interface Organization {
     }>;
     }
   >;
+  tableFieldDefinitions?: Record<
+    string, // entity type: "kids", "parents", etc.
+    {
+      fields: Record<string, {
+        type: string; // "TEXT" | "SELECT" | "DATE" | "NUMBER" | "EMAIL" | "PHONE"
+        label: string;
+        required?: boolean;
+        choices?: string[]; // for SELECT type
+        defaultValue?: any;
+      }>;
+    }
+  >;
 }
 
 export interface NewOrganizationPayload {

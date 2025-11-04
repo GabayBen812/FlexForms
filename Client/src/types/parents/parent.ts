@@ -8,5 +8,6 @@ export interface Parent {
   linked_kids?: string[];
   address?: string;
   organizationId: string;
+  dynamicFields?: Record<string, any>;
 }
 

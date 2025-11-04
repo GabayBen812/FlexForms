@@ -8,6 +8,7 @@ export interface Kid {
   linked_parents?: string[];
   address?: string;
   organizationId: string;
+  dynamicFields?: Record<string, any>;
   createdAt?: string;
   updatedAt?: string;
 }

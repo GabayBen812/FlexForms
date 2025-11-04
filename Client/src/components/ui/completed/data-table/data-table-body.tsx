@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   ColumnDef,
   flexRender,
@@ -17,12 +17,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Ghost, MoreVertical, Pencil, Trash, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/Input";
 import DataTableBodyRowExpanded from "./data-table-body-row-expanded";
 import { ExpandedContentProps, TableAction } from "@/types/ui/data-table-types";
 import { DataTableLoading } from "./data-table-loading";
 import { GetDirection } from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
-import { formatDateForDisplay, isDateValue } from "@/lib/dateUtils";
+import { formatDateForDisplay, formatDateForEdit, parseDateForSubmit, isDateValue } from "@/lib/dateUtils";
 import "./data-table-row.css";
 
 interface BaseData {
@@ -64,6 +65,168 @@ interface RowComponentProps<T extends BaseData> {
   showDuplicateButton?: boolean;
 }
 
+interface EditableCellProps<T> {
+  cell: any;
+  row: Row<T>;
+  table: Table<T>;
+  onSave: (value: any) => void;
+  isEditing: boolean;
+  onEdit: () => void;
+  onCancel: () => void;
+}
+
+function EditableCell<T>({
+  cell,
+  row,
+  table,
+  onSave,
+  isEditing,
+  onEdit,
+  onCancel,
+}: EditableCellProps<T>) {
+  const inputRef = useRef<HTMLInputElement | HTMLSelectElement>(null);
+  const [value, setValue] = useState<string>("");
+  const { t } = useTranslation();
+
+  const columnDef = cell.column.columnDef;
+  const accessorKey = (columnDef as any).accessorKey as string;
+  const meta = (columnDef as any).meta || {};
+  const fieldType = meta.fieldType;
+  const options = meta.options;
+  const isDate = meta.isDate || isDateValue(cell.getValue());
+  const isDynamic = accessorKey?.startsWith("dynamicFields.");
+  
+  // Get the current value
+  const cellValue = cell.getValue();
+  const displayValue = isDate ? formatDateForDisplay(cellValue) : (cellValue ?? "");
+
+  useEffect(() => {
+    if (isEditing) {
+      // Set initial value when editing starts
+      if (isDate && cellValue) {
+        setValue(formatDateForEdit(cellValue));
+      } else {
+        setValue(String(cellValue ?? ""));
+      }
+      // Focus the input
+      setTimeout(() => {
+        inputRef.current?.focus();
+        if (inputRef.current instanceof HTMLInputElement) {
+          inputRef.current.select();
+        }
+      }, 0);
+    }
+  }, [isEditing, cellValue, isDate]);
+
+  const handleSave = () => {
+    let processedValue: any = value;
+    
+    // Process date values
+    if (isDate && value) {
+      processedValue = parseDateForSubmit(value) || value;
+    }
+    
+    // Process dynamic fields - merge with existing dynamicFields
+    if (isDynamic) {
+      const fieldName = accessorKey.replace("dynamicFields.", "");
+      const existingDynamicFields = (row.original as any).dynamicFields || {};
+      onSave({ 
+        dynamicFields: { 
+          ...existingDynamicFields,
+          [fieldName]: processedValue 
+        } 
+      });
+    } else {
+      onSave({ [accessorKey]: processedValue });
+    }
+    onCancel();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      onCancel();
+    }
+  };
+
+  if (!isEditing) {
+    return (
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          onEdit();
+        }}
+        className="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded min-h-[1.5rem] transition-colors"
+      >
+        {displayValue || <span className="text-gray-400 italic">{t("click_to_edit") || "Click to edit"}</span>}
+      </div>
+    );
+  }
+
+  if (fieldType === "SELECT" && options) {
+    return (
+      <select
+        ref={inputRef as React.RefObject<HTMLSelectElement>}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={handleKeyDown}
+        className="w-full border border-primary rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary text-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {options.map((opt: any) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
+  if (isDate) {
+    return (
+      <input
+        ref={inputRef as React.RefObject<HTMLInputElement>}
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={handleKeyDown}
+        placeholder="DD/MM/YYYY"
+        pattern="\d{2}/\d{2}/\d{4}"
+        className="w-full border border-primary rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary text-center"
+        onClick={(e) => e.stopPropagation()}
+      />
+    );
+  }
+
+  // Determine input type based on field type
+  let inputType = "text";
+  if (accessorKey === "email" || meta.fieldType === "EMAIL") {
+    inputType = "email";
+  } else if (accessorKey === "phone" || meta.fieldType === "PHONE") {
+    inputType = "tel";
+  } else if (meta.fieldType === "NUMBER") {
+    inputType = "number";
+  }
+
+  return (
+    <input
+      ref={inputRef as React.RefObject<HTMLInputElement>}
+      type={inputType}
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={handleSave}
+      onKeyDown={handleKeyDown}
+      className="w-full border border-primary rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary text-center"
+      onClick={(e) => e.stopPropagation()}
+    />
+  );
+}
+
 const RowComponent = React.memo(function RowComponent<T>({
   row,
   table,
@@ -82,6 +245,7 @@ const RowComponent = React.memo(function RowComponent<T>({
 }: RowComponentProps<T>) {
   const direction = GetDirection();
   const { t } = useTranslation();
+  const [editingCell, setEditingCell] = useState<string | null>(null);
   const firstColumnRounding = direction
     ? "rounded-r-lg px-8"
     : "rounded-l-lg px-8";
@@ -89,16 +253,49 @@ const RowComponent = React.memo(function RowComponent<T>({
 
   const renderCellContent = (cell: any) => {
     const value = cell.getValue();
-
+    const columnDef = cell.column.columnDef;
+    const accessorKey = (columnDef as any).accessorKey as string;
+    const meta = (columnDef as any).meta || {};
+    
     // Check if the column is explicitly marked as a date
-    const isDateColumn = cell.column.columnDef?.meta?.isDate;
+    const isDateColumn = meta.isDate;
 
-    // If column is marked as date or value matches date pattern
+    // Check if this cell should be editable
+    // Don't allow editing for selection column, action columns, or hidden columns
+    const isEditable = accessorKey && 
+      accessorKey !== "select" && 
+      accessorKey !== "actions" &&
+      !meta.hidden &&
+      meta.editable !== false; // Allow explicit editable flag, default to true for regular columns
+    
+    const cellId = `${row.id}-${accessorKey}`;
+    const isEditing = editingCell === cellId;
+
+    // If cell is editable, render EditableCell
+    if (isEditable) {
+      return (
+        <EditableCell
+          cell={cell}
+          row={row}
+          table={table}
+          onSave={(data) => {
+            if (handleEdit) {
+              handleEdit(row, data);
+            }
+          }}
+          isEditing={isEditing}
+          onEdit={() => setEditingCell(cellId)}
+          onCancel={() => setEditingCell(null)}
+        />
+      );
+    }
+
+    // Otherwise, render normally
     if (isDateColumn || isDateValue(value)) {
       return formatDateForDisplay(value);
     }
 
-    return flexRender(cell.column.columnDef.cell, cell.getContext());
+    return flexRender(columnDef.cell, cell.getContext());
   };
 
   const handleActionClick = (e: React.MouseEvent, action: string) => {

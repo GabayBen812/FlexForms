@@ -98,6 +98,24 @@ export function AddRecordDialog({
                     className="w-full"
                     required
                   />
+                ) : accessorKey === "email" ? (
+                  <Input
+                    type="email"
+                    name={accessorKey}
+                    value={form[accessorKey] || ""}
+                    onChange={handleChange}
+                    className="w-full"
+                    required
+                  />
+                ) : accessorKey === "phone" ? (
+                  <Input
+                    type="tel"
+                    name={accessorKey}
+                    value={form[accessorKey] || ""}
+                    onChange={handleChange}
+                    className="w-full"
+                    required
+                  />
                 ) : (
                   <Input
                     type="text"

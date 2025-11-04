@@ -3,6 +3,7 @@ import { useContext } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
 import { useState } from "react";
+import { Plus } from "lucide-react";
 
 import DataTable from "@/components/ui/completed/data-table";
 import DynamicForm, { FieldConfig } from "@/components/forms/DynamicForm";
@@ -13,93 +14,100 @@ import { AdvancedSearchModal } from "@/components/ui/completed/data-table/Advanc
 import { Button } from "@/components/ui/button";
 import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
+import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
+import { toast } from "sonner";
 
-export type Payment = {
-  id: string;
-  amount: number;
-  service: string;
-  status: string;
-  lowProfileCode?: string;
-  cardDetails?: {
-    cardOwnerName: string;
-    cardOwnerEmail: string;
-    last4Digits: string;
-    expiryMonth: string;
-    expiryYear: string;
-    token: string;
-  };
-  invoice?: {
-    id: string;
-    originalDocumentUrl: string;
-  };
-  formId: string;
+export interface Employee {
+  _id?: string;
+  id?: string;
+  firstname: string;
+  lastname: string;
+  address?: string;
+  phone?: string;
+  email: string;
+  idNumber?: string;
   organizationId: string;
   createdAt?: string;
   updatedAt?: string;
-};
+}
 
-const paymentsApi = createApiService<Payment>("/payments", {
+const employeesApi = createApiService<Employee>("/employees", {
   includeOrgId: true,
 });
 
-export default function Payments() {
+export default function EmployeesPage() {
   const { t } = useTranslation();
   const { organization } = useContext(OrganizationsContext);
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
     {}
   );
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const columns: ColumnDef<Payment>[] = [
-
+  const columns: ColumnDef<Employee>[] = [
+    { accessorKey: "firstname", header: t("firstname") },
+    { accessorKey: "lastname", header: t("lastname") },
+    { accessorKey: "address", header: t("address") || "Address" },
+    { accessorKey: "phone", header: t("phone") || "Phone" },
+    { accessorKey: "email", header: t("email") || "Email" },
+    { accessorKey: "idNumber", header: t("id") || "ID" },
+    { accessorKey: "organizationId", header: "", meta: { hidden: true } },
   ];
 
-  const actions: TableAction<Payment>[] = [
+  const visibleColumns = columns.filter(
+    //@ts-ignore
+    (col) => !col.meta?.hidden
+  );
+
+  const actions: TableAction<Employee>[] = [
     { label: t("edit"), type: "edit" },
     { label: t("delete"), type: "delete" },
   ];
 
-  const paymentFormFields: FieldConfig[] = [
-    { name: "payerName", label: t("payer_name"), type: "text" },
-    { name: "payerEmail", label: t("payer_email"), type: "email" },
-    { name: "amount", label: t("amount"), type: "number" },
-    { name: "date", label: t("date"), type: "date" },
-    { name: "formId", label: t("form"), type: "text" },
-  ];
-
-  const paymentSchema = z.object({
-    payerName: z.string().min(1),
-    payerEmail: z.string().email(),
-    amount: z.number(),
-    date: z.string(),
-    formId: z.string(),
-  });
+  const handleAddEmployee = async (data: any) => {
+    try {
+      const newEmployee = {
+        ...data,
+        organizationId: organization?._id || "",
+      };
+      const res = await employeesApi.create(newEmployee);
+      if (res.status === 200 || res.data) {
+        toast.success(t("form_created_success") || "Employee created successfully");
+        // Table will refresh automatically via fetchData
+      }
+    } catch (error) {
+      console.error("Error creating employee:", error);
+      toast.error(t("error") || "Error creating employee");
+      throw error;
+    }
+  };
 
   return (
     <div className="mx-auto">
       <h1 className="text-2xl font-semibold text-primary mb-6">
         {t("employees")}
       </h1>
-      <DataTable<Payment>
+      <DataTable<Employee>
         data={[]}
-        updateData={async () => Promise.resolve({} as any)}
         fetchData={async (params) => {
-          const res = await paymentsApi.fetchAll(params);
+          if (!organization?._id)
+            return Promise.resolve({ status: 200, data: [] });
+          const res = await employeesApi.fetchAll(params, false, organization._id);
           if (Array.isArray(res.data)) {
             return {
               ...res,
               data: res.data.map((item: any) => ({
                 ...item,
-                id: item._id,
-                cardDetails: item.cardDetails || {},
+                id: item._id || item.id,
               })),
             };
           }
           return res;
         }}
-        addData={paymentsApi.create}
-        deleteData={paymentsApi.delete}
-        columns={columns}
+        addData={employeesApi.create}
+        updateData={employeesApi.update}
+        deleteData={employeesApi.delete}
+        columns={visibleColumns}
         actions={actions}
         searchable
         showAdvancedSearch
@@ -107,26 +115,25 @@ export default function Payments() {
         initialAdvancedFilters={advancedFilters}
         isPagination={false}
         defaultPageSize={10}
-        idField="id"
+        //@ts-ignore
+        idField="_id"
         extraFilters={advancedFilters}
-        renderExpandedContent={({ handleSave }) => (
-          <DynamicForm
-            mode="create"
-            headerKey="payment"
-            fields={paymentFormFields}
-            validationSchema={paymentSchema}
-            onSubmit={async (data) => {
-              const newPayment = {
-                ...data,
-                organizationId: organization?._id,
-              };
-              const res = await paymentsApi.create(newPayment);
-              if (res.status === 200 && res.data) {
-                handleSave?.(res.data);
-              }
-            }}
-          />
-        )}
+        organazitionId={organization?._id}
+        customLeftButtons={
+          <Button variant="outline" onClick={() => setIsAddDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" /> {t("add")}
+          </Button>
+        }
+      />
+      <AddRecordDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        columns={visibleColumns}
+        onAdd={handleAddEmployee}
+        excludeFields={["organizationId"]}
+        defaultValues={{
+          organizationId: organization?._id || "",
+        }}
       />
     </div>
   );

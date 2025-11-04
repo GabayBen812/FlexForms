@@ -3,6 +3,7 @@ import { useContext } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
 import { useState } from "react";
+import { Plus } from "lucide-react";
 
 import DataTable from "@/components/ui/completed/data-table";
 import DynamicForm, { FieldConfig } from "@/components/forms/DynamicForm";
@@ -13,6 +14,8 @@ import { AdvancedSearchModal } from "@/components/ui/completed/data-table/Advanc
 import { Button } from "@/components/ui/button";
 import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
+import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
+import { toast } from "sonner";
 
 export type Payment = {
   id: string;
@@ -49,6 +52,7 @@ export default function Payments() {
     {}
   );
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const columns: ColumnDef<Payment>[] = [
     { accessorKey: "cardDetails.cardOwnerName", header: t("card_owner_name") },
@@ -59,7 +63,17 @@ export default function Payments() {
     { accessorKey: "amount", header: t("amount") },
     { accessorKey: "status", header: t("status") },
     { accessorKey: "service", header: t("service") },
-    { accessorKey: "createdAt", header: t("created_at") },
+    { accessorKey: "createdAt", header: t("created_at"), meta: { hidden: true } },
+    { accessorKey: "organizationId", header: "", meta: { hidden: true } },
+  ];
+
+  // Create simplified columns for the dialog (without nested paths)
+  const dialogColumns: ColumnDef<Payment>[] = [
+    { accessorKey: "cardOwnerName", header: t("card_owner_name") },
+    { accessorKey: "cardOwnerEmail", header: t("card_owner_email") },
+    { accessorKey: "amount", header: t("amount") },
+    { accessorKey: "status", header: t("status") },
+    { accessorKey: "service", header: t("service") },
   ];
 
   const actions: TableAction<Payment>[] = [
@@ -82,6 +96,30 @@ export default function Payments() {
     date: z.string(),
     formId: z.string(),
   });
+
+  const handleAddPayment = async (data: any) => {
+    try {
+      const newPayment = {
+        cardDetails: {
+          cardOwnerName: data.cardOwnerName || "",
+          cardOwnerEmail: data.cardOwnerEmail || "",
+        },
+        amount: parseFloat(data.amount) || 0,
+        status: data.status || "",
+        service: data.service || "",
+        organizationId: organization?._id || "",
+      };
+      const res = await paymentsApi.create(newPayment);
+      if (res.status === 200 || res.data) {
+        toast.success(t("form_created_success") || "Payment created successfully");
+        // Table will refresh automatically via fetchData
+      }
+    } catch (error) {
+      console.error("Error creating payment:", error);
+      toast.error(t("error") || "Error creating payment");
+      throw error;
+    }
+  };
 
   return (
     <div className="mx-auto">
@@ -117,6 +155,11 @@ export default function Payments() {
         defaultPageSize={10}
         idField="id"
         extraFilters={advancedFilters}
+        customLeftButtons={
+          <Button variant="outline" onClick={() => setIsAddDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" /> {t("add")}
+          </Button>
+        }
         renderExpandedContent={({ handleSave }) => (
           <DynamicForm
             mode="create"
@@ -135,6 +178,16 @@ export default function Payments() {
             }}
           />
         )}
+      />
+      <AddRecordDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        columns={dialogColumns}
+        onAdd={handleAddPayment}
+        excludeFields={["organizationId", "createdAt"]}
+        defaultValues={{
+          organizationId: organization?._id || "",
+        }}
       />
     </div>
   );

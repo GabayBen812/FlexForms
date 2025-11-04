@@ -84,7 +84,6 @@ export default function KidsPage() {
         columns={visibleColumns}
         actions={actions}
         searchable
-        
         showAdvancedSearch
         onAdvancedSearchChange={setAdvancedFilters}
         initialAdvancedFilters={advancedFilters}

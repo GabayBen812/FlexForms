@@ -405,10 +405,7 @@ const handleAddClubClick = () => {
           <Button 
   variant="default"
   onClick={handleAddClubClick}
-  className="text-white hover:brightness-110"
-  style={{
-    backgroundColor: "#1f5fd1",
-  }}
+  className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 hover:border-blue-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
 >
   {t("add_club")}
   <CirclePlus className="w-4 h-4 mr-2" strokeWidth={2.5}/>
@@ -422,13 +419,14 @@ const handleAddClubClick = () => {
           }}
           columns={columns}
         />
-        <Button variant="destructive"
+        <Button 
+          variant="destructive"
           onClick={handleDeleteSelectedRows}
           disabled={selectedRows.length === 0}
           className={
-          selectedRows.length === 0
-          ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-          : "bg-red-600 hover:bg-red-700 text-white"
+            selectedRows.length === 0
+              ? "bg-gray-300 text-gray-600 cursor-not-allowed border-gray-300 shadow-none"
+              : "bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
           }
         >
           {t("delete_selected_rows", "מחק שורות נבחרות")}

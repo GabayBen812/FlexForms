@@ -47,7 +47,12 @@ export function DeleteRoomDialog({
           >
             {t("cancel")}
           </Button>
-          <Button type="button" variant="destructive" onClick={onConfirm}>
+          <Button 
+            type="button" 
+            variant="destructive" 
+            onClick={onConfirm}
+            className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+          >
             {t("delete")}
           </Button>
         </DialogFooter>

@@ -19,7 +19,7 @@
 /* Remove unwanted scroll and spacing for table and wrappers, but allow cell padding */
 .table, .table-wrapper, table, tbody, tr {
   margin: 0 !important;
-  border-spacing: 0 12px !important; 
+  border-spacing: 0 4px !important; 
   border-collapse: separate !important;
   box-sizing: border-box !important;
   min-width: 0 !important;
@@ -30,9 +30,9 @@
   padding: 0 !important;
 }
 
-/* Restore nice padding for cells and headers */
+/* Restore nice padding for cells and headers - reduced for compact rows */
 .data-table-row-cell {
-  padding: 1rem 1.5rem !important;
+  padding: 0.5rem 1rem !important;
 }
 
 /* Remove global max-width, keep ellipsis and nowrap */

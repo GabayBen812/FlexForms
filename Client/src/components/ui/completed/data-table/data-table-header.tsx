@@ -99,6 +99,7 @@ function DataTableHeader<T>({
                       backgroundColor: "var(--datatable-header)",
                       width: "120px",
                       textAlign: "center",
+                      padding: "0.5rem 1rem",
                     }}
                   >
                     פעולות
@@ -108,7 +109,7 @@ function DataTableHeader<T>({
                     style={{
                       width: header.getSize(),
                       backgroundColor: "var(--datatable-header)",
-                      padding: "0.5rem 0.25rem",
+                      padding: "0.5rem 1rem",
                       ...stickyStyles,
                     }}
                   >
@@ -131,14 +132,14 @@ function DataTableHeader<T>({
                           header.column.getCanSort() &&
                           "cursor-pointer select-none"
                         } whitespace-normal text-balance text-center`}
-                        onClick={header.column.getToggleSortingHandler()}
-                        style={{
-                          width: "100%",
-                          padding: "0.5rem 0.25rem",
-                          lineHeight: "1.2",
-                          maxHeight: "5em",
-                        }}
-                      >
+                    onClick={header.column.getToggleSortingHandler()}
+                    style={{
+                      width: "100%",
+                      padding: "0.5rem 1rem",
+                      lineHeight: "1.4",
+                      maxHeight: "5em",
+                    }}
+                  >
                         {flexRender(
                           header.column.columnDef.header,
                           header.getContext()
@@ -197,7 +198,7 @@ function DataTableHeader<T>({
                 style={{
                   width: header.getSize(),
                   backgroundColor: "var(--datatable-header)",
-                  padding: "0.5rem 0.25rem",
+                  padding: "0.5rem 1rem",
                   textAlign: "center",
                   ...stickyStyles,
                 }}
@@ -224,8 +225,8 @@ function DataTableHeader<T>({
                     onClick={header.column.getToggleSortingHandler()}
                     style={{
                       width: "100%",
-                      padding: "0.5rem 0.25rem",
-                      lineHeight: "1.2",
+                      padding: "0.5rem 1rem",
+                      lineHeight: "1.4",
                       maxHeight: "5em",
                     }}
                   >

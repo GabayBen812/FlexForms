@@ -30,7 +30,7 @@ return (
                 return (
               <th
                 key={header.id}
-                className={`px-4 py-3 text-center align-middle whitespace-normal break-words ${
+                className={`text-center align-middle whitespace-normal break-words ${
                       isSticky ? "sticky z-20 bg-gray-300" : ""
                     }`}
                     style={{
@@ -38,6 +38,8 @@ return (
                       width: header.column.getSize(),
                       minWidth: header.column.getSize(),
                       maxWidth: header.column.getSize(),
+                      padding: "0.5rem 1rem",
+                      lineHeight: "1.4",
                     }}
               >
                 {flexRender(
@@ -63,7 +65,7 @@ return (
               return (
                 <td
                   key={cell.id}
-                  className={`px-2 py-0 text-center align-middle ${
+                  className={`text-center align-middle ${
                       meta?.className || ""
                     } ${isSticky ? "sticky z-10" : ""}`}
                     style={{
@@ -71,6 +73,8 @@ return (
                       width: cell.column.getSize(),
                       minWidth: cell.column.getSize(),
                       maxWidth: cell.column.getSize(),
+                      padding: "0.5rem 1rem",
+                      lineHeight: "1.4",
                       backgroundColor: isSticky
                         ? isEven
                           ? "#e5e7eb"

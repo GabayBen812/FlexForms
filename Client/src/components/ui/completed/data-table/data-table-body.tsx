@@ -22,7 +22,7 @@ import { ExpandedContentProps, TableAction } from "@/types/ui/data-table-types";
 import { DataTableLoading } from "./data-table-loading";
 import { GetDirection } from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
-import dayjs from "dayjs";
+import { formatDateForDisplay, isDateValue } from "@/lib/dateUtils";
 import "./data-table-row.css";
 
 interface BaseData {
@@ -94,8 +94,8 @@ const RowComponent = React.memo(function RowComponent<T>({
     const isDateColumn = cell.column.columnDef?.meta?.isDate;
 
     // If column is marked as date or value matches date pattern
-    if (isDateColumn || isDateString(value)) {
-      return formatDateValue(value);
+    if (isDateColumn || isDateValue(value)) {
+      return formatDateForDisplay(value);
     }
 
     return flexRender(cell.column.columnDef.cell, cell.getContext());
@@ -137,7 +137,7 @@ const RowComponent = React.memo(function RowComponent<T>({
         key={row.id}
         data-state={row.getIsSelected() && "selected"}
         className="transition-colors cursor-pointer data-table-row"
-        style={{ width: "100%", backgroundColor: "white" }}
+        style={{ width: "100%", backgroundColor: "white", height: "auto" }}
       >
         {row.getVisibleCells().map((cell, cellIndex) => {
           const isFirst = cellIndex === 0;
@@ -183,7 +183,7 @@ const RowComponent = React.memo(function RowComponent<T>({
                     ...stickyStyles,
                     width: cell.column.getSize(),
                     maxWidth: cell.column.getSize(),
-                    padding: "1rem 1.5rem",
+                    padding: "0.5rem 1rem",
                   }}
                   className={`text-center data-table-row-cell ${roundedClass}`}
                   onClick={(e) => {
@@ -193,7 +193,7 @@ const RowComponent = React.memo(function RowComponent<T>({
                     }
                   }}
                 >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  {renderCellContent(cell)}
                 </TableCell>
                 {showActionColumn && (
                   <TableCell className="text-center data-table-row-cell">
@@ -211,6 +211,7 @@ const RowComponent = React.memo(function RowComponent<T>({
                         variant="ghost"
                         size="icon"
                         onClick={(e) => handleActionClick(e, "delete")}
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors duration-200"
                       >
                         <Trash className="w-4 h-4" />
                       </Button>
@@ -239,7 +240,7 @@ const RowComponent = React.memo(function RowComponent<T>({
                 ...stickyStyles,
                 width: cell.column.getSize(),
                 maxWidth: cell.column.getSize(),
-                padding: "1rem 1.5rem",
+                padding: "0.5rem 1rem",
               }}
               className={`text-center data-table-row-cell ${roundedClass}`}
               onClick={(e) => {
@@ -249,7 +250,7 @@ const RowComponent = React.memo(function RowComponent<T>({
                 }
               }}
             >
-              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              {renderCellContent(cell)}
             </TableCell>
           );
         })}
@@ -363,30 +364,5 @@ function NoResultsRow({ colSpan }: { colSpan: number }) {
   );
 }
 
-const isDateString = (value: any): boolean => {
-  if (typeof value !== "string" && !(value instanceof Date)) return false;
-  const dateStr = value instanceof Date ? value.toISOString() : value;
-
-  // Common date formats to check
-  const datePatterns = [
-    /^\d{4}-\d{2}-\d{2}/, // YYYY-MM-DD
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/, // YYYY-MM-DDThh:mm
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/, // YYYY-MM-DDThh:mm:ss
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/, // ISO date
-    /^\d{2}\/\d{2}\/\d{4}/, // DD/MM/YYYY
-    /^\d{2}-\d{2}-\d{4}/, // DD-MM-YYYY
-  ];
-
-  return datePatterns.some((pattern) => pattern.test(dateStr));
-};
-
-const formatDateValue = (value: any): string => {
-  if (!value) return "";
-  try {
-    return dayjs(value).format("DD/MM/YYYY");
-  } catch {
-    return value;
-  }
-};
 
 export default DataTableBody;

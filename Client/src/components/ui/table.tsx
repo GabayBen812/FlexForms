@@ -58,9 +58,10 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b transition-colors  data-[state=selected]:bg-muted",
+      "border-b transition-colors data-[state=selected]:bg-muted",
       className
     )}
+    style={{ height: "auto", lineHeight: "1.4" }}
     {...props}
   />
 ));
@@ -73,9 +74,10 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-10 px-2 font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+      "px-2 font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
       className
     )}
+    style={{ padding: "0.5rem 1rem", lineHeight: "1.4" }}
     {...props}
   />
 ));
@@ -91,6 +93,7 @@ const TableCell = React.forwardRef<
       "p-2 align-middle rtl:text-center ltr:text-left [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
       className
     )}
+    style={{ padding: "0.5rem 1rem", lineHeight: "1.4" }}
     {...props}
   />
 ));

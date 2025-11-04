@@ -168,6 +168,7 @@ export default function FeatureFlagsTable() {
                   setDeletingFlag(null);
                   setRefreshKey((k) => k + 1);
                 }}
+                className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
               >
                 {t("delete", "Delete")}
               </Button>

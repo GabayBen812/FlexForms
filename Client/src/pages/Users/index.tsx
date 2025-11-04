@@ -1,13 +1,18 @@
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { useNavigate } from "react-router-dom";
+import { useState, useCallback } from "react";
+import { Plus, Trash, Pencil } from "lucide-react";
 import DataTable from "@/components/ui/completed/data-table";
 import { useOrganization } from "@/hooks/useOrganization";
 import { createApiService } from "@/api/utils/apiFactory";
 import { User } from "@/types/users/user";
-import { useState } from "react";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
+import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
+import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import { TableAction } from "@/types/ui/data-table-types";
 
 const usersApi = createApiService<User>("/users");
 
@@ -21,9 +26,66 @@ export default function Users() {
     {}
   );
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [refreshFn, setRefreshFn] = useState<(() => void) | null>(null);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [tableRows, setTableRows] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
+  // Custom selection column with edit icon
+  const selectionColumn: ColumnDef<User> = {
+    id: "select",
+    enableSorting: false,
+    header: ({ table }) => {
+      const selectedCount = table.getSelectedRowModel().rows.length;
+      return (
+        <div className="flex items-center justify-center gap-2">
+          <Checkbox
+            // @ts-ignore
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && "indeterminate")
+            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+            className="border-white"
+          />
+          <span className="text-xs text-white">
+            {selectedCount} נבחרו
+          </span>
+        </div>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="flex items-center justify-center gap-2">
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          onClick={(e) => e.stopPropagation()}
+          aria-label="Select row"
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={(e) => {
+            e.stopPropagation();
+            setEditingUser(row.original);
+            setIsEditDialogOpen(true);
+          }}
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </div>
+    ),
+    enableHiding: false,
+    size: 150,
+  };
+
   const columns: ColumnDef<User, any>[] = [
+    selectionColumn,
     { accessorKey: "name", header: t("user_name") },
     { accessorKey: "email", header: t("user_email") },
     { accessorKey: "role", header: t("user_role") },
@@ -32,13 +94,87 @@ export default function Users() {
   //@ts-ignore
   const visibleColumns = columns.filter((col) => !col.meta?.hidden);
 
+  const actions: TableAction<User>[] = [
+    { label: t("edit"), type: "edit" },
+    { label: t("delete"), type: "delete" },
+  ];
+
+  const handleAddUser = async (data: any) => {
+    try {
+      const newUser = {
+        ...data,
+        organizationId: organization?._id || "",
+      };
+      const res = await usersApi.create(newUser);
+      if (res.status === 200 || res.data) {
+        toast.success(t("form_created_success"));
+        setIsAddDialogOpen(false);
+        // Trigger table refresh
+        refreshFn?.();
+      }
+    } catch (error) {
+      console.error("Error creating user:", error);
+      toast.error(t("error"));
+      throw error;
+    }
+  };
+
+  const handleEditUser = async (data: any) => {
+    if (!editingUser?._id) return;
+    try {
+      const updatedUser = {
+        ...data,
+        id: editingUser._id,
+        organizationId: organization?._id || "",
+      };
+      const res = await usersApi.update(updatedUser);
+      if (res.status === 200 || res.data) {
+        toast.success(t("updated_successfully") || "Record updated successfully");
+        setIsEditDialogOpen(false);
+        setEditingUser(null);
+        // Trigger table refresh
+        refreshFn?.();
+      }
+    } catch (error) {
+      console.error("Error updating user:", error);
+      toast.error(t("error"));
+      throw error;
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const selectedIndices = Object.keys(rowSelection).map(Number);
+    const selectedRows = selectedIndices.map((index) => tableRows[index]).filter((row): row is User => !!row);
+    const selectedIds = selectedRows.map((row) => row._id).filter((id): id is string => !!id);
+    
+    if (selectedIds.length === 0) return;
+    
+    const count = selectedIds.length;
+    const confirmed = window.confirm(
+      t("confirm_delete", { count }) || 
+      `Are you sure you want to delete ${count} item(s)?`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      await Promise.all(selectedIds.map((id) => usersApi.delete(id)));
+      toast.success(t("deleted_successfully") || `Successfully deleted ${count} item(s)`);
+      setRowSelection({});
+      refreshFn?.();
+    } catch (error) {
+      console.error("Error deleting users:", error);
+      toast.error(t("delete_failed") || "Failed to delete items");
+    }
+  };
+
   return (
     <div className="mx-auto">
       <h1 className="text-2xl font-semibold text-primary mb-6">{t("users")}</h1>
       <DataTable<User>
         data={users}
-        updateData={async () => Promise.resolve({} as any)}
-        fetchData={async (params) => {
+        updateData={usersApi.update}
+        fetchData={useCallback(async (params) => {
           if (!organization?._id) return { status: 200, data: [] };
           const result = await usersApi.fetchAll(
             params,
@@ -48,10 +184,12 @@ export default function Users() {
           if ("data" in result && Array.isArray(result.data))
             setUsers(result.data);
           return result;
-        }}
+        }, [organization?._id])}
+        addData={usersApi.create}
+        deleteData={usersApi.delete}
         columns={visibleColumns}
+        actions={actions}
         searchable
-        showAddButton
         showAdvancedSearch
         onAdvancedSearchChange={setAdvancedFilters}
         initialAdvancedFilters={advancedFilters}
@@ -59,7 +197,71 @@ export default function Users() {
         defaultPageSize={10}
         idField="_id"
         extraFilters={advancedFilters}
+        organazitionId={organization?._id}
+        onRefreshReady={useCallback((fn) => setRefreshFn(() => fn), [])}
+        rowSelection={rowSelection}
+        onRowSelectionChange={useCallback((updater: any) => {
+          setRowSelection((prev) => {
+            if (typeof updater === 'function') {
+              return updater(prev);
+            } else {
+              return updater;
+            }
+          });
+        }, [])}
+        visibleRows={useCallback((rows) => setTableRows(rows), [])}
+        customLeftButtons={
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsAddDialogOpen(true)}
+              className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 hover:border-blue-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+            >
+              <Plus className="w-4 h-4 mr-2" /> {t("add")}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleBulkDelete}
+              disabled={Object.keys(rowSelection).length === 0}
+              className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium disabled:bg-gray-300 disabled:border-gray-300 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed"
+            >
+              <Trash className="w-4 h-4 mr-2" /> {t("delete")}
+            </Button>
+          </div>
+        }
         onRowClick={(user) => {}}
+      />
+      <AddRecordDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        columns={visibleColumns}
+        onAdd={handleAddUser}
+        excludeFields={["organizationId"]}
+        defaultValues={{
+          organizationId: organization?._id || "",
+        }}
+      />
+      <AddRecordDialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) {
+            setEditingUser(null);
+          }
+        }}
+        columns={visibleColumns}
+        onAdd={handleAddUser}
+        onEdit={handleEditUser}
+        editMode={true}
+        editData={editingUser ? {
+          name: editingUser.name,
+          email: editingUser.email,
+          role: editingUser.role,
+        } : undefined}
+        excludeFields={["organizationId"]}
+        defaultValues={{
+          organizationId: organization?._id || "",
+        }}
       />
     </div>
   );

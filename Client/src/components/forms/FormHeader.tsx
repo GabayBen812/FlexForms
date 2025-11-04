@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Form } from "@/types/forms/Form";
 import { useTranslation } from "react-i18next";
-import dayjs from "dayjs";
+import { formatDateTimeForDisplay } from "@/lib/dateUtils";
 import { createApiService } from "@/api/utils/apiFactory";
 
 interface Props {
@@ -40,11 +40,11 @@ export default function FormHeader({ form }: Props) {
         </div>
         <div>
           <strong>{t("created_at")}:</strong>{" "}
-          {dayjs(form.createdAt).format("DD/MM/YYYY HH:mm")}
+          {formatDateTimeForDisplay(form.createdAt)}
         </div>
         <div>
           <strong>{t("updated_at")}:</strong>{" "}
-          {dayjs(form.updatedAt).format("DD/MM/YYYY HH:mm")}
+          {formatDateTimeForDisplay(form.updatedAt)}
         </div>
       </div>
     </div>

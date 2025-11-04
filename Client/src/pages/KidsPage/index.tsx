@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { z } from "zod";
 import { useState, useCallback } from "react";
-import { Plus, Trash } from "lucide-react";
+import { Plus, Trash, Pencil } from "lucide-react";
 
 import DataTable from "@/components/ui/completed/data-table";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -14,7 +14,8 @@ import apiClient from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
 import { toast } from "sonner";
-import { getSelectionColumn } from "@/components/tables/selectionColumns";
+import { Checkbox } from "@/components/ui/checkbox";
+import { formatDateForEdit } from "@/lib/dateUtils";
 
 const kidsApi = createApiService<Kid>("/kids", {
   includeOrgId: true,
@@ -27,18 +28,68 @@ export default function KidsPage() {
     {}
   );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingKid, setEditingKid] = useState<Kid | null>(null);
   const [refreshFn, setRefreshFn] = useState<(() => void) | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [tableRows, setTableRows] = useState<Kid[]>([]);
 
-  const selectionColumn = getSelectionColumn<Kid>();
+  // Custom selection column with edit icon
+  const selectionColumn: ColumnDef<Kid> = {
+    id: "select",
+    enableSorting: false,
+    header: ({ table }) => {
+      const selectedCount = table.getSelectedRowModel().rows.length;
+      return (
+        <div className="flex items-center justify-center gap-2">
+          <Checkbox
+            // @ts-ignore
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && "indeterminate")
+            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+            className="border-white"
+          />
+          <span className="text-xs text-white">
+            {selectedCount} נבחרו
+          </span>
+        </div>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="flex items-center justify-center gap-2">
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          onClick={(e) => e.stopPropagation()}
+          aria-label="Select row"
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={(e) => {
+            e.stopPropagation();
+            setEditingKid(row.original);
+            setIsEditDialogOpen(true);
+          }}
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </div>
+    ),
+    enableHiding: false,
+    size: 150,
+  };
   
 
   const columns: ColumnDef<Kid>[] = [
     selectionColumn,
     { accessorKey: "firstname", header: t("firstname") },
     { accessorKey: "lastname", header: t("lastname") },
-    { accessorKey: "birthdate", header: t("birthdate") },
+    { accessorKey: "birthdate", header: t("birthdate"), meta: { isDate: true } },
     { accessorKey: "sex", header: t("sex") },
     { accessorKey: "address", header: t("address") },
     { accessorKey: "linked_parents", header: t("linked_parents") },
@@ -72,6 +123,30 @@ export default function KidsPage() {
       }
     } catch (error) {
       console.error("Error creating kid:", error);
+      toast.error(t("error"));
+      throw error;
+    }
+  };
+
+  const handleEditKid = async (data: any) => {
+    if (!editingKid?._id) return;
+    try {
+      const updatedKid = {
+        ...data,
+        id: editingKid._id,
+        organizationId: organization?._id || "",
+        linked_parents: data.linked_parents || [],
+      };
+      const res = await kidsApi.update(updatedKid);
+      if (res.status === 200 || res.data) {
+        toast.success(t("updated_successfully") || "Record updated successfully");
+        setIsEditDialogOpen(false);
+        setEditingKid(null);
+        // Trigger table refresh
+        refreshFn?.();
+      }
+    } catch (error) {
+      console.error("Error updating kid:", error);
       toast.error(t("error"));
       throw error;
     }
@@ -144,13 +219,18 @@ export default function KidsPage() {
         visibleRows={useCallback((rows) => setTableRows(rows), [])}
         customLeftButtons={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(true)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsAddDialogOpen(true)}
+              className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 hover:border-blue-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+            >
               <Plus className="w-4 h-4 mr-2" /> {t("add")}
             </Button>
             <Button 
               variant="outline" 
               onClick={handleBulkDelete}
               disabled={Object.keys(rowSelection).length === 0}
+              className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium disabled:bg-gray-300 disabled:border-gray-300 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed"
             >
               <Trash className="w-4 h-4 mr-2" /> {t("delete")}
             </Button>
@@ -166,6 +246,31 @@ export default function KidsPage() {
         defaultValues={{
           organizationId: organization?._id || "",
           linked_parents: [],
+        }}
+      />
+      <AddRecordDialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) {
+            setEditingKid(null);
+          }
+        }}
+        columns={visibleColumns}
+        onAdd={handleAddKid}
+        onEdit={handleEditKid}
+        editMode={true}
+        editData={editingKid ? {
+          firstname: editingKid.firstname,
+          lastname: editingKid.lastname,
+          birthdate: formatDateForEdit(editingKid.birthdate),
+          sex: editingKid.sex,
+          address: editingKid.address || "",
+        } : undefined}
+        excludeFields={["linked_parents", "organizationId"]}
+        defaultValues={{
+          organizationId: organization?._id || "",
+          linked_parents: editingKid?.linked_parents || [],
         }}
       />
     </div>

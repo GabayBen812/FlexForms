@@ -187,7 +187,7 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
                         size="icon"
                         variant="ghost"
                         onClick={() => handleDeleteField(field.name)}
-                        className="hover:bg-destructive/10 text-destructive"
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors duration-200"
                       >
                         <Trash2 className="!w-6 !h-6" />
                       </Button>

@@ -44,7 +44,11 @@ export function DataTableAddButton({ showAddButton, onToggleAddRow, columns = []
 
   return (
     <>
-      <Button variant="outline" onClick={() => setOpen(true)}>
+      <Button 
+        variant="outline" 
+        onClick={() => setOpen(true)}
+        className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 hover:border-blue-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+      >
         <Plus className="w-4 h-4 mr-2" /> הוסף
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>

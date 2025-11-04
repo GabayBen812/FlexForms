@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { createApiService } from "@/api/utils/apiFactory";
 import DataTable from "@/components/ui/completed/data-table";
 import { Form } from "@/types/forms/Form";
-import dayjs from "dayjs";
+import { formatDateForDisplay } from "@/lib/dateUtils";
 import { TableAction } from "@/types/ui/data-table-types";
 import { useState, useEffect } from "react";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
@@ -129,11 +129,9 @@ function getColumns(
           header: t("payment_date"),
           meta: { isDate: true },
           cell: ({ row }) =>
-            row.original.additionalData?.paymentDetails?.paymentDate
-              ? dayjs(
-                  row.original.additionalData?.paymentDetails?.paymentDate
-                ).format("DD/MM/YYYY")
-              : "-",
+            formatDateForDisplay(
+              row.original.additionalData?.paymentDetails?.paymentDate
+            ) || "-",
         },
         {
           accessorKey: "additionalData.paymentDetails.lowProfileCode",

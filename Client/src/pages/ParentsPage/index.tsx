@@ -14,6 +14,8 @@ import { AdvancedSearchModal } from "@/components/ui/completed/data-table/Advanc
 import { Button } from "@/components/ui/button";
 import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
+import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
+import { toast } from "sonner";
 
 export type Payment = {
   id: string;
@@ -50,6 +52,7 @@ export default function Payments() {
     {}
   );
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const columns: ColumnDef<Payment>[] = [
     { accessorKey: "firstname", header: t("firstname") },
@@ -80,6 +83,29 @@ export default function Payments() {
     date: z.string(),
     formId: z.string(),
   });
+
+  const visibleColumns = columns.filter(
+    (col) => !(col.meta as any)?.hidden && col.accessorKey !== "kids"
+  );
+
+  const handleAddParent = async (data: any) => {
+    try {
+      const newParent = {
+        ...data,
+        organizationId: organization?._id || "",
+        kids: data.kids || [],
+      };
+      const res = await paymentsApi.create(newParent);
+      if (res.status === 200 || res.data) {
+        toast.success(t("form_created_success") || "Parent created successfully");
+        // Table will refresh automatically via fetchData
+      }
+    } catch (error) {
+      console.error("Error creating parent:", error);
+      toast.error(t("error") || "Error creating parent");
+      throw error;
+    }
+  };
 
   return (
     <div className="mx-auto">
@@ -116,7 +142,7 @@ export default function Payments() {
         idField="id"
         extraFilters={advancedFilters}
         customLeftButtons={
-          <Button variant="outline" onClick={() => {}}>
+          <Button variant="outline" onClick={() => setIsAddDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" /> {t("add")}
           </Button>
         }
@@ -138,6 +164,17 @@ export default function Payments() {
             }}
           />
         )}
+      />
+      <AddRecordDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        columns={visibleColumns}
+        onAdd={handleAddParent}
+        excludeFields={["kids", "organizationId"]}
+        defaultValues={{
+          organizationId: organization?._id || "",
+          kids: [],
+        }}
       />
     </div>
   );

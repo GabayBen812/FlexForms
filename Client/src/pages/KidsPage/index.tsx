@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
 import { useState } from "react";
+import { Plus } from "lucide-react";
 
 import DataTable from "@/components/ui/completed/data-table";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -10,6 +11,9 @@ import { createApiService } from "@/api/utils/apiFactory";
 import { Kid } from "@/types/kids/kid";
 import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
+import { Button } from "@/components/ui/button";
+import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
+import { toast } from "sonner";
 
 const kidsApi = createApiService<Kid>("/kids", {
   includeOrgId: true,
@@ -21,6 +25,7 @@ export default function KidsPage() {
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
     {}
   );
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const columns: ColumnDef<Kid>[] = [
     { accessorKey: "firstname", header: t("firstname") },
@@ -41,6 +46,25 @@ export default function KidsPage() {
     { label: t("edit"), type: "edit" },
     { label: t("delete"), type: "delete" },
   ];
+
+  const handleAddKid = async (data: any) => {
+    try {
+      const newKid = {
+        ...data,
+        organizationId: organization?._id || "",
+        linked_parents: data.linked_parents || [],
+      };
+      const res = await kidsApi.create(newKid);
+      if (res.status === 200 || res.data) {
+        toast.success(t("form_created_success") || "Kid created successfully");
+        // Table will refresh automatically via fetchData
+      }
+    } catch (error) {
+      console.error("Error creating kid:", error);
+      toast.error(t("error") || "Error creating kid");
+      throw error;
+    }
+  };
 
   return (
     <div className="mx-auto">
@@ -72,6 +96,22 @@ export default function KidsPage() {
         idField="_id"
         extraFilters={advancedFilters}
         organazitionId={organization?._id}
+        customLeftButtons={
+          <Button variant="outline" onClick={() => setIsAddDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" /> {t("add")}
+          </Button>
+        }
+      />
+      <AddRecordDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        columns={visibleColumns}
+        onAdd={handleAddKid}
+        excludeFields={["linked_parents", "organizationId"]}
+        defaultValues={{
+          organizationId: organization?._id || "",
+          linked_parents: [],
+        }}
       />
     </div>
   );

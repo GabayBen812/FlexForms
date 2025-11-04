@@ -1,34 +1,31 @@
 import { ColumnDef } from "@tanstack/react-table";
+import { Checkbox } from "@/components/ui/checkbox";
 
-export const selectionColumn: ColumnDef<any, any> = {
-  id: "select",
-  header: ({ table }) => {
-    const selectedCount = table.getSelectedRowModel().rows.length;
-    return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <input
-          type="checkbox"
-          className="w-4 h-4 border-2 border-blue-500 text-blue-600 rounded focus:ring-0"
-          checked={table.getIsAllPageRowsSelected()}
-          onChange={table.getToggleAllPageRowsSelectedHandler()}
-          onClick={(e) => e.stopPropagation()}
-        />
-        <span style={{ fontSize: 12, marginTop: 2 }}>
-          נבחרו {selectedCount}
-        </span>
-      </div>
-    );
-  },
-  cell: ({ row }) => (
-    <input
-      type="checkbox"
-      className="w-4 h-4 border-2 border-blue-500 text-blue-600 rounded focus:ring-0"
-      checked={row.getIsSelected()}
-      onChange={row.getToggleSelectedHandler()}
-      onClick={(e) => e.stopPropagation()}
-    />
-  ),
-  size: 40,
-};
-
+export function getSelectionColumn<T>(): ColumnDef<T> {
+  return {
+    id: "select",
+    enableSorting: false,
+    header: ({ table }) => (
+      <Checkbox
+        // @ts-ignore
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        onClick={(e) => e.stopPropagation()}
+        aria-label="Select row"
+      />
+    ),
+    enableHiding: false,
+    size: 40,
+  };
+}
 

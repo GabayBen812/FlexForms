@@ -9,6 +9,8 @@ import { color } from "framer-motion";
 import { Input } from "./ui/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { SelectPortal } from "@radix-ui/react-select";
+import { ColumnDef } from "@tanstack/react-table";
+import { MacabiClub } from "@/types/macabiClub/macabiClub";
 
 interface AdvancedUpdateDialogProps {
   open: boolean;
@@ -39,12 +41,12 @@ export const AdvancedUpdateDialog = ({
 
   const columnDef = useMemo(() => {
     return columns.find(
-      col => col.accessorKey === selectedField || col.id === selectedField
+      col => (col as any).accessorKey === selectedField || col.id === selectedField
     );
   }, [selectedField, columns]);
 
-  const fieldType = columnDef?.meta?.fieldType || "TEXT";
-  const options = columnDef?.meta?.options || [];
+  const fieldType = ((columnDef?.meta as any)?.fieldType) || "TEXT";
+  const options = ((columnDef?.meta as any)?.options) || [];
 
   const handleUpdate = () => {
     if (!selectedField) return;
@@ -68,15 +70,15 @@ export const AdvancedUpdateDialog = ({
             <Select  value={selectedField ?? undefined} onValueChange={setSelectedField}>
             <SelectTrigger className="w-full h-12">
                 {selectedField
-                ? columns.find(col => col.accessorKey === selectedField || col.id === selectedField)?.header?.toString()
+                ? columns.find(col => (col as any).accessorKey === selectedField || col.id === selectedField)?.header?.toString()
                 : t("select_field_to_update")}
             </SelectTrigger>
             <SelectPortal>
             <SelectContent  className="max-w-[700px] max-h-[300px] text-center" >
                 {columns
-                .filter(col => col.id !== "select" && col.id !== "edit" && !col.meta?.hidden)
+                .filter(col => col.id !== "select" && col.id !== "edit" && !((col.meta as any)?.hidden))
                 .map(col => (
-                    <SelectItem className="text-base text-center" key={col.id} value={col.accessorKey || col.id}>
+                    <SelectItem className="text-base text-center" key={col.id} value={(col as any).accessorKey || col.id}>
                     {col.header?.toString()}
                     </SelectItem>
                 ))}

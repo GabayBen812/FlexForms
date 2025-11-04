@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import type { FieldType } from "@/types/ui/data-table-types";
 import { MacabiClub } from "@/types/macabiClub/macabiClub";
+import { ColumnDef } from "@tanstack/react-table";
 
 type EditClubDialogProps = {
   open: boolean;
@@ -24,8 +25,9 @@ export function EditClubDialog({ open, onClose, rowData, columns, onSave }: Edit
       // Initialize with empty values for create mode
       const emptyData = {} as MacabiClub;
       columns.forEach(col => {
-        if (col.accessorKey) {
-          emptyData[col.accessorKey as keyof MacabiClub] = "";
+        const key = (col as any).accessorKey as keyof MacabiClub | undefined;
+        if (key) {
+          emptyData[key] = "" as any;
         }
       });
       setFormData(emptyData);
@@ -58,10 +60,10 @@ export function EditClubDialog({ open, onClose, rowData, columns, onSave }: Edit
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
           {columns
-            .filter(col => col.accessorKey && col.meta?.hidden !== true)
+            .filter(col => (col as any).accessorKey && !((col.meta as any)?.hidden === true))
             .map(column => {
-              const accessor = column.accessorKey as keyof MacabiClub;
-              const meta = column.meta;
+              const accessor = (column as any).accessorKey as keyof MacabiClub;
+              const meta = column.meta as any;
               const value = formData[accessor];
               const label = column.header?.toString() || accessor;
 

@@ -101,7 +101,7 @@ export const createApiService = <T>(
   console.log('Creating data:', data);
   try {
     const payload = includeOrgId
-  ? { ...data, organizationId: data.organizationId ?? getUserOrganizationId() }
+  ? { ...data, organizationId: (data as any).organizationId ?? getUserOrganizationId() }
   : data;
 
     const { url, config } = resolveRoute(customRoutes.create, baseUrl);

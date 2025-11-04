@@ -3,6 +3,7 @@ import { useContext } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
 import { useState } from "react";
+import { Plus } from "lucide-react";
 
 import DataTable from "@/components/ui/completed/data-table";
 import DynamicForm, { FieldConfig } from "@/components/forms/DynamicForm";
@@ -114,6 +115,11 @@ export default function Payments() {
         defaultPageSize={10}
         idField="id"
         extraFilters={advancedFilters}
+        customLeftButtons={
+          <Button variant="outline" onClick={() => {}}>
+            <Plus className="w-4 h-4 mr-2" /> {t("add")}
+          </Button>
+        }
         renderExpandedContent={({ handleSave }) => (
           <DynamicForm
             mode="create"

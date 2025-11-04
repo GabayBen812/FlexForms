@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Plus } from "lucide-react";
 
 import DataTable from "@/components/ui/completed/data-table";
@@ -26,7 +26,7 @@ export default function ParentsPage() {
     {}
   );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [refreshFn, setRefreshFn] = useState<(() => void) | null>(null);
 
   const columns: ColumnDef<Parent>[] = [
     { accessorKey: "firstname", header: t("firstname") },
@@ -60,7 +60,7 @@ export default function ParentsPage() {
         toast.success(t("form_created_success"));
         setIsAddDialogOpen(false);
         // Trigger table refresh
-        setRefreshTrigger((prev) => prev + 1);
+        refreshFn?.();
       }
     } catch (error) {
       console.error("Error creating parent:", error);
@@ -76,11 +76,11 @@ export default function ParentsPage() {
       </h1>
       <DataTable<Parent>
         data={[]}
-        fetchData={(params) => {
+        fetchData={useCallback((params) => {
           if (!organization?._id)
             return Promise.resolve({ status: 200, data: [] });
           return parentsApi.fetchAll(params, false, organization._id);
-        }}
+        }, [organization?._id])}
         addData={parentsApi.create}
         updateData={parentsApi.update}
         deleteData={parentsApi.delete}
@@ -96,7 +96,7 @@ export default function ParentsPage() {
         idField="_id"
         extraFilters={advancedFilters}
         organazitionId={organization?._id}
-        refreshTrigger={refreshTrigger}
+        onRefreshReady={useCallback((fn) => setRefreshFn(() => fn), [])}
         customLeftButtons={
           <Button variant="outline" onClick={() => setIsAddDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" /> {t("add")}

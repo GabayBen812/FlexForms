@@ -5,11 +5,20 @@ import { featureFlagCache } from '@/services/featureFlagCache';
 
 export function useFeatureFlag(key: string) {
   const { user } = useAuth();
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  // If no key provided, consider it enabled immediately (no feature flag check needed)
+  const hasKey = key && key.trim() !== "";
+  const [isEnabled, setIsEnabled] = useState(!hasKey);
+  const [isLoading, setIsLoading] = useState(hasKey);
 
   useEffect(() => {
     const checkFeatureFlag = async () => {
+      // If no key provided, consider it enabled (no feature flag check needed)
+      if (!key || key.trim() === "") {
+        setIsEnabled(true);
+        setIsLoading(false);
+        return;
+      }
+
       if (!user?.organizationId) {
         setIsEnabled(false);
         setIsLoading(false);

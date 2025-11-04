@@ -1,0 +1,197 @@
+# Paradize Cursor Rules
+
+## Project Overview
+Paradize is a multi-tenant ERP/CRM platform with a React frontend and NestJS backend. This project uses TypeScript throughout, MongoDB for data storage, and modern tooling including Vite, Tailwind CSS, and React Query.
+This will be dedicated for education organizations
+
+## Project Structure
+
+### Client (`/Client`)
+- **Frontend Framework:** React 18+ with TypeScript
+- **Build Tool:** Vite
+- **Styling:** Tailwind CSS with Radix UI components
+- **State Management:** React Query (@tanstack/react-query) for server state
+- **Routing:** React Router v7
+- **Internationalization:** i18next with support for English (en) and Hebrew (he)
+- **Testing:** Cypress for E2E testing
+
+### Server (`/Server`)
+- **Backend Framework:** NestJS with Express
+- **Database:** MongoDB with Mongoose
+- **Authentication:** JWT-based authentication
+- **Validation:** class-validator and class-transformer
+
+## Code Style & Conventions
+
+### TypeScript
+- Use strict TypeScript configuration
+- Always define explicit types for function parameters and return values
+- Prefer interfaces over types for object shapes that might be extended
+- Use type inference only when the type is obvious from context
+- Avoid `any` - use `unknown` if the type is truly unknown, then narrow it
+
+### React/TypeScript (Client)
+- Use functional components with hooks
+- Follow React hooks rules strictly
+- Use TypeScript for all components and utilities
+- Prefer named exports over default exports
+- Component files should use PascalCase (e.g., `UserProfile.tsx`)
+- Use React Query for all server state management
+- Keep components small and focused - extract logic into custom hooks when needed
+- Use React.memo() sparingly, only when performance profiling shows it's needed
+
+### NestJS (Server)
+- Follow NestJS module architecture patterns
+- Use DTOs (Data Transfer Objects) for all API endpoints
+- Validate all inputs using class-validator decorators
+- Use dependency injection throughout
+- Keep controllers thin - business logic belongs in services
+- Use guards for authentication and authorization
+- Use interceptors for cross-cutting concerns
+
+### File Naming
+- React components: PascalCase (e.g., `UserProfile.tsx`)
+- Hooks: camelCase with `use` prefix (e.g., `useAuth.ts`)
+- Utilities: camelCase (e.g., `formUtils.ts`)
+- Types/interfaces: PascalCase (e.g., `User.ts`)
+- Constants: UPPER_SNAKE_CASE (e.g., `API_BASE_URL`)
+
+### Folder Organization
+- Group related files by feature, not by type
+- Keep feature-specific files together (components, hooks, types, utils)
+- Shared utilities go in `/lib` or `/utils`
+- API-related code goes in `/api` with clear subfolder structure
+
+## Best Practices
+
+### API Client
+- Use the centralized API client (`apiClient.ts`) for all HTTP requests
+- Organize API functions by feature in subfolders
+- Always handle errors appropriately
+- Use React Query hooks for data fetching and mutations
+
+### Internationalization
+- All user-facing text must be internationalized using i18next
+- Use translation keys in the format: `namespace:key` (e.g., `common:save`)
+- Keep translation keys organized by feature/namespace
+- Support both RTL (Hebrew) and LTR (English) layouts
+
+### Styling
+- Use Tailwind CSS utility classes
+- Prefer Radix UI components for complex UI elements
+- Use Tailwind's RTL support for Hebrew language support
+- Keep custom CSS minimal - use Tailwind configuration for design tokens
+- Use `cn()` utility (from `clsx` + `tailwind-merge`) for conditional classes
+
+### State Management
+- Server state: React Query (@tanstack/react-query)
+- Local component state: useState/useReducer
+- Form state: React Hook Form
+- Global client state: Context API (sparingly, only when truly needed)
+
+### Error Handling
+- Always handle errors at the appropriate level
+- Use React Query's error handling for API errors
+- Display user-friendly error messages (internationalized)
+- Log errors appropriately for debugging
+
+### Security
+- Never commit sensitive data (API keys, tokens, passwords)
+- Always validate user input on the server side
+- Use environment variables for configuration
+- Sanitize user inputs before rendering
+
+### Database
+- Use Mongoose schemas for all database models
+- Always validate data before saving to database
+- Use transactions for operations that must be atomic
+- Index frequently queried fields
+
+## Testing
+- Write E2E tests with Cypress for critical user flows
+- Test file naming: `*.cy.ts` (e.g., `form_registration.cy.ts`)
+- Focus tests on user interactions and business logic
+- Keep tests maintainable and readable
+
+## Code Review Checklist
+- [ ] TypeScript types are properly defined
+- [ ] All user-facing text is internationalized
+- [ ] API errors are handled appropriately
+- [ ] Components are properly typed
+- [ ] No console.log statements in production code
+- [ ] Environment variables are used (not hardcoded)
+- [ ] DTOs are used for API endpoints (server)
+- [ ] Input validation is present (server)
+- [ ] Authentication/authorization is checked (server)
+
+## Common Patterns
+
+### React Component with API
+```typescript
+// Use React Query for data fetching
+const { data, isLoading, error } = useQuery({
+  queryKey: ['users'],
+  queryFn: () => fetchAllUsers()
+});
+
+// Use mutations for data updates
+const mutation = useMutation({
+  mutationFn: updateUser,
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+  }
+});
+```
+
+### NestJS Controller Pattern
+```typescript
+@Controller('users')
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+  
+  @Get()
+  @UseGuards(AuthGuard)
+  async findAll(@Query() query: FindUsersDto) {
+    return this.usersService.findAll(query);
+  }
+}
+```
+
+### Form Handling
+- Use React Hook Form with Zod validation
+- Use `@hookform/resolvers` for Zod integration
+- Extract form logic into custom hooks when reused
+
+## Dependencies to Prefer
+- **UI Components:** Radix UI primitives
+- **Forms:** React Hook Form + Zod
+- **HTTP Client:** Axios (via apiClient)
+- **Date Handling:** date-fns or dayjs
+- **Icons:** lucide-react
+- **Animations:** framer-motion (when needed)
+
+## Dependencies to Avoid
+- Avoid adding new state management libraries (use React Query + Context)
+- Avoid jQuery or other DOM manipulation libraries
+- Avoid class-based React components
+- Avoid any in production code
+
+## Performance Considerations
+- Use React Query's caching effectively
+- Implement proper loading and error states
+- Lazy load routes when appropriate
+- Optimize images and assets
+- Use React.memo() only when profiling shows benefit
+
+## Git Workflow
+- Write clear, descriptive commit messages
+- Keep commits focused and atomic
+- Use feature branches for new work
+- Update documentation when adding features
+
+## Documentation
+- Document complex business logic
+- Add JSDoc comments for public APIs
+- Keep README files updated
+- Document environment variables needed
+

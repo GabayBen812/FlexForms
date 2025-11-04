@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { z } from "zod";
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Plus, Trash } from "lucide-react";
 
 import DataTable from "@/components/ui/completed/data-table";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -14,6 +14,7 @@ import apiClient from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
 import { toast } from "sonner";
+import { getSelectionColumn } from "@/components/tables/selectionColumns";
 
 const kidsApi = createApiService<Kid>("/kids", {
   includeOrgId: true,
@@ -26,9 +27,14 @@ export default function KidsPage() {
     {}
   );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [refreshFn, setRefreshFn] = useState<(() => void) | null>(null);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [tableRows, setTableRows] = useState<Kid[]>([]);
 
+  const selectionColumn = getSelectionColumn<Kid>();
+  
   const columns: ColumnDef<Kid>[] = [
+    selectionColumn,
     { accessorKey: "firstname", header: t("firstname") },
     { accessorKey: "lastname", header: t("lastname") },
     { accessorKey: "birthdate", header: t("birthdate") },
@@ -60,12 +66,38 @@ export default function KidsPage() {
         toast.success(t("form_created_success"));
         setIsAddDialogOpen(false);
         // Trigger table refresh
-        setRefreshTrigger((prev) => prev + 1);
+        refreshFn?.();
       }
     } catch (error) {
       console.error("Error creating kid:", error);
       toast.error(t("error"));
       throw error;
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const selectedIndices = Object.keys(rowSelection).map(Number);
+    const selectedRows = selectedIndices.map((index) => tableRows[index]).filter((row): row is Kid => !!row);
+    const selectedIds = selectedRows.map((row) => row._id).filter((id): id is string => !!id);
+    
+    if (selectedIds.length === 0) return;
+    
+    const count = selectedIds.length;
+    const confirmed = window.confirm(
+      t("confirm_delete", { count }) || 
+      `Are you sure you want to delete ${count} item(s)?`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      await Promise.all(selectedIds.map((id) => kidsApi.delete(id)));
+      toast.success(t("deleted_successfully") || `Successfully deleted ${count} item(s)`);
+      setRowSelection({});
+      refreshFn?.();
+    } catch (error) {
+      console.error("Error deleting kids:", error);
+      toast.error(t("delete_failed") || "Failed to delete items");
     }
   };
 
@@ -76,11 +108,11 @@ export default function KidsPage() {
       </h1>
       <DataTable<Kid>
         data={[]}
-        fetchData={(params) => {
+        fetchData={useCallback((params) => {
           if (!organization?._id)
             return Promise.resolve({ status: 200, data: [] });
           return kidsApi.fetchAll(params, false, organization._id);
-        }}
+        }, [organization?._id])}
         addData={kidsApi.create}
         updateData={kidsApi.update}
         deleteData={kidsApi.delete}
@@ -96,11 +128,31 @@ export default function KidsPage() {
         idField="_id"
         extraFilters={advancedFilters}
         organazitionId={organization?._id}
-        refreshTrigger={refreshTrigger}
+        onRefreshReady={useCallback((fn) => setRefreshFn(() => fn), [])}
+        rowSelection={rowSelection}
+        onRowSelectionChange={useCallback((updater: any) => {
+          setRowSelection((prev) => {
+            if (typeof updater === 'function') {
+              return updater(prev);
+            } else {
+              return updater;
+            }
+          });
+        }, [])}
+        visibleRows={useCallback((rows) => setTableRows(rows), [])}
         customLeftButtons={
-          <Button variant="outline" onClick={() => setIsAddDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" /> {t("add")}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" /> {t("add")}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleBulkDelete}
+              disabled={Object.keys(rowSelection).length === 0}
+            >
+              <Trash className="w-4 h-4 mr-2" /> {t("delete")}
+            </Button>
+          </div>
         }
       />
       <AddRecordDialog

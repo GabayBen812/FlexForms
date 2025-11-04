@@ -47,7 +47,6 @@ export function NavRoutes() {
 }
 
 function SideBarMenuRoute({ route, user }: { route: RouteObject, user: any }) {
-  const { t } = useTranslation();
   const { organization } = useOrganization();
 
   return (
@@ -55,10 +54,6 @@ function SideBarMenuRoute({ route, user }: { route: RouteObject, user: any }) {
       {route.children?.map((childRoute) => {
         if (!childRoute.handle?.showInSidebar) return null;
         if (childRoute.handle?.adminOnly && user?.role !== 'system_admin') return null;
-        if (childRoute.handle?.featureFlag) {
-          const { isEnabled } = useFeatureFlag(childRoute.handle.featureFlag);
-          if (!isEnabled) return null;
-        }
         if (
           childRoute.handle?.isMaccabi &&
           organization?.name !== "מרכז מכבי ישראל"
@@ -66,55 +61,75 @@ function SideBarMenuRoute({ route, user }: { route: RouteObject, user: any }) {
           return null;
         }
         return (
-          <Collapsible
+          <RouteItemWithFeatureFlag
             key={childRoute.id}
-            asChild
-            className="group/collapsible"
-          >
-            <SidebarMenuItem className="">
-              {childRoute.children && childRoute.children?.length > 0 && (
-                <CollapsibleChildren childRoute={childRoute} />
-              )}
-              {childRoute.handle?.groupLabel && (
-                <SidebarGroupLabel>
-                  {childRoute.handle?.groupLabel}
-                </SidebarGroupLabel>
-              )}
-              {!childRoute.children && childRoute.path && (
-                <NavLink
-                  to={childRoute.path}
-                  className={({ isActive }) => `
-    ease duration-150 text-sidebar-primary-foreground rounded-none px-2 relative
-    ${isActive ? "text-sidebar-accent" : ""}
-  `}
-                >
-                  {({ isActive }) => (
-                    <SidebarMenuButton
-                      tooltip={t(childRoute.handle.title)}
-                      className={`flex items-center w-full ${
-                        isActive ? "text-sidebar-accent" : "text-gray-700"
-                      }`}
-                    >
-                      {isActive && (
-                        <div className="absolute h-full rtl:left-0 ltr:right-0 w-1 bg-sidebar-accent" />
-                      )}
-                      <span className="mx-4">
-                        {childRoute.handle.icon && (
-                          <childRoute.handle.icon isActive={isActive} />
-                        )}
-                      </span>
-                      <span className="font-semibold">
-                        {t(childRoute.handle.title)}
-                      </span>
-                    </SidebarMenuButton>
-                  )}
-                </NavLink>
-              )}
-            </SidebarMenuItem>
-          </Collapsible>
+            childRoute={childRoute}
+          />
         );
       })}
     </SidebarMenu>
+  );
+}
+
+function RouteItemWithFeatureFlag({ childRoute }: { childRoute: RouteObject }) {
+  const { t } = useTranslation();
+  const featureFlag = childRoute.handle?.featureFlag;
+  
+  // Always call the hook (React rules), but pass empty string if no flag
+  const { isEnabled, isLoading } = useFeatureFlag(featureFlag || "");
+
+  // If there's a feature flag that's disabled (and done loading), don't render
+  if (featureFlag && !isLoading && !isEnabled) {
+    return null;
+  }
+
+  // Render the navigation item
+  return (
+    <Collapsible
+      asChild
+      className="group/collapsible"
+    >
+      <SidebarMenuItem className="">
+        {childRoute.children && childRoute.children?.length > 0 && (
+          <CollapsibleChildren childRoute={childRoute} />
+        )}
+        {childRoute.handle?.groupLabel && (
+          <SidebarGroupLabel>
+            {childRoute.handle?.groupLabel}
+          </SidebarGroupLabel>
+        )}
+        {!childRoute.children && childRoute.path && (
+          <NavLink
+            to={childRoute.path}
+            className={({ isActive }) => `
+    ease duration-150 text-sidebar-primary-foreground rounded-none px-2 relative
+    ${isActive ? "text-sidebar-accent" : ""}
+  `}
+          >
+            {({ isActive }) => (
+              <SidebarMenuButton
+                tooltip={t(childRoute.handle.title)}
+                className={`flex items-center w-full ${
+                  isActive ? "text-sidebar-accent" : "text-gray-700"
+                }`}
+              >
+                {isActive && (
+                  <div className="absolute h-full rtl:left-0 ltr:right-0 w-1 bg-sidebar-accent" />
+                )}
+                <span className="mx-4">
+                  {childRoute.handle.icon && (
+                    <childRoute.handle.icon isActive={isActive} />
+                  )}
+                </span>
+                <span className="font-semibold">
+                  {t(childRoute.handle.title)}
+                </span>
+              </SidebarMenuButton>
+            )}
+          </NavLink>
+        )}
+      </SidebarMenuItem>
+    </Collapsible>
   );
 }
 

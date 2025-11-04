@@ -37,7 +37,7 @@ export default function EmployeesPage() {
     {}
   );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [refreshFn, setRefreshFn] = useState<(() => void) | null>(null);
 
   const columns: ColumnDef<Employee>[] = [
     { accessorKey: "firstname", header: t("firstname") },
@@ -70,7 +70,7 @@ export default function EmployeesPage() {
         toast.success(t("form_created_success"));
         setIsAddDialogOpen(false);
         // Trigger table refresh
-        setRefreshTrigger((prev) => prev + 1);
+        refreshFn?.();
       }
     } catch (error) {
       console.error("Error creating employee:", error);
@@ -106,7 +106,7 @@ export default function EmployeesPage() {
         idField="_id"
         extraFilters={advancedFilters}
         organazitionId={organization?._id}
-        refreshTrigger={refreshTrigger}
+        onRefreshReady={(fn) => setRefreshFn(() => fn)}
         customLeftButtons={
           <Button variant="outline" onClick={() => setIsAddDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" /> {t("add")}

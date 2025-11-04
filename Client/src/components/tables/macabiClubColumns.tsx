@@ -1,6 +1,6 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { MacabiClub } from "@/types/macabiClub/macabiClub";
-import { selectionColumn } from "./selectionColumns"; 
+import { getSelectionColumn } from "./selectionColumns"; 
 import { FieldType } from "@/types/ui/data-table-types";
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ export function getClubColumns(t: (key: string) => string
   onEdit: (row: MacabiClub) => void
 ): ColumnDef<MacabiClub>[] {
   return [ 
-  selectionColumn,
+  getSelectionColumn<MacabiClub>(),
   
     {
       id: "edit",

@@ -74,6 +74,7 @@ export default function OrganizationsTable() {
         {t("organizations")}
       </h1>
       <DataTable<Organization>
+        data={[]}
         columns={columns}
         fetchData={fetchData}
         addData={noop}

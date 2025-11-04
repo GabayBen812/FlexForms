@@ -146,7 +146,7 @@ export default function clubs() {
           if (typeof clubValue === 'string') {
             return clubValue.toLowerCase().includes(value.toLowerCase());
           } else if (typeof clubValue === 'number') {
-            return clubValue.toString().includes(value);
+            return String(clubValue).includes(value as string);
           }
           return true;
         }
@@ -464,7 +464,7 @@ const handleAddClubClick = () => {
             fields={columns
               .map((col) => ({
                 visual_name: col.header?.toString?.() || "",
-                technical_name: col.accessorKey || col.id || "",
+                technical_name: (col as any).accessorKey || col.id || "",
               }))
               .slice(1, -1)}
             onlyImport={false}

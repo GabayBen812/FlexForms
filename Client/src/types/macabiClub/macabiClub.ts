@@ -1,5 +1,8 @@
 
 export interface MacabiClub {
+  _id?: string;
+  clubName?: string;
+  clubNumber?: string;
   name: string;
   number: string;
   serviceAgreementDate: string;

@@ -57,8 +57,7 @@ export default function Requests() {
    { 
   accessorKey: "status",
   header: t("request_status"),
-  cellType: "select",
-  options: statusOptions,
+  meta: { fieldType: "SELECT", options: statusOptions },
   cell: ({ getValue }) => {
     const value = getValue<string>();
     const option = statusOptions.find(opt => opt.value === value);
@@ -70,7 +69,7 @@ export default function Requests() {
     { accessorKey: "organizationId", header: "", meta: { hidden: true } },
   ];
   
-  const visibleColumns = columns.filter((col) => !col.meta?.hidden);
+  const visibleColumns = columns.filter((col) => !((col.meta as any)?.hidden));
 
 const handleSaveRequestDefinition = async (newRequestDefinition: any) => {
   try {

@@ -1,137 +1,77 @@
 import { useTranslation } from "react-i18next";
-import { useContext } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
 import { useState } from "react";
 
 import DataTable from "@/components/ui/completed/data-table";
-import DynamicForm, { FieldConfig } from "@/components/forms/DynamicForm";
-import { OrganizationsContext } from "@/contexts/OrganizationsContext";
+import { useOrganization } from "@/hooks/useOrganization";
 import { TableAction, ApiQueryParams } from "@/types/ui/data-table-types";
 import { createApiService } from "@/api/utils/apiFactory";
-import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
-import { Button } from "@/components/ui/button";
+import { Kid } from "@/types/kids/kid";
 import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
 
-export type Payment = {
-  id: string;
-  amount: number;
-  service: string;
-  status: string;
-  lowProfileCode?: string;
-  cardDetails?: {
-    cardOwnerName: string;
-    cardOwnerEmail: string;
-    last4Digits: string;
-    expiryMonth: string;
-    expiryYear: string;
-    token: string;
-  };
-  invoice?: {
-    id: string;
-    originalDocumentUrl: string;
-  };
-  formId: string;
-  organizationId: string;
-  createdAt?: string;
-  updatedAt?: string;
-};
-
-const paymentsApi = createApiService<Payment>("/payments", {
+const kidsApi = createApiService<Kid>("/kids", {
   includeOrgId: true,
 });
 
-export default function Payments() {
+export default function KidsPage() {
   const { t } = useTranslation();
-  const { organization } = useContext(OrganizationsContext);
+  const { organization } = useOrganization();
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
     {}
   );
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
-  const columns: ColumnDef<Payment>[] = [
+  const columns: ColumnDef<Kid>[] = [
     { accessorKey: "firstname", header: t("firstname") },
     { accessorKey: "lastname", header: t("lastname") },
-    { accessorKey: "address", header: t("lastname") },
     { accessorKey: "birthdate", header: t("birthdate") },
     { accessorKey: "sex", header: t("sex") },
-    { accessorKey: "parents", header: t("linked_parents") },
+    { accessorKey: "address", header: t("address") || "Address" },
+    { accessorKey: "linked_parents", header: t("linked_parents") },
+    { accessorKey: "organizationId", header: "", meta: { hidden: true } },
   ];
 
-  const actions: TableAction<Payment>[] = [
+  const visibleColumns = columns.filter(
+    //@ts-ignore
+    (col) => !col.meta?.hidden
+  );
+
+  const actions: TableAction<Kid>[] = [
     { label: t("edit"), type: "edit" },
     { label: t("delete"), type: "delete" },
   ];
-
-  const paymentFormFields: FieldConfig[] = [
-    { name: "payerName", label: t("payer_name"), type: "text" },
-    { name: "payerEmail", label: t("payer_email"), type: "email" },
-    { name: "amount", label: t("amount"), type: "number" },
-    { name: "date", label: t("date"), type: "date" },
-    { name: "formId", label: t("form"), type: "text" },
-  ];
-
-  const paymentSchema = z.object({
-    payerName: z.string().min(1),
-    payerEmail: z.string().email(),
-    amount: z.number(),
-    date: z.string(),
-    formId: z.string(),
-  });
 
   return (
     <div className="mx-auto">
       <h1 className="text-2xl font-semibold text-primary mb-6">
         {t("kids")}
       </h1>
-      <DataTable<Payment>
-        data={[]}
-        updateData={async () => Promise.resolve({} as any)}
-        fetchData={async (params) => {
-          const res = await paymentsApi.fetchAll(params);
-          if (Array.isArray(res.data)) {
-            return {
-              ...res,
-              data: res.data.map((item: any) => ({
-                ...item,
-                id: item._id,
-                cardDetails: item.cardDetails || {},
-              })),
-            };
-          }
-          return res;
+      <DataTable<Kid>
+        fetchData={(params) => {
+          if (!organization?._id)
+            return Promise.resolve({ status: 200, data: [] });
+          return kidsApi.fetchAll(params, false, organization._id);
         }}
-        addData={paymentsApi.create}
-        deleteData={paymentsApi.delete}
-        columns={columns}
+        addData={kidsApi.create}
+        updateData={kidsApi.update}
+        deleteData={kidsApi.delete}
+        columns={visibleColumns}
         actions={actions}
         searchable
+        showAddButton={[
+          { name: "organizationId", defaultValue: organization?._id || "" },
+          { name: "linked_parents", defaultValue: [] }
+        ]}
         showAdvancedSearch
         onAdvancedSearchChange={setAdvancedFilters}
         initialAdvancedFilters={advancedFilters}
         isPagination={false}
         defaultPageSize={10}
-        idField="id"
+        //@ts-ignore
+        idField="_id"
         extraFilters={advancedFilters}
-        renderExpandedContent={({ handleSave }) => (
-          <DynamicForm
-            mode="create"
-            headerKey="payment"
-            fields={paymentFormFields}
-            validationSchema={paymentSchema}
-            onSubmit={async (data) => {
-              const newPayment = {
-                ...data,
-                organizationId: organization?._id,
-              };
-              const res = await paymentsApi.create(newPayment);
-              if (res.status === 200 && res.data) {
-                handleSave?.(res.data);
-              }
-            }}
-          />
-        )}
+        organazitionId={organization?._id}
       />
     </div>
   );

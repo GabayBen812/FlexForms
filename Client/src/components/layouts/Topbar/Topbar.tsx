@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Hotel } from "lucide-react";
 import { CommandDialogDemo } from "./WebSearch";
 import LanguagePicker from "@/components/LanguagePicker";
 import { APP_VERSION } from "@/version";
-import { Pencil } from "lucide-react";
+import { Pencil, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { updateOrganizationName } from "@/api/organizations";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
@@ -13,28 +14,41 @@ import { t } from "i18next";
 
 function Topbar() {
   const { organization, isOrganizationFetching, refetchOrganization } = useOrganization();
+  const { user } = useAuth();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(organization?.name || "");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { isEnabled: canEditOrgName } = useFeatureFlag("is_edit_org_name");
+  
+  // Allow editing if user is admin/system_admin OR if feature flag is enabled
+  const canEdit = useFeatureFlag("is_edit_org_name").isEnabled || user?.role === "admin" || user?.role === "system_admin";
 
   if (!organization || isOrganizationFetching) {
     return null;
   }
 
   const handleSave = async () => {
+    if (!name.trim()) {
+      toast({ title: t("organization_name_empty") });
+      return;
+    }
+    
     setLoading(true);
     try {
-      await updateOrganizationName(organization._id, name);
-      toast({ title: t("organization_name_updated"), description: undefined });
+      await updateOrganizationName(organization._id, name.trim());
+      toast({ title: t("organization_name_updated") });
       setEditing(false);
       refetchOrganization?.();
     } catch (e) {
-      toast({ title: "Failed to update organization name.", description: undefined });
+      toast({ title: t("organization_name_update_failed") });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCancel = () => {
+    setName(organization.name);
+    setEditing(false);
   };
 
   return (
@@ -50,31 +64,42 @@ function Topbar() {
             </Avatar>
           </div>
           <div className="grid flex-1 ltr:text-left rtl:text-right text-sm leading-tight">
-            {canEditOrgName ? (
+            {canEdit ? (
               editing ? (
                 <div className="flex items-center gap-2">
                   <input
-                    className="border rounded px-2 py-1 text-sm"
+                    className="border rounded px-2 py-1 text-sm flex-1"
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder={organization?.name}
                     disabled={loading}
                     autoFocus
-                    onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
+                    onKeyDown={e => { 
+                      if (e.key === 'Enter') handleSave();
+                      if (e.key === 'Escape') handleCancel();
+                    }}
                   />
                   <button
-                    className="btn btn-primary"
+                    className="btn btn-primary text-sm px-3 py-1"
                     onClick={handleSave}
                     disabled={loading || !name.trim()}
                   >
-                    Save
+                    {t("save")}
+                  </button>
+                  <button
+                    className="btn btn-secondary text-sm px-3 py-1"
+                    onClick={handleCancel}
+                    disabled={loading}
+                  >
+                    <X size={16} />
                   </button>
                 </div>
               ) : (
                 <h1
                   className="truncate font-bold text-xl flex items-center gap-2 group cursor-pointer"
                   style={{ color: "var(--primary)" }}
-                  onClick={() => { setEditing(true); setName(organization?.name || ""); }}
+                  onClick={() => { setEditing(true); setName(organization.name); }}
+                  title={t("click_to_edit")}
                 >
                   {organization?.name}
                   <span className="transition-opacity opacity-30 group-hover:opacity-100">

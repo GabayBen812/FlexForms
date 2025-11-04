@@ -1,5 +1,5 @@
 import { createBrowserRouter } from "react-router-dom";
-import PrivateRoute from "@/api/PrivateRoute";
+import ProtectedRoute from "@/routes/ProtectedRoute";
 import CreateOrganization from "@/pages/CreateOrganization/CreateOrganization";
 import Login from "@/pages/Login/Login";
 import { Layout } from "@/components/layouts/Layout";
@@ -55,7 +55,7 @@ export const router = createBrowserRouter([
     path: "/",
     element: (
       <Layout>
-        <PrivateRoute />
+        <ProtectedRoute />
       </Layout>
     ),
     handle: { showInSidebar: true },

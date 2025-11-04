@@ -16,7 +16,7 @@ import { AdvancedSearchModal } from "@/components/ui/completed/data-table/Advanc
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 import { InlineEditPopup } from "@/components/InlineEditPopup";
-import { getClubColumns } from "@/columns/macabiClubColumns";
+import { getClubColumns } from "@/components/tables/macabiClubColumns";
 import { EditClubDialog } from "@/components/EditClubDialog";
 import { AdvancedUpdateDialog } from "@/components/AdvancedUpdateDialog";
 import ExcelImporterExporter from "@/components/ui/ExcelImporterExporter";

@@ -12,7 +12,7 @@ import { createApiService } from "@/api/utils/apiFactory";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
 import { FeatureFlag } from "@/types/feature-flags";
-import apiClient from "@/api/utils/apiClient";
+import apiClient from "@/api/apiClient";
 
 export type Payment = {
   id: string;

@@ -13,3 +13,5 @@ export const OrganizationsProvider: React.FC<{ children: ReactNode }> = ({
     </OrganizationsContext.Provider>
   );
 };
+
+

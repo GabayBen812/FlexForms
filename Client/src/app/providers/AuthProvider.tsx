@@ -1,5 +1,5 @@
 import React, { ReactNode } from "react";
-import { AuthContext } from "@/contexts/AuthContext"; // Adjust the import path as needed
+import { AuthContext } from "@/contexts/AuthContext";
 import { useAuth } from "@/hooks/useAuth";
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
@@ -11,3 +11,5 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 };
+
+

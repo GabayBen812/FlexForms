@@ -1,0 +1,15 @@
+{
+  "projectName": "Paradise ERP",
+  "preferredRules": [
+    "rules/backend.md",
+    "rules/frontend.md",
+    "rules/style.md",
+    "rules/general.md"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    "dist",
+    "build",
+    ".git"
+  ]
+}

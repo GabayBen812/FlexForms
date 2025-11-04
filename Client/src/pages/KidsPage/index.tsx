@@ -61,7 +61,7 @@ export default function KidsPage() {
         searchable
         showAddButton={[
           { name: "organizationId", defaultValue: organization?._id || "" },
-          { name: "linked_parents", defaultValue: [] }
+          { name: "linked_parents", defaultValue: "" }
         ]}
         showAdvancedSearch
         onAdvancedSearchChange={setAdvancedFilters}

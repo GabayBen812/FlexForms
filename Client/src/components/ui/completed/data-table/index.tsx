@@ -63,6 +63,7 @@ export function DataTable<TData>({
   isPagination = true,
   showAddButton = false,
   customAddButton,
+  customLeftButtons,
   showActionColumn = false,
   showEditButton = false,
   showDeleteButton = false,
@@ -83,7 +84,7 @@ export function DataTable<TData>({
   isLazyLoading = false,
   organazitionId,
 
-}: DataTableProps<TData> & { extraFilters?: Record<string, any> }) {
+}: DataTableProps<TData> & { extraFilters?: Record<string, any>; customLeftButtons?: React.ReactNode }) {
   const [tableData, setTableData] = useState<TData[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -455,6 +456,7 @@ export function DataTable<TData>({
             onAdvancedSearchChange={onAdvancedSearchChange}
             initialAdvancedFilters={initialAdvancedFilters}
           />
+          {customLeftButtons}
         </div>
         <div className="flex items-center gap-4">
           {customAddButton || (

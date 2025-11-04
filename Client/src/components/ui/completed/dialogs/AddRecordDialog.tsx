@@ -28,11 +28,16 @@ export function AddRecordDialog({
 
   // Filter columns to show only visible data fields
   const dataColumns = columns.filter(
-    (col) =>
-      col.accessorKey &&
-      !["select", "duplicate", "actions"].includes(col.accessorKey as string) &&
-      !excludeFields.includes(col.accessorKey as string) &&
-      !(col.meta as any)?.hidden
+    (col) => {
+      const accessorKey = (col as any).accessorKey;
+      return (
+        accessorKey &&
+        typeof accessorKey === "string" &&
+        !["select", "duplicate", "actions"].includes(accessorKey) &&
+        !excludeFields.includes(accessorKey) &&
+        !(col.meta as any)?.hidden
+      );
+    }
   );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -44,7 +49,7 @@ export function AddRecordDialog({
     setSaving(true);
     try {
       await onAdd({ ...form, ...defaultValues });
-      setOpen(false);
+      onOpenChange(false);
       setForm({});
     } catch (error) {
       console.error("Error adding record:", error);
@@ -66,7 +71,7 @@ export function AddRecordDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {dataColumns.map((col) => {
-            const accessorKey = col.accessorKey as string;
+            const accessorKey = (col as any).accessorKey as string;
             const header = typeof col.header === "string" ? col.header : col.header?.toString() || accessorKey;
             const fieldType = (col.meta as any)?.fieldType;
             const options = (col.meta as any)?.options;

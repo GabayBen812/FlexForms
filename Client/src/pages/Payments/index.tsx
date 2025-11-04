@@ -99,10 +99,14 @@ export default function Payments() {
 
   const handleAddPayment = async (data: any) => {
     try {
-      const newPayment = {
+      const newPayment: Partial<Payment> = {
         cardDetails: {
           cardOwnerName: data.cardOwnerName || "",
           cardOwnerEmail: data.cardOwnerEmail || "",
+          last4Digits: "",
+          expiryMonth: "",
+          expiryYear: "",
+          token: "",
         },
         amount: parseFloat(data.amount) || 0,
         status: data.status || "",

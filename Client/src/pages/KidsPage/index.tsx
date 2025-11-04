@@ -33,6 +33,7 @@ export default function KidsPage() {
 
   const selectionColumn = getSelectionColumn<Kid>();
   
+
   const columns: ColumnDef<Kid>[] = [
     selectionColumn,
     { accessorKey: "firstname", header: t("firstname") },
@@ -42,6 +43,7 @@ export default function KidsPage() {
     { accessorKey: "address", header: t("address") },
     { accessorKey: "linked_parents", header: t("linked_parents") },
     { accessorKey: "organizationId", header: "", meta: { hidden: true } },
+    // Place selectionColumn as the last item so it renders at the right side of the table.
   ];
 
   const visibleColumns = columns.filter(

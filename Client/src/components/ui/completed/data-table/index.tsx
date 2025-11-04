@@ -213,7 +213,7 @@ export function DataTable<TData>({
       pagination,
       rowSelection,
       columnOrder:
-        columnOrder || columns.map((col) => (col as any).accessorKey as string),
+        columnOrder || columns.map((col) => (col as any).id || (col as any).accessorKey as string),
     },
     globalFilterFn: globalFilterFn,
     onColumnOrderChange: onColumnOrderChange,

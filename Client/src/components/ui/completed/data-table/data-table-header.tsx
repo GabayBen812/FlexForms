@@ -240,21 +240,6 @@ function DataTableHeader<T>({
                       ) : header.column.getIsSorted() === "desc" ? (
                         <ChevronDown className="h-4 w-4" />
                       ) : null)}
-
-                    {isFirst && enableRowSelection && (
-                      <div className="flex items-center justify-center gap-2 mt-1">
-                        <Checkbox
-                          checked={table.getIsAllPageRowsSelected()}
-                          onCheckedChange={(value) =>
-                            table.toggleAllPageRowsSelected(!!value)
-                          }
-                          className="border-white"
-                        />
-                        <span className="text-xs text-white">
-                          {selectedRowCount} {t("selected")}
-                        </span>
-                      </div>
-                    )}
                   </div>
 
                   {enableColumnReordering && (

@@ -200,6 +200,10 @@
   "request_name": "Request name",
   "request_type": "Request type",
   "request_status": "Request status",
-  "set_requests": "Set Requests"
+  "set_requests": "Set Requests",
+  "organization_name_updated": "Organization name updated",
+  "organization_name_empty": "Organization name cannot be empty",
+  "organization_name_update_failed": "Failed to update organization name",
+  "click_to_edit": "Click to edit organization name"
 
 }

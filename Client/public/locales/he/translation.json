@@ -216,5 +216,8 @@
   "add_club": "הוסף עמותה",
   "add_new_club": "הוסף עמותה חדשה",
   "club_created_successfully": "העמותה נוצרה בהצלחה",
-  "set_requests": "הגדר בקשות"
+  "set_requests": "הגדר בקשות",
+  "organization_name_empty": "שם הארגון לא יכול להיות ריק",
+  "organization_name_update_failed": "עדכון שם הארגון נכשל",
+  "click_to_edit": "לחץ לערוך את שם הארגון"
 }

@@ -72,6 +72,7 @@ export default function KidsPage() {
         {t("kids")}
       </h1>
       <DataTable<Kid>
+        data={[]}
         fetchData={(params) => {
           if (!organization?._id)
             return Promise.resolve({ status: 200, data: [] });

@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { z } from "zod";
-import { useState, useCallback } from "react";
-import { Plus, Trash, Pencil } from "lucide-react";
+import { useState, useCallback, useMemo } from "react";
+import { Plus, Trash, Pencil, Settings } from "lucide-react";
 
 import DataTable from "@/components/ui/completed/data-table";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -12,6 +12,8 @@ import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
+import { TableFieldConfigDialog } from "@/components/ui/completed/dialogs/TableFieldConfigDialog";
+import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -25,6 +27,7 @@ export interface Employee {
   email: string;
   idNumber?: string;
   organizationId: string;
+  dynamicFields?: Record<string, any>;
 }
 
 const employeesApi = createApiService<Employee>("/employees", {
@@ -39,6 +42,7 @@ export default function EmployeesPage() {
   );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isFieldConfigDialogOpen, setIsFieldConfigDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [refreshFn, setRefreshFn] = useState<(() => void) | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -110,6 +114,16 @@ export default function EmployeesPage() {
     (col) => !col.meta?.hidden
   );
 
+  // Merge static columns with dynamic fields
+  const mergedColumns = useMemo(() => {
+    return mergeColumnsWithDynamicFields(
+      visibleColumns,
+      "employees",
+      organization,
+      t
+    );
+  }, [visibleColumns, organization, t]);
+
   const actions: TableAction<Employee>[] = [
     { label: t("edit"), type: "edit" },
     { label: t("delete"), type: "delete" },
@@ -117,10 +131,14 @@ export default function EmployeesPage() {
 
   const handleAddEmployee = async (data: any) => {
     try {
+      console.log("handleAddEmployee received data:", data);
       const newEmployee = {
         ...data,
         organizationId: organization?._id || "",
+        // Preserve dynamicFields if it exists
+        ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
       };
+      console.log("newEmployee to send:", newEmployee);
       const res = await employeesApi.create(newEmployee);
       if (res.status === 200 || res.data) {
         toast.success(t("form_created_success"));
@@ -142,6 +160,8 @@ export default function EmployeesPage() {
         ...data,
         id: editingEmployee._id,
         organizationId: organization?._id || "",
+        // Preserve dynamicFields if they exist
+        ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
       };
       const res = await employeesApi.update(updatedEmployee);
       if (res.status === 200 || res.data) {
@@ -199,7 +219,7 @@ export default function EmployeesPage() {
         addData={employeesApi.create}
         updateData={employeesApi.update}
         deleteData={employeesApi.delete}
-        columns={visibleColumns}
+        columns={mergedColumns}
         actions={actions}
         searchable
         showAdvancedSearch
@@ -240,13 +260,20 @@ export default function EmployeesPage() {
             >
               <Trash className="w-4 h-4 mr-2" /> {t("delete")}
             </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsFieldConfigDialogOpen(true)}
+              className="bg-gray-500 hover:bg-gray-600 text-white border-gray-500 hover:border-gray-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+            >
+              <Settings className="w-4 h-4 mr-2" /> {t("configure_fields", "ערוך שדות דינאמיים")}
+            </Button>
           </div>
         }
       />
       <AddRecordDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
-        columns={visibleColumns}
+        columns={mergedColumns}
         onAdd={handleAddEmployee}
         excludeFields={["organizationId"]}
         defaultValues={{
@@ -261,7 +288,7 @@ export default function EmployeesPage() {
             setEditingEmployee(null);
           }
         }}
-        columns={visibleColumns}
+        columns={mergedColumns}
         onAdd={handleAddEmployee}
         onEdit={handleEditEmployee}
         editMode={true}
@@ -272,10 +299,20 @@ export default function EmployeesPage() {
           phone: editingEmployee.phone || "",
           email: editingEmployee.email,
           idNumber: editingEmployee.idNumber || "",
+          ...(editingEmployee.dynamicFields ? { dynamicFields: editingEmployee.dynamicFields } : {}),
         } : undefined}
         excludeFields={["organizationId"]}
         defaultValues={{
           organizationId: organization?._id || "",
+        }}
+      />
+      <TableFieldConfigDialog
+        open={isFieldConfigDialogOpen}
+        onOpenChange={setIsFieldConfigDialogOpen}
+        entityType="employees"
+        organizationId={organization?._id || ""}
+        onSave={() => {
+          refreshFn?.();
         }}
       />
     </div>

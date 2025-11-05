@@ -3,12 +3,14 @@ import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { z } from "zod";
 import { useState, useCallback, useMemo } from "react";
 import { Plus, Trash, Pencil, Settings } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 import DataTable from "@/components/ui/completed/data-table";
 import { useOrganization } from "@/hooks/useOrganization";
 import { TableAction, ApiQueryParams } from "@/types/ui/data-table-types";
 import { createApiService } from "@/api/utils/apiFactory";
 import { Parent } from "@/types/parents/parent";
+import { Kid } from "@/types/kids/kid";
 import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
@@ -20,6 +22,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { formatDateForEdit } from "@/lib/dateUtils";
 
 const parentsApi = createApiService<Parent>("/parents", {
+  includeOrgId: true,
+});
+
+const kidsApi = createApiService<Kid>("/kids", {
   includeOrgId: true,
 });
 
@@ -36,6 +42,20 @@ export default function ParentsPage() {
   const [refreshFn, setRefreshFn] = useState<(() => void) | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [tableRows, setTableRows] = useState<Parent[]>([]);
+
+  // Fetch kids for multi-select
+  const { data: kidsOptions = [], isLoading: kidsLoading } = useQuery({
+    queryKey: ["kids-options", organization?._id],
+    queryFn: async () => {
+      if (!organization?._id) return [];
+      const res = await kidsApi.fetchAll({}, false, organization._id);
+      return (res.data || []).map((kid: Kid) => ({
+        value: kid._id || "",
+        label: `${kid.firstname} ${kid.lastname}`,
+      }));
+    },
+    enabled: !!organization?._id,
+  });
 
   // Custom selection column with edit icon
   const selectionColumn: ColumnDef<Parent> = {
@@ -92,7 +112,14 @@ export default function ParentsPage() {
     { accessorKey: "firstname", header: t("firstname") },
     { accessorKey: "lastname", header: t("lastname") },
     { accessorKey: "idNumber", header: t("id_number") },
-    { accessorKey: "linked_kids", header: t("linked_kids") },
+    { 
+      accessorKey: "linked_kids", 
+      header: t("linked_kids"),
+      meta: {
+        editable: true,
+        relationshipOptions: kidsOptions,
+      },
+    },
     { accessorKey: "organizationId", header: "", meta: { hidden: true } },
   ];
 
@@ -103,13 +130,26 @@ export default function ParentsPage() {
 
   // Merge static columns with dynamic fields
   const mergedColumns = useMemo(() => {
+    // Update columns with current kidsOptions
+    const updatedColumns = visibleColumns.map((col) => {
+      if ((col as any).accessorKey === "linked_kids") {
+        return {
+          ...col,
+          meta: {
+            ...(col as any).meta,
+            relationshipOptions: kidsOptions,
+          },
+        };
+      }
+      return col;
+    });
     return mergeColumnsWithDynamicFields(
-      visibleColumns,
+      updatedColumns,
       "parents",
       organization,
       t
     );
-  }, [visibleColumns, organization, t]);
+  }, [visibleColumns, organization, t, kidsOptions]);
 
   const actions: TableAction<Parent>[] = [
     { label: t("edit"), type: "edit" },
@@ -122,7 +162,7 @@ export default function ParentsPage() {
       const newParent = {
         ...data,
         organizationId: organization?._id || "",
-        linked_kids: data.linked_kids || [],
+        linked_kids: Array.isArray(data.linked_kids) ? data.linked_kids : [],
         // Preserve dynamicFields if it exists
         ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
       };
@@ -148,7 +188,13 @@ export default function ParentsPage() {
         ...data,
         id: editingParent._id,
         organizationId: organization?._id || "",
-        linked_kids: data.linked_kids || [],
+        linked_kids: Array.isArray(data.linked_kids) 
+          ? data.linked_kids 
+          : (Array.isArray(editingParent.linked_kids) 
+              ? editingParent.linked_kids.map((k: any) => typeof k === 'string' ? k : (k?._id || k?.toString() || k))
+              : []),
+        // Preserve dynamicFields if they exist
+        ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
       };
       const res = await parentsApi.update(updatedParent);
       if (res.status === 200 || res.data) {
@@ -263,7 +309,12 @@ export default function ParentsPage() {
         onOpenChange={setIsAddDialogOpen}
         columns={mergedColumns}
         onAdd={handleAddParent}
-        excludeFields={["linked_kids", "organizationId"]}
+        excludeFields={["organizationId"]}
+        relationshipFields={{
+          linked_kids: {
+            options: kidsOptions,
+          },
+        }}
         defaultValues={{
           organizationId: organization?._id || "",
           linked_kids: [],
@@ -285,9 +336,17 @@ export default function ParentsPage() {
           firstname: editingParent.firstname,
           lastname: editingParent.lastname,
           idNumber: editingParent.idNumber || "",
+          linked_kids: Array.isArray(editingParent.linked_kids) 
+            ? editingParent.linked_kids.map((k: any) => typeof k === 'string' ? k : (k?._id || k?.toString() || k))
+            : [],
           ...(editingParent.dynamicFields ? { dynamicFields: editingParent.dynamicFields } : {}),
         } : undefined}
-        excludeFields={["linked_kids", "organizationId"]}
+        relationshipFields={{
+          linked_kids: {
+            options: kidsOptions,
+          },
+        }}
+        excludeFields={["organizationId"]}
         defaultValues={{
           organizationId: organization?._id || "",
           linked_kids: editingParent?.linked_kids || [],

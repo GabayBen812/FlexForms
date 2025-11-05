@@ -15,15 +15,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Ghost, MoreVertical, Pencil, Trash, Copy } from "lucide-react";
+import { Ghost, MoreVertical, Pencil, Trash, Copy, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
+import { Checkbox } from "@/components/ui/checkbox";
 import DataTableBodyRowExpanded from "./data-table-body-row-expanded";
 import { ExpandedContentProps, TableAction } from "@/types/ui/data-table-types";
 import { DataTableLoading } from "./data-table-loading";
 import { GetDirection } from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { formatDateForDisplay, formatDateForEdit, parseDateForSubmit, isDateValue } from "@/lib/dateUtils";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { AddressInput } from "@/components/ui/address-input";
+import { cn } from "@/lib/utils";
+import { isValidIsraeliID } from "@/lib/israeliIdValidator";
 import "./data-table-row.css";
 
 interface BaseData {
@@ -75,6 +80,163 @@ interface EditableCellProps<T> {
   onCancel: () => void;
 }
 
+// Colors for chips display
+const chipColors = [
+  "bg-pink-100 text-pink-800 border-pink-200",
+  "bg-blue-100 text-blue-800 border-blue-200",
+  "bg-green-100 text-green-800 border-green-200",
+  "bg-orange-100 text-orange-800 border-orange-200",
+  "bg-red-100 text-red-800 border-red-200",
+  "bg-purple-100 text-purple-800 border-purple-200",
+  "bg-yellow-100 text-yellow-800 border-yellow-200",
+  "bg-indigo-100 text-indigo-800 border-indigo-200",
+];
+
+// Component to display relationship chips
+function RelationshipChipsDisplay({ 
+  values, 
+  options, 
+  onClick 
+}: { 
+  values: string[]; 
+  options: { value: string; label: string }[];
+  onClick?: (e?: React.MouseEvent) => void;
+}) {
+  const labels = values
+    .map((value) => options.find((opt) => opt.value === value)?.label)
+    .filter(Boolean);
+
+  if (labels.length === 0) {
+    return (
+      <div
+        onClick={onClick}
+        className="cursor-pointer px-2 py-1 rounded min-h-[1.5rem]"
+      />
+    );
+  }
+
+  return (
+    <div
+      onClick={onClick}
+      className="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded min-h-[1.5rem] transition-colors flex flex-wrap gap-1 justify-center items-center"
+    >
+      {labels.map((label, index) => (
+        <div
+          key={values[index]}
+          className={cn(
+            "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border",
+            chipColors[index % chipColors.length]
+          )}
+        >
+          <span>{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Relationship Editable Cell Component
+function RelationshipEditableCell<T>({
+  cell,
+  row,
+  onSave,
+  isEditing,
+  onEdit,
+  onCancel,
+}: EditableCellProps<T>) {
+  const columnDef = cell.column.columnDef;
+  const accessorKey = (columnDef as any).accessorKey as string;
+  const meta = (columnDef as any).meta || {};
+  const relationshipOptions = meta.relationshipOptions || [];
+  
+  const cellValue = cell.getValue();
+  const currentValues = Array.isArray(cellValue) 
+    ? cellValue.map((v: any) => typeof v === 'string' ? v : (v?._id || v?.toString() || v))
+    : [];
+  const [selectedValues, setSelectedValues] = useState<string[]>(currentValues);
+
+  useEffect(() => {
+    if (isEditing) {
+      setSelectedValues(currentValues);
+    }
+  }, [isEditing, cellValue]);
+
+  const handleSave = () => {
+    onSave({ [accessorKey]: selectedValues });
+    onCancel();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      onCancel();
+    }
+  };
+
+  if (!isEditing) {
+    return (
+      <div
+        className={cn(
+          "cursor-pointer group relative px-2 py-1 rounded min-h-[1.5rem] transition-all duration-200",
+          "hover:bg-blue-50 hover:border hover:border-blue-200 hover:shadow-sm"
+        )}
+        onClick={(e) => {
+          e.stopPropagation();
+          onEdit();
+        }}
+      >
+        <RelationshipChipsDisplay
+          values={currentValues}
+          options={relationshipOptions}
+        />
+        <Pencil className="w-3.5 h-3.5 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute top-1 right-1" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="w-full"
+      onKeyDown={handleKeyDown}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <MultiSelect
+        options={relationshipOptions}
+        selected={selectedValues}
+        onSelect={setSelectedValues}
+        placeholder="בחר אפשרויות..."
+        className="w-full"
+      />
+      <div className="flex gap-2 mt-2 justify-end">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={(e) => {
+            e.stopPropagation();
+            onCancel();
+          }}
+          className="h-6 text-xs"
+        >
+          ביטול
+        </Button>
+        <Button
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSave();
+          }}
+          className="h-6 text-xs"
+        >
+          שמור
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function EditableCell<T>({
   cell,
   row,
@@ -86,6 +248,7 @@ function EditableCell<T>({
 }: EditableCellProps<T>) {
   const inputRef = useRef<HTMLInputElement | HTMLSelectElement>(null);
   const [value, setValue] = useState<string>("");
+  const [optimisticCheckboxValue, setOptimisticCheckboxValue] = useState<boolean | null>(null);
   const { t } = useTranslation();
 
   const columnDef = cell.column.columnDef;
@@ -94,17 +257,28 @@ function EditableCell<T>({
   const fieldType = meta.fieldType;
   const options = meta.options;
   const isDate = meta.isDate || isDateValue(cell.getValue());
+  const isTime = meta.isTime;
+  const isMoney = meta.isMoney;
   const isDynamic = accessorKey?.startsWith("dynamicFields.");
   
   // Get the current value
   const cellValue = cell.getValue();
-  const displayValue = isDate ? formatDateForDisplay(cellValue) : (cellValue ?? "");
+  const displayValue = isDate ? formatDateForDisplay(cellValue) : 
+                      isTime ? (cellValue || "") :
+                      isMoney ? (cellValue ? `₪${parseFloat(cellValue).toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : "") :
+                      fieldType === "CHECKBOX" ? (cellValue === true || cellValue === "true" || cellValue === "1" ? "✓" : "") :
+                      fieldType === "MULTI_SELECT" && Array.isArray(cellValue) ? cellValue.join(", ") :
+                      (cellValue ?? "");
 
   useEffect(() => {
     if (isEditing) {
       // Set initial value when editing starts
       if (isDate && cellValue) {
         setValue(formatDateForEdit(cellValue));
+      } else if (fieldType === "MULTI_SELECT" && Array.isArray(cellValue)) {
+        setValue(cellValue.join(","));
+      } else if (fieldType === "CHECKBOX") {
+        setValue(cellValue === true || cellValue === "true" || cellValue === "1" ? "true" : "false");
       } else {
         setValue(String(cellValue ?? ""));
       }
@@ -116,14 +290,75 @@ function EditableCell<T>({
         }
       }, 0);
     }
-  }, [isEditing, cellValue, isDate]);
+  }, [isEditing, cellValue, isDate, fieldType]);
+
+  // Sync optimistic checkbox value with server value when it updates
+  useEffect(() => {
+    if (fieldType === "CHECKBOX" && optimisticCheckboxValue !== null) {
+      const serverValue = cellValue === true || cellValue === "true" || cellValue === "1";
+      // If server value matches our optimistic value, clear optimistic (server confirmed)
+      if (serverValue === optimisticCheckboxValue) {
+        setOptimisticCheckboxValue(null);
+      }
+    }
+  }, [cellValue, fieldType, optimisticCheckboxValue]);
 
   const handleSave = () => {
     let processedValue: any = value;
     
+    // Validate Israeli ID if editing idNumber field
+    if (accessorKey === "idNumber" && processedValue && processedValue.trim() !== "") {
+      if (!isValidIsraeliID(processedValue)) {
+        alert(t("invalid_israeli_id") || "תעודת זהות לא תקינה. אנא בדוק את המספר שהוזן.");
+        // Clear the invalid value and cancel editing
+        setValue("");
+        onCancel();
+        return;
+      }
+    }
+    
     // Process date values
     if (isDate && value) {
       processedValue = parseDateForSubmit(value) || value;
+    }
+    
+    // Process time values - ensure HH:MM format
+    if (isTime && value) {
+      // Validate and format time as HH:MM
+      const timeRegex = /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/;
+      if (!timeRegex.test(value)) {
+        alert(t("invalid_time_format") || "פורמט זמן לא תקין. אנא השתמש בפורמט HH:MM");
+        return;
+      }
+      processedValue = value;
+    }
+    
+    // Process money values - remove currency symbols and format
+    if (isMoney && value) {
+      // Remove any non-digit characters except decimal point
+      const numericValue = value.toString().replace(/[^\d.]/g, '');
+      processedValue = numericValue;
+    }
+    
+    // Process checkbox values - convert to boolean
+    if (fieldType === "CHECKBOX") {
+      processedValue = value === "true" || value === "1" || String(value) === "true";
+    }
+    
+    // Process multi-select values - ensure array format
+    if (fieldType === "MULTI_SELECT") {
+      if (Array.isArray(value)) {
+        processedValue = value;
+      } else if (typeof value === "string") {
+        // Try to parse as JSON array, otherwise treat as comma-separated
+        try {
+          processedValue = JSON.parse(value);
+        } catch {
+          processedValue = value.split(',').map(v => v.trim()).filter(Boolean);
+        }
+      } else {
+        processedValue = [];
+      }
     }
     
     // Process dynamic fields - merge with existing dynamicFields
@@ -153,15 +388,71 @@ function EditableCell<T>({
   };
 
   if (!isEditing) {
+    // For checkbox fields, show an actual checkbox component and allow direct editing
+    if (fieldType === "CHECKBOX") {
+      // Use optimistic value if set, otherwise use cellValue
+      const checked = optimisticCheckboxValue !== null 
+        ? optimisticCheckboxValue 
+        : (cellValue === true || cellValue === "true" || cellValue === "1");
+      
+      return (
+        <div
+          className={cn(
+            "cursor-pointer group relative px-2 py-1 rounded min-h-[1.5rem] transition-all duration-200",
+            "hover:bg-blue-50 hover:border hover:border-blue-200 hover:shadow-sm",
+            "flex items-center justify-center"
+          )}
+        >
+          <Checkbox
+            checked={checked}
+            onCheckedChange={(newChecked) => {
+              const newValue = Boolean(newChecked);
+              
+              // Immediately update optimistic state (instant UI feedback)
+              setOptimisticCheckboxValue(newValue);
+              
+              // Save to server in background
+              if (isDynamic) {
+                const fieldName = accessorKey.replace("dynamicFields.", "");
+                const existingDynamicFields = (row.original as any).dynamicFields || {};
+                onSave({ 
+                  dynamicFields: { 
+                    ...existingDynamicFields,
+                    [fieldName]: newValue 
+                  } 
+                });
+              } else {
+                onSave({ [accessorKey]: newValue });
+              }
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            className="cursor-pointer"
+          />
+        </div>
+      );
+    }
+    
     return (
       <div
         onClick={(e) => {
           e.stopPropagation();
           onEdit();
         }}
-        className="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded min-h-[1.5rem] transition-colors"
+        className={cn(
+          "cursor-pointer group relative px-2 py-1 rounded min-h-[1.5rem] transition-all duration-200",
+          "hover:bg-blue-50 hover:border hover:border-blue-200 hover:shadow-sm",
+          "hover:font-medium",
+          isMoney ? "font-semibold text-lg text-orange-700" : ""
+        )}
       >
-        {displayValue || <span className="text-gray-400 italic">{t("click_to_edit") || "Click to edit"}</span>}
+        <div className="flex items-center justify-center gap-1.5">
+          <span className="group-hover:text-blue-700 transition-colors">
+            {displayValue}
+          </span>
+          <Pencil className="w-3.5 h-3.5 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+        </div>
       </div>
     );
   }
@@ -186,6 +477,45 @@ function EditableCell<T>({
     );
   }
 
+  if (fieldType === "MULTI_SELECT" && options) {
+    const selectedValues = Array.isArray(value) ? value : (typeof value === "string" && value ? value.split(',').map(v => v.trim()) : []);
+    return (
+      <div onClick={(e) => e.stopPropagation()} className="w-full">
+        <MultiSelect
+          options={options}
+          selected={selectedValues}
+          onSelect={(values) => {
+            setValue(values.join(","));
+          }}
+          placeholder={t("select_options") || "בחר אפשרויות..."}
+          className="w-full"
+        />
+        <button
+          onClick={handleSave}
+          className="mt-2 text-xs text-primary hover:underline"
+        >
+          {t("save") || "שמור"}
+        </button>
+      </div>
+    );
+  }
+
+  if (fieldType === "CHECKBOX") {
+    const checked = value === "true" || value === "1" || String(value) === "true";
+    return (
+      <div onClick={(e) => e.stopPropagation()} className="flex items-center justify-center">
+        <Checkbox
+          checked={checked}
+          onCheckedChange={(newChecked) => {
+            setValue(newChecked ? "true" : "false");
+            setTimeout(handleSave, 100); // Auto-save after change
+          }}
+          className="cursor-pointer"
+        />
+      </div>
+    );
+  }
+
   if (isDate) {
     return (
       <input
@@ -200,6 +530,56 @@ function EditableCell<T>({
         className="w-full border border-primary rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary text-center"
         onClick={(e) => e.stopPropagation()}
       />
+    );
+  }
+
+  if (isTime) {
+    return (
+      <input
+        ref={inputRef as React.RefObject<HTMLInputElement>}
+        type="time"
+        value={value || ""}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={handleKeyDown}
+        className="w-full border border-primary rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary text-center"
+        onClick={(e) => e.stopPropagation()}
+      />
+    );
+  }
+
+  if (isMoney) {
+    const numericValue = typeof value === "number" ? value : (value ? parseFloat(value.toString().replace(/[^\d.]/g, '')) || 0 : 0);
+    return (
+      <div className="flex items-center gap-1 w-full" onClick={(e) => e.stopPropagation()}>
+        <input
+          ref={inputRef as React.RefObject<HTMLInputElement>}
+          type="number"
+          step="0.01"
+          value={numericValue}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyDown}
+          className="flex-1 border border-primary rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary text-center"
+          onClick={(e) => e.stopPropagation()}
+        />
+        <span className="text-sm font-medium">₪</span>
+      </div>
+    );
+  }
+
+  if (meta.fieldType === "ADDRESS") {
+    return (
+      <div onClick={(e) => e.stopPropagation()} className="w-full">
+        <AddressInput
+          value={value}
+          onChange={(address) => setValue(address)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyDown}
+          placeholder={t("enter_address", "הכנס כתובת")}
+          className="w-full"
+        />
+      </div>
     );
   }
 
@@ -260,6 +640,9 @@ const RowComponent = React.memo(function RowComponent<T>({
     // Check if the column is explicitly marked as a date
     const isDateColumn = meta.isDate;
 
+    // Check if this is a relationship field
+    const isRelationshipField = meta.relationshipOptions && Array.isArray(meta.relationshipOptions);
+
     // Check if this cell should be editable
     // Don't allow editing for selection column, action columns, or hidden columns
     const isEditable = accessorKey && 
@@ -270,6 +653,38 @@ const RowComponent = React.memo(function RowComponent<T>({
     
     const cellId = `${row.id}-${accessorKey}`;
     const isEditing = editingCell === cellId;
+
+    // If it's a relationship field, use RelationshipEditableCell
+    if (isRelationshipField && isEditable) {
+      return (
+        <RelationshipEditableCell
+          cell={cell}
+          row={row}
+          table={table}
+          onSave={(data) => {
+            if (handleEdit) {
+              handleEdit(row, data);
+            }
+          }}
+          isEditing={isEditing}
+          onEdit={() => setEditingCell(cellId)}
+          onCancel={() => setEditingCell(null)}
+        />
+      );
+    }
+
+    // If it's a relationship field but not editable, just display chips
+    if (isRelationshipField) {
+      const currentValues = Array.isArray(value) 
+        ? value.map((v: any) => typeof v === 'string' ? v : (v?._id || v?.toString() || v))
+        : [];
+      return (
+        <RelationshipChipsDisplay
+          values={currentValues}
+          options={meta.relationshipOptions}
+        />
+      );
+    }
 
     // If cell is editable, render EditableCell
     if (isEditable) {
@@ -293,6 +708,18 @@ const RowComponent = React.memo(function RowComponent<T>({
     // Otherwise, render normally
     if (isDateColumn || isDateValue(value)) {
       return formatDateForDisplay(value);
+    }
+
+    // Check if this is a money field
+    const isMoney = meta.isMoney;
+    
+    if (isMoney && value) {
+      const formattedValue = `₪${parseFloat(value).toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+      return (
+        <span className="font-semibold text-lg text-orange-700">
+          {formattedValue}
+        </span>
+      );
     }
 
     return flexRender(columnDef.cell, cell.getContext());

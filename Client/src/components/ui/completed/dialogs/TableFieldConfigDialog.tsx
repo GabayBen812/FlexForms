@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,12 +7,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Save, Trash } from "lucide-react";
+import { Plus, Save, Trash, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DynamicFieldDefinition } from "@/utils/tableFieldUtils";
 import { fetchTableFieldDefinitions, updateTableFieldDefinitions } from "@/api/organizations";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 interface TableFieldConfigDialogProps {
   open: boolean;
@@ -25,10 +26,76 @@ interface TableFieldConfigDialogProps {
 interface FieldInput {
   name: string;
   label: string;
-  type: "TEXT" | "SELECT" | "DATE" | "NUMBER" | "EMAIL" | "PHONE";
+  type: "TEXT" | "SELECT" | "DATE" | "NUMBER" | "EMAIL" | "PHONE" | "MULTI_SELECT" | "TIME" | "CHECKBOX" | "ADDRESS" | "MONEY";
   required: boolean;
   choices?: string[];
   rawChoices?: string;
+}
+
+// Colors for chips display
+const chipColors = [
+  "bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800",
+  "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800",
+  "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
+  "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800",
+  "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800",
+  "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800",
+  "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800",
+  "bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800",
+];
+
+// Component for adding new choices
+interface ChoiceInputProps {
+  onAddChoice: (value: string) => void;
+  placeholder?: string;
+  existingChoices: string[];
+}
+
+function ChoiceInput({ onAddChoice, placeholder, existingChoices }: ChoiceInputProps) {
+  const [inputValue, setInputValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && inputValue.trim()) {
+      e.preventDefault();
+      if (!existingChoices.includes(inputValue.trim())) {
+        onAddChoice(inputValue.trim());
+        setInputValue("");
+      }
+    }
+  };
+
+  const handleAddClick = () => {
+    if (inputValue.trim() && !existingChoices.includes(inputValue.trim())) {
+      onAddChoice(inputValue.trim());
+      setInputValue("");
+      inputRef.current?.focus();
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        ref={inputRef}
+        type="text"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        className="flex-1 border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+      />
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={handleAddClick}
+        disabled={!inputValue.trim() || existingChoices.includes(inputValue.trim())}
+        className="shrink-0"
+      >
+        <Plus className="w-4 h-4" />
+      </Button>
+    </div>
+  );
 }
 
 export function TableFieldConfigDialog({
@@ -115,12 +182,12 @@ export function TableFieldConfigDialog({
     const newFields = [...fields];
     newFields[index] = { ...newFields[index], ...updates };
     
-    // Handle SELECT type changes
-    if (updates.type === "SELECT" && !newFields[index].choices) {
+    // Handle SELECT/MULTI_SELECT type changes
+    if ((updates.type === "SELECT" || updates.type === "MULTI_SELECT") && !newFields[index].choices) {
       newFields[index].choices = [];
       newFields[index].rawChoices = "";
     }
-    if (updates.type !== "SELECT") {
+    if (updates.type !== "SELECT" && updates.type !== "MULTI_SELECT") {
       newFields[index].choices = undefined;
       newFields[index].rawChoices = undefined;
     }
@@ -138,12 +205,38 @@ export function TableFieldConfigDialog({
     setFields(newFields);
   };
 
+  const handleAddChoice = (index: number, choiceValue: string) => {
+    if (!choiceValue.trim()) return;
+    
+    const newFields = [...fields];
+    const currentChoices = newFields[index].choices || [];
+    
+    // Check if choice already exists
+    if (currentChoices.includes(choiceValue.trim())) {
+      toast.error(t("choice_already_exists", "This option already exists"));
+      return;
+    }
+    
+    newFields[index].choices = [...currentChoices, choiceValue.trim()];
+    newFields[index].rawChoices = newFields[index].choices.join("\n");
+    setFields(newFields);
+  };
+
+  const handleRemoveChoice = (index: number, choiceIndex: number) => {
+    const newFields = [...fields];
+    const currentChoices = newFields[index].choices || [];
+    currentChoices.splice(choiceIndex, 1);
+    newFields[index].choices = currentChoices;
+    newFields[index].rawChoices = currentChoices.join("\n");
+    setFields(newFields);
+  };
+
   const handleSubmit = async () => {
     if (!organizationId) return;
 
     // Validate fields
     const invalidFields = fields.filter(
-      (f) => !f.name.trim() || !f.label.trim() || (f.type === "SELECT" && (!f.choices || f.choices.length === 0))
+      (f) => !f.name.trim() || !f.label.trim() || ((f.type === "SELECT" || f.type === "MULTI_SELECT") && (!f.choices || f.choices.length === 0))
     );
 
     if (invalidFields.length > 0) {
@@ -167,7 +260,7 @@ export function TableFieldConfigDialog({
           required: field.required,
         };
         
-        if (field.type === "SELECT" && field.choices) {
+        if ((field.type === "SELECT" || field.type === "MULTI_SELECT") && field.choices) {
           fieldDef.choices = field.choices;
         }
         
@@ -253,9 +346,14 @@ export function TableFieldConfigDialog({
                       <option value="TEXT">{t("text", "Text")}</option>
                       <option value="NUMBER">{t("number", "Number")}</option>
                       <option value="DATE">{t("date", "Date")}</option>
+                      <option value="TIME">{t("time", "Time")}</option>
                       <option value="EMAIL">{t("email", "Email")}</option>
                       <option value="PHONE">{t("phone", "Phone")}</option>
                       <option value="SELECT">{t("select", "Select")}</option>
+                      <option value="MULTI_SELECT">{t("multi_select", "Multiple Choice")}</option>
+                      <option value="CHECKBOX">{t("checkbox", "Checkbox")}</option>
+                      <option value="ADDRESS">{t("address", "Address")}</option>
+                      <option value="MONEY">{t("money", "Money")}</option>
                     </select>
                     <div className="flex items-center gap-2">
                       <label className="text-sm whitespace-nowrap">
@@ -281,14 +379,44 @@ export function TableFieldConfigDialog({
                     </div>
                   </div>
 
-                  {field.type === "SELECT" && (
-                    <textarea
-                      value={field.rawChoices || ""}
-                      onChange={(e) => handleChoicesChange(index, e.target.value)}
-                      placeholder={t("field_choices_placeholder", "Enter one option per line")}
-                      className="w-full border rounded px-3 py-2 resize-y"
-                      rows={3}
-                    />
+                  {(field.type === "SELECT" || field.type === "MULTI_SELECT") && (
+                    <div className="mt-3 space-y-3">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {t("select_options", "Select Options")}
+                      </label>
+                      
+                      {/* Display existing choices as chips */}
+                      {field.choices && field.choices.length > 0 && (
+                        <div className="flex flex-wrap gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 min-h-[60px]">
+                          {field.choices.map((choice, choiceIndex) => (
+                            <div
+                              key={choiceIndex}
+                              className={cn(
+                                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all hover:shadow-sm",
+                                chipColors[choiceIndex % chipColors.length]
+                              )}
+                            >
+                              <span>{choice}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveChoice(index, choiceIndex)}
+                                className="ml-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-full p-0.5 transition-colors"
+                                aria-label={t("remove_option", "Remove option")}
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Input for adding new choices */}
+                      <ChoiceInput
+                        onAddChoice={(value) => handleAddChoice(index, value)}
+                        placeholder={t("add_option_placeholder", "Type an option and press Enter")}
+                        existingChoices={field.choices || []}
+                      />
+                    </div>
                   )}
                 </div>
               ))}

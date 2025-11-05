@@ -1,11 +1,15 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ParentController } from '../controllers/parent.controller';
 import { ParentService } from '../services/parent.service';
 import { Parent, ParentSchema } from '../schemas/parent.schema';
+import { KidModule } from './kid.module';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Parent.name, schema: ParentSchema }])],
+  imports: [
+    MongooseModule.forFeature([{ name: Parent.name, schema: ParentSchema }]),
+    forwardRef(() => KidModule),
+  ],
   controllers: [ParentController],
   providers: [ParentService],
   exports: [ParentService],

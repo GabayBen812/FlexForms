@@ -2,7 +2,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Organization } from "@/types/api/organization";
 
 export interface DynamicFieldDefinition {
-  type: "TEXT" | "SELECT" | "DATE" | "NUMBER" | "EMAIL" | "PHONE";
+  type: "TEXT" | "SELECT" | "DATE" | "NUMBER" | "EMAIL" | "PHONE" | "MULTI_SELECT" | "TIME" | "CHECKBOX" | "ADDRESS" | "MONEY";
   label: string;
   required?: boolean;
   choices?: string[];
@@ -44,9 +44,15 @@ export function mergeColumnsWithDynamicFields<T>(
       header: fieldDef.label || fieldName,
       meta: {
         isDynamic: true,
-        fieldType: fieldDef.type === "SELECT" ? "SELECT" : undefined,
+        fieldType: fieldDef.type === "SELECT" ? "SELECT" : 
+                   fieldDef.type === "MULTI_SELECT" ? "MULTI_SELECT" : 
+                   fieldDef.type === "CHECKBOX" ? "CHECKBOX" :
+                   fieldDef.type === "ADDRESS" ? "ADDRESS" :
+                   undefined,
         options: fieldDef.choices?.map(choice => ({ value: choice, label: choice })),
         isDate: fieldDef.type === "DATE",
+        isTime: fieldDef.type === "TIME",
+        isMoney: fieldDef.type === "MONEY",
         editable: true, // Dynamic fields are editable by default
         fieldDefinition: fieldDef,
       },

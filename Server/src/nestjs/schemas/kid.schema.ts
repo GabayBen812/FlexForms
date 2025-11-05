@@ -17,7 +17,7 @@ export class Kid {
   @Prop({ required: true })
   sex!: string;
 
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Parent' }], default: [] })
   linked_parents!: Types.ObjectId[];
 
   @Prop()

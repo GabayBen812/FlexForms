@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/Input";
 import { formatDateForEdit, parseDateForSubmit, isDateValue } from "@/lib/dateUtils";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { AddressInput } from "@/components/ui/address-input";
+import { isValidIsraeliID } from "@/lib/israeliIdValidator";
 
 interface AddRecordDialogProps {
   open: boolean;
@@ -16,6 +19,11 @@ interface AddRecordDialogProps {
   editMode?: boolean;
   editData?: Record<string, any>;
   onEdit?: (data: any) => Promise<void>;
+  relationshipFields?: {
+    [key: string]: {
+      options: { value: string; label: string }[];
+    };
+  };
 }
 
 export function AddRecordDialog({
@@ -28,6 +36,7 @@ export function AddRecordDialog({
   editMode = false,
   editData,
   onEdit,
+  relationshipFields,
 }: AddRecordDialogProps) {
   const { t } = useTranslation();
   const [form, setForm] = useState<Record<string, any>>({});
@@ -91,6 +100,19 @@ export function AddRecordDialog({
         }
       });
       
+      // Handle relationship fields - ensure they're arrays
+      if (relationshipFields) {
+        Object.keys(relationshipFields).forEach((key) => {
+          if (editData[key] !== undefined) {
+            formattedData[key] = Array.isArray(editData[key]) ? editData[key] : [];
+          } else if (defaultValues[key] !== undefined) {
+            formattedData[key] = Array.isArray(defaultValues[key]) ? defaultValues[key] : [];
+          } else {
+            formattedData[key] = [];
+          }
+        });
+      }
+      
       // Handle dynamic fields
       if (editData.dynamicFields) {
         Object.keys(editData.dynamicFields).forEach((key) => {
@@ -108,9 +130,18 @@ export function AddRecordDialog({
       
       setForm(formattedData);
     } else if (open && !editMode) {
-      setForm({});
+      // Initialize with defaultValues for relationship fields
+      const initialForm: Record<string, any> = {};
+      if (defaultValues) {
+        Object.keys(defaultValues).forEach((key) => {
+          if (relationshipFields?.[key] && Array.isArray(defaultValues[key])) {
+            initialForm[key] = defaultValues[key];
+          }
+        });
+      }
+      setForm(initialForm);
     }
-  }, [open, editMode, editData, dataColumns]);
+  }, [open, editMode, editData, dataColumns, defaultValues, relationshipFields]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -124,6 +155,17 @@ export function AddRecordDialog({
     e.preventDefault();
     setSaving(true);
     try {
+      // Validate Israeli ID if present
+      if (form.idNumber && form.idNumber.trim() !== "") {
+        if (!isValidIsraeliID(form.idNumber)) {
+          alert(t("invalid_israeli_id") || "תעודת זהות לא תקינה. אנא בדוק את המספר שהוזן.");
+          // Clear the invalid ID number
+          setForm({ ...form, idNumber: "" });
+          setSaving(false);
+          return;
+        }
+      }
+
       // Separate regular fields and dynamic fields
       const processedData: Record<string, any> = {};
       const dynamicFields: Record<string, any> = {};
@@ -146,12 +188,12 @@ export function AddRecordDialog({
             dynamicFields[fieldName] = value;
           }
         } else {
-          // Skip empty values for regular fields
-          if (value === "" || value === null || value === undefined) {
+          // Skip empty values for regular fields (but include arrays even if empty)
+          if (Array.isArray(value)) {
+            processedData[key] = value;
+          } else if (value === "" || value === null || value === undefined) {
             return;
-          }
-          
-          if (isDateField(key) && value && typeof value === "string") {
+          } else if (isDateField(key) && value && typeof value === "string") {
             // Convert DD/MM/YYYY to YYYY-MM-DD for API
             const isoDate = parseDateForSubmit(value);
             processedData[key] = isoDate || value;
@@ -169,10 +211,23 @@ export function AddRecordDialog({
       console.log("Processed data:", processedData);
       console.log("Dynamic fields:", dynamicFields);
       
-      // Merge with defaultValues, but preserve dynamicFields
+      // Include relationship fields from form even if they're empty arrays
+      if (relationshipFields) {
+        Object.keys(relationshipFields).forEach((key) => {
+          if (form[key] !== undefined) {
+            processedData[key] = form[key];
+          } else if (defaultValues[key] !== undefined) {
+            processedData[key] = defaultValues[key];
+          } else {
+            processedData[key] = [];
+          }
+        });
+      }
+      
+      // Merge with defaultValues, but preserve dynamicFields and relationship fields
       const finalData = {
-        ...processedData,
         ...defaultValues,
+        ...processedData,
         // Ensure dynamicFields is preserved even if defaultValues has it
         ...(processedData.dynamicFields && { dynamicFields: processedData.dynamicFields }),
       };
@@ -215,8 +270,10 @@ export function AddRecordDialog({
             const fieldDefinition = (col.meta as any)?.fieldDefinition;
             
             // Get field value - handle dynamic fields differently
-            const fieldValue = form[accessorKey] || "";
+            const fieldValue = form[accessorKey] !== undefined ? form[accessorKey] : (defaultValues[accessorKey] || "");
             const dynamicFieldName = isDynamic ? getDynamicFieldName(accessorKey) : null;
+            const isRelationshipField = relationshipFields?.[accessorKey];
+            const relationshipOptions = isRelationshipField?.options || [];
 
             return (
               <div key={accessorKey}>
@@ -224,7 +281,16 @@ export function AddRecordDialog({
                   {header}
                   {isDynamic && fieldDefinition?.required && <span className="text-red-500 ml-1">*</span>}
                 </label>
-                {fieldType === "SELECT" && options ? (
+                {isRelationshipField ? (
+                  <MultiSelect
+                    options={relationshipOptions}
+                    selected={Array.isArray(fieldValue) ? fieldValue : fieldValue ? [fieldValue] : []}
+                    onSelect={(values) => {
+                      setForm({ ...form, [accessorKey]: values });
+                    }}
+                    placeholder={t("select_options") || "בחר אפשרויות..."}
+                  />
+                ) : fieldType === "SELECT" && options ? (
                   <select
                     name={accessorKey}
                     value={fieldValue}
@@ -239,6 +305,29 @@ export function AddRecordDialog({
                       </option>
                     ))}
                   </select>
+                ) : fieldType === "MULTI_SELECT" && options ? (
+                  <MultiSelect
+                    options={options}
+                    selected={Array.isArray(fieldValue) ? fieldValue : fieldValue ? [fieldValue] : []}
+                    onSelect={(values) => {
+                      setForm({ ...form, [accessorKey]: values });
+                    }}
+                    placeholder={t("select_options") || "בחר אפשרויות..."}
+                  />
+                ) : (isDynamic && fieldDefinition?.type === "CHECKBOX") ? (
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      name={accessorKey}
+                      checked={fieldValue === true || fieldValue === "true" || fieldValue === "1"}
+                      onChange={(e) => {
+                        setForm({ ...form, [accessorKey]: e.target.checked });
+                      }}
+                      className="w-4 h-4"
+                      required={fieldDefinition?.required}
+                    />
+                    <span>{t("checked", "סומן")}</span>
+                  </label>
                 ) : (isDateField(accessorKey) || (isDynamic && fieldDefinition?.type === "DATE")) ? (
                   <input
                     type="text"
@@ -269,6 +358,39 @@ export function AddRecordDialog({
                     className="w-full"
                     required={fieldDefinition?.required}
                   />
+                ) : (isDynamic && fieldDefinition?.type === "TIME") ? (
+                  <input
+                    type="time"
+                    name={accessorKey}
+                    value={fieldValue}
+                    onChange={handleChange}
+                    className="w-full border border-border rounded-md placeholder:text-muted-foreground font-normal rtl:text-right ltr:text-left focus:outline-border outline-none px-3 py-2"
+                    required={fieldDefinition?.required}
+                  />
+                ) : (isDynamic && fieldDefinition?.type === "ADDRESS") ? (
+                  <AddressInput
+                    value={fieldValue || ""}
+                    onChange={(address) => {
+                      setForm({ ...form, [accessorKey]: address });
+                    }}
+                    placeholder={t("enter_address", "הכנס כתובת")}
+                    className="w-full"
+                    required={fieldDefinition?.required}
+                    name={accessorKey}
+                  />
+                ) : (isDynamic && fieldDefinition?.type === "MONEY") ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      name={accessorKey}
+                      value={fieldValue}
+                      onChange={handleChange}
+                      className="w-full"
+                      required={fieldDefinition?.required}
+                    />
+                    <span className="text-sm font-medium whitespace-nowrap">₪</span>
+                  </div>
                 ) : (isDynamic && fieldDefinition?.type === "NUMBER") ? (
                   <Input
                     type="number"

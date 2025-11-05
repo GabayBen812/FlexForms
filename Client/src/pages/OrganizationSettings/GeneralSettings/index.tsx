@@ -3,11 +3,13 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Hotel } from "lucide-react";
+import { Hotel, Moon, Sun } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "react-i18next";
 import { OrganizationsContext } from "@/contexts/OrganizationsContext";
+import { ThemeContext } from "@/contexts/ThemeContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { handleLogoUpload } from "@/lib/formUtils";
 import { resolveTheme } from "@/lib/themeUtils";
@@ -24,6 +26,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function GeneralSettings() {
   const { organization } = useContext(OrganizationsContext);
+  const { resolvedTheme, setTheme } = useContext(ThemeContext);
   //@ts-ignore
   const { updateOrganization, refetchOrganization } = useOrganization();
   const { t } = useTranslation();
@@ -121,6 +124,12 @@ export default function GeneralSettings() {
     fileInputRef.current?.click();
   };
 
+  const isDarkMode = resolvedTheme === "dark";
+
+  const handleDarkModeToggle = (checked: boolean) => {
+    setTheme(checked ? "dark" : "light");
+  };
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       {/* Name */}
@@ -160,6 +169,22 @@ export default function GeneralSettings() {
               }
             }}
           />
+        </div>
+      </div>
+
+      {/* Dark Mode */}
+      <div className="flex border-b border-border pb-4 items-center gap-4">
+        <div className="w-72">
+          <h2 className="font-semibold">{t("dark_mode")}</h2>
+          <p className="text-sm text-secondary">{t("toggle_dark_mode")}</p>
+        </div>
+        <div className="flex gap-4 items-center">
+          {isDarkMode ? (
+            <Moon className="size-5 text-primary" />
+          ) : (
+            <Sun className="size-5 text-primary" />
+          )}
+          <Switch checked={isDarkMode} onCheckedChange={handleDarkModeToggle} />
         </div>
       </div>
 

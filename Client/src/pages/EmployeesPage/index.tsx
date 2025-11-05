@@ -23,9 +23,6 @@ export interface Employee {
   id?: string;
   firstname: string;
   lastname: string;
-  address?: string;
-  phone?: string;
-  email: string;
   idNumber?: string;
   organizationId: string;
   dynamicFields?: Record<string, any>;
@@ -150,8 +147,8 @@ export default function EmployeesPage() {
         throw new Error(errorMessage);
       }
       
-      // Check if response is successful
-      if (res.status === 200 && res.data) {
+      // Check if response is successful (200 or 201)
+      if ((res.status === 200 || res.status === 201) && res.data) {
         const createdEmployee = res.data;
         toast.success(t("form_created_success"));
         setIsAddDialogOpen(false);

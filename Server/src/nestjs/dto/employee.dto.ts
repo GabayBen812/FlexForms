@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsMongoId, IsOptional, IsEmail } from 'class-validator';
+import { IsString, IsNotEmpty, IsMongoId, IsOptional } from 'class-validator';
 import { IsValidIsraeliID } from '../../common/decorators/is-valid-israeli-id';
 
 export class CreateEmployeeDto {
@@ -12,24 +12,15 @@ export class CreateEmployeeDto {
 
   @IsString()
   @IsOptional()
-  address?: string;
-
-  @IsString()
-  @IsOptional()
-  phone?: string;
-
-  @IsEmail()
-  @IsNotEmpty()
-  email!: string;
-
-  @IsString()
-  @IsOptional()
   @IsValidIsraeliID()
   idNumber?: string;
 
   @IsMongoId()
   @IsNotEmpty()
   organizationId!: string;
+
+  @IsOptional()
+  dynamicFields?: Record<string, any>;
 }
 
 export class UpdateEmployeeDto {
@@ -43,19 +34,10 @@ export class UpdateEmployeeDto {
 
   @IsString()
   @IsOptional()
-  address?: string;
-
-  @IsString()
-  @IsOptional()
-  phone?: string;
-
-  @IsEmail()
-  @IsOptional()
-  email?: string;
-
-  @IsString()
-  @IsOptional()
   @IsValidIsraeliID()
   idNumber?: string;
+
+  @IsOptional()
+  dynamicFields?: Record<string, any>;
 }
 

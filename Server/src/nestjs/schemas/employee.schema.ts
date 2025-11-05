@@ -12,19 +12,13 @@ export class Employee {
   lastname!: string;
 
   @Prop()
-  address?: string;
-
-  @Prop()
-  phone?: string;
-
-  @Prop({ required: true })
-  email!: string;
-
-  @Prop()
   idNumber?: string;
 
   @Prop({ type: Types.ObjectId, ref: 'Organization', required: true })
   organizationId!: Types.ObjectId;
+
+  @Prop({ type: Object, default: {} })
+  dynamicFields!: Record<string, any>;
 }
 
 export const EmployeeSchema = SchemaFactory.createForClass(Employee);

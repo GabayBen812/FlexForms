@@ -17,20 +17,16 @@ export class EmployeeService {
       const employeeData: any = {
         firstname: createEmployeeDto.firstname,
         lastname: createEmployeeDto.lastname,
-        email: createEmployeeDto.email,
         organizationId: new Types.ObjectId(createEmployeeDto.organizationId),
       };
       
-      if (createEmployeeDto.address) {
-        employeeData.address = createEmployeeDto.address;
-      }
-      
-      if (createEmployeeDto.phone) {
-        employeeData.phone = createEmployeeDto.phone;
-      }
-      
       if (createEmployeeDto.idNumber) {
         employeeData.idNumber = createEmployeeDto.idNumber;
+      }
+
+      // Handle dynamicFields - save them to the database
+      if (createEmployeeDto.dynamicFields && typeof createEmployeeDto.dynamicFields === 'object') {
+        employeeData.dynamicFields = createEmployeeDto.dynamicFields;
       }
       
       console.log('EmployeeService.create - employeeData to save:', employeeData);
@@ -53,8 +49,22 @@ export class EmployeeService {
   }
 
   async update(id: string, updateEmployeeDto: UpdateEmployeeDto): Promise<Employee | null> {
+    const updateData: any = { ...updateEmployeeDto };
+    
+    // Handle dynamicFields separately using dot notation to merge instead of replace
+    if (updateEmployeeDto.dynamicFields && typeof updateEmployeeDto.dynamicFields === 'object') {
+      const dynamicFieldsUpdate: any = {};
+      Object.keys(updateEmployeeDto.dynamicFields).forEach(key => {
+        dynamicFieldsUpdate[`dynamicFields.${key}`] = updateEmployeeDto.dynamicFields[key];
+      });
+      
+      // Remove dynamicFields from updateData and use dot notation instead
+      delete updateData.dynamicFields;
+      Object.assign(updateData, dynamicFieldsUpdate);
+    }
+    
     return this.employeeModel
-      .findByIdAndUpdate(id, updateEmployeeDto, { new: true })
+      .findByIdAndUpdate(id, updateData, { new: true })
       .exec();
   }
 

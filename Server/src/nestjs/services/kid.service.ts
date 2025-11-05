@@ -30,11 +30,20 @@ export class KidService {
       if (createKidDto.address) {
         kidData.address = createKidDto.address;
       }
+
+      if (createKidDto.idNumber) {
+        kidData.idNumber = createKidDto.idNumber;
+      }
       
       if (createKidDto.linked_parents && Array.isArray(createKidDto.linked_parents) && createKidDto.linked_parents.length > 0) {
         kidData.linked_parents = createKidDto.linked_parents
           .filter(parentId => parentId && Types.ObjectId.isValid(parentId))
           .map(parentId => new Types.ObjectId(parentId));
+      }
+
+      // Handle dynamicFields - save them to the database
+      if (createKidDto.dynamicFields && typeof createKidDto.dynamicFields === 'object') {
+        kidData.dynamicFields = createKidDto.dynamicFields;
       }
       
       console.log('KidService.create - kidData to save:', kidData);

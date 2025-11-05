@@ -352,7 +352,7 @@ export function AddRecordDialog({
                       className="w-4 h-4"
                       required={isRequiredField || fieldDefinition?.required}
                     />
-                    <span>{t("checked", "סומן")}</span>
+                    <span>כן / לא</span>
                   </label>
                 ) : (isDateField(accessorKey) || (isDynamic && fieldDefinition?.type === "DATE")) ? (
                   <input

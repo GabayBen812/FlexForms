@@ -36,6 +36,11 @@ export class ParentService {
           .filter(kidId => kidId && Types.ObjectId.isValid(kidId))
           .map(kidId => new Types.ObjectId(kidId));
       }
+
+      // Handle dynamicFields - save them to the database
+      if (createParentDto.dynamicFields && typeof createParentDto.dynamicFields === 'object') {
+        parentData.dynamicFields = createParentDto.dynamicFields;
+      }
       
       console.log('ParentService.create - parentData to save:', parentData);
       const createdParent = new this.parentModel(parentData);

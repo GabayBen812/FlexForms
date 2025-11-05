@@ -22,6 +22,9 @@ export class CreateParentDto {
   @IsMongoId()
   @IsNotEmpty()
   organizationId!: string;
+
+  @IsOptional()
+  dynamicFields?: Record<string, any>;
 }
 
 export class UpdateParentDto {

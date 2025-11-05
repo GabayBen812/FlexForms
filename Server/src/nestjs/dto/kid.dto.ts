@@ -26,6 +26,9 @@ export class CreateKidDto {
   @IsMongoId()
   @IsNotEmpty()
   organizationId!: string;
+
+  @IsOptional()
+  dynamicFields?: Record<string, any>;
 }
 
 export class UpdateKidDto {

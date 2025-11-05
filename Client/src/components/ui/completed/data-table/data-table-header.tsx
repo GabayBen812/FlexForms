@@ -444,24 +444,29 @@ function DataTableHeader<T>({
     }
 
     const currentOrder = table.getState().columnOrder;
-    const dynamicFieldIds = getDynamicFieldIds();
+    const dynamicFieldIdsSet = new Set(getDynamicFieldIds());
     
-    // Find indices of dragged columns
-    const activeIndex = dynamicFieldIds.indexOf(active.id as string);
-    const overIndex = dynamicFieldIds.indexOf(over.id as string);
+    // Get the current order of dynamic fields from the actual displayed order
+    const currentDynamicFieldOrder = currentOrder.filter(id => 
+      dynamicFieldIdsSet.has(id)
+    );
+    
+    // Find indices of dragged columns in the CURRENT displayed order
+    const activeIndex = currentDynamicFieldOrder.indexOf(active.id as string);
+    const overIndex = currentDynamicFieldOrder.indexOf(over.id as string);
 
     // Only allow reordering if both are dynamic fields
     if (activeIndex === -1 || overIndex === -1) {
       return;
     }
 
-    // Reorder only the dynamic fields
-    const reorderedDynamicFields = arrayMove(dynamicFieldIds, activeIndex, overIndex);
+    // Reorder based on the CURRENT order, not the original definition order
+    const reorderedDynamicFields = arrayMove(currentDynamicFieldOrder, activeIndex, overIndex);
 
     // Rebuild the column order: keep static columns in their positions, reorder dynamic fields
     // Find where dynamic fields start in the current order
     const firstDynamicIndex = currentOrder.findIndex((id) => 
-      dynamicFieldIds.includes(id)
+      dynamicFieldIdsSet.has(id)
     );
 
     // Build new order
@@ -469,10 +474,14 @@ function DataTableHeader<T>({
     
     if (firstDynamicIndex !== -1) {
       // Replace dynamic fields section with reordered version
-      newOrder.splice(firstDynamicIndex, dynamicFieldIds.length, ...reorderedDynamicFields);
+      // Find how many dynamic fields are in the current order
+      const dynamicFieldCount = currentOrder.filter(id => 
+        dynamicFieldIdsSet.has(id)
+      ).length;
+      newOrder.splice(firstDynamicIndex, dynamicFieldCount, ...reorderedDynamicFields);
     } else {
       // If no dynamic fields in order, append them at the end
-      const staticColumns = currentOrder.filter(id => !dynamicFieldIds.includes(id));
+      const staticColumns = currentOrder.filter(id => !dynamicFieldIdsSet.has(id));
       newOrder.splice(0, newOrder.length, ...staticColumns, ...reorderedDynamicFields);
     }
     

@@ -16,6 +16,7 @@ import apiClient from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
 import { TableFieldConfigDialog } from "@/components/ui/completed/dialogs/TableFieldConfigDialog";
+import { SmartLoadFromExcel } from "@/components/ui/completed/dialogs/SmartLoadFromExcel";
 import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -303,6 +304,7 @@ export default function KidsPage() {
             >
               <Settings className="w-4 h-4 mr-2" /> {t("configure_fields", "ערוך שדות דינאמיים")}
             </Button>
+            <SmartLoadFromExcel />
           </div>
         }
       />

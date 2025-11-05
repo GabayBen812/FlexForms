@@ -306,8 +306,11 @@ function DataTableHeader<T>({
   const lastColumnRounding = direction ? "rounded-l-lg" : "rounded-r-lg";
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  
+  // Ref for debouncing save operations
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Mutation for saving field order automatically
+  // Mutation for saving field order automatically - NO invalidate to avoid refresh
   const saveFieldOrderMutation = useMutation({
     mutationFn: async (fieldOrder: string[]) => {
       if (!organizationId || !entityType) return;
@@ -329,14 +332,26 @@ function DataTableHeader<T>({
       return updateTableFieldDefinitions(organizationId, updatedDefinitions);
     },
     onSuccess: () => {
-      // Invalidate organization query to refetch with new order
-      queryClient.invalidateQueries({ queryKey: ['organization'] });
+      // Don't invalidate - the local table state is already updated
+      // The server is updated, but we don't need to refetch
+      // This prevents the annoying refresh/rerender
+      // The columns will be correct on next page load or manual refresh
     },
     onError: (error) => {
       console.error("Error saving field order:", error);
       toast.error(t("error_saving_field_order") || "Failed to save field order");
+      // Optionally, you could show a toast to ask user to manually refresh
     },
   });
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Configure drag-and-drop sensors
   // Reduced activation distance for easier dragging (like Monday.com)
@@ -474,12 +489,20 @@ function DataTableHeader<T>({
       return null;
     }).filter((name): name is string => name !== null);
     
-    // Call custom callback if provided, otherwise save automatically
+    // Call custom callback if provided
     if (onColumnOrderChange) {
       onColumnOrderChange(reorderedFieldNames);
     } else if (organizationId && entityType) {
-      // Auto-save if organizationId and entityType are provided
-      saveFieldOrderMutation.mutate(reorderedFieldNames);
+      // Debounce the save - clear any pending save and set a new one
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      
+      // Debounce save to avoid multiple API calls during rapid dragging
+      // Wait 500ms after user stops dragging before saving
+      saveTimeoutRef.current = setTimeout(() => {
+        saveFieldOrderMutation.mutate(reorderedFieldNames);
+      }, 500);
     }
   };
 

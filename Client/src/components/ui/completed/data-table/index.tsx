@@ -185,21 +185,34 @@ export function DataTable<TData>({
   const id = row.original[idField] as string | number;
   const updatedData = { ...data, id };
 
+  // Save the original data in case we need to revert
+  const originalData = { ...row.original };
+
+  // Optimistically update the UI immediately (BEFORE the API call)
+  setTableData((prev) =>
+    prev.map((item) =>
+      (item as TData)[idField] === id
+        ? { ...item, ...updatedData }
+        : item
+    )
+  );
+
   try {
+    // Call the API in the background
     await updateData(updatedData);
-
-    // Update only the relevant row in tableData
-    setTableData((prev) =>
-      prev.map((item) =>
-        (item as TData)[idField] === id
-          ? { ...item, ...updatedData }
-          : item
-      )
-    );
-
     toast.success(t("updated_successfully"));
   } catch (error) {
     console.error("Failed to update data:", error);
+    
+    // Revert to original data on error
+    setTableData((prev) =>
+      prev.map((item) =>
+        (item as TData)[idField] === id
+          ? originalData as TData
+          : item
+      )
+    );
+    
     toast.error(t("error"));
   }
 };

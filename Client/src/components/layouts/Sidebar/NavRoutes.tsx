@@ -29,7 +29,6 @@ export function NavRoutes() {
   const { user } = useAuth();
   return (
     <SidebarGroup className="gap-4">
-      <NewCallButton />
       {router.routes.map((route) => {
         if (!route.handle?.showInSidebar) return null;
         if (route.handle?.adminOnly && user?.role !== 'system_admin') return null;
@@ -175,45 +174,3 @@ function CollapsibleChildren({ childRoute }: { childRoute: RouteObject }) {
   );
 }
 
-function NewCallButton() {
-  const { t } = useTranslation();
-  const { state, isMobile } = useSidebar();
-  const { organization } = useOrganization();
-  const theme = organization?.customStyles?.accentColor;
-  const fill = resolveTheme(theme).primary;
-  const navigate = useNavigate();
-
-  const handleClick = () => {
-    navigate("/create-form");
-  };
-
-
-  return (
-    <SidebarMenu>
-      <SidebarMenuItem className="m-[2.5px] mt-5">
-        <Link to="/create-form">
-          <SidebarMenuButton className="text-sidebar-primary-foreground active:bg-none group">
-            <span className="flex items-center gap-2 font-bold whitespace-nowrap">
-              <div className="rounded-full bg-sidebar-accent p-2 mx-1">
-                <Plus className="text-white rounded-full w-5 h-5" />
-              </div>
-              <span
-                className={`${
-                  state === "collapsed" && !isMobile ? "hidden" : ""
-                } transition-colors`}
-                style={{ color: fill }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.color = "var(--accent)")
-                }
-                onMouseLeave={(e) => (e.currentTarget.style.color = fill || "")}
-                onClick={handleClick}
-              >
-                {t("add_x", { x: t("call") })}
-              </span>
-            </span>
-          </SidebarMenuButton>
-        </Link>
-      </SidebarMenuItem>
-    </SidebarMenu>
-  );
-}

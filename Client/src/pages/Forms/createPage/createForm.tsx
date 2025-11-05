@@ -6,6 +6,7 @@ import { string, z } from "zod";
 import { useTranslation } from "react-i18next";
 import FieldPalette from "@/components/forms/FieldPalette";
 import DynamicForm, { FieldConfig } from "@/components/forms/DynamicForm";
+import { showError } from "@/utils/swal";
 
 export default function CreateForm() {
   const { t } = useTranslation();
@@ -90,11 +91,11 @@ export default function CreateForm() {
       if (res.status === 200 || res.status === 201) {
         navigate(`/forms/${res.data.code}/edit`);
       } else {
-        alert(t("form_created_fail"));
+        showError(t("form_created_fail"));
       }
     } catch (err) {
       console.error(err);
-      alert(t("error"));
+      showError(t("error"));
     }
   };
 

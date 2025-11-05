@@ -10,14 +10,6 @@ export class CreateKidDto {
   @IsNotEmpty()
   lastname!: string;
 
-  @IsDateString()
-  @IsNotEmpty()
-  birthdate!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  sex!: string;
-
   @IsArray()
   @IsOptional()
   linked_parents?: string[];
@@ -44,14 +36,6 @@ export class UpdateKidDto {
   @IsString()
   @IsOptional()
   lastname?: string;
-
-  @IsDateString()
-  @IsOptional()
-  birthdate?: string;
-
-  @IsString()
-  @IsOptional()
-  sex?: string;
 
   @IsArray()
   @IsOptional()

@@ -13,6 +13,7 @@ import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDial
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TableAction } from "@/types/ui/data-table-types";
+import { showConfirm } from "@/utils/swal";
 
 const usersApi = createApiService<User>("/users");
 
@@ -29,7 +30,11 @@ export default function Users() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [refreshFn, setRefreshFn] = useState<(() => void) | null>(null);
+  const [tableMethods, setTableMethods] = useState<{
+    refresh: () => void;
+    addItem: (item: User) => void;
+    updateItem: (item: User) => void;
+  } | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [tableRows, setTableRows] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -106,15 +111,34 @@ export default function Users() {
         organizationId: organization?._id || "",
       };
       const res = await usersApi.create(newUser);
-      if (res.status === 200 || res.data) {
+      
+      // Check for errors in response
+      if (res.error) {
+        const errorMessage = res.error || t("error") || "Failed to create user";
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
+      }
+      
+      // Check if response is successful
+      if (res.status === 200 && res.data) {
+        const createdUser = res.data;
         toast.success(t("form_created_success"));
         setIsAddDialogOpen(false);
-        // Trigger table refresh
-        refreshFn?.();
+        // Add item directly to table without refresh
+        tableMethods?.addItem(createdUser);
+      } else {
+        const errorMessage = res.error || t("error") || "Failed to create user";
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error("Error creating user:", error);
-      toast.error(t("error"));
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : (error as any)?.response?.data?.message 
+        || (error as any)?.error 
+        || t("error") || "An error occurred";
+      toast.error(errorMessage);
       throw error;
     }
   };
@@ -129,11 +153,12 @@ export default function Users() {
       };
       const res = await usersApi.update(updatedUser);
       if (res.status === 200 || res.data) {
+        const updatedUserData = res.data;
         toast.success(t("updated_successfully") || "Record updated successfully");
         setIsEditDialogOpen(false);
         setEditingUser(null);
-        // Trigger table refresh
-        refreshFn?.();
+        // Update item directly in table without refresh
+        tableMethods?.updateItem(updatedUserData);
       }
     } catch (error) {
       console.error("Error updating user:", error);
@@ -150,7 +175,7 @@ export default function Users() {
     if (selectedIds.length === 0) return;
     
     const count = selectedIds.length;
-    const confirmed = window.confirm(
+    const confirmed = await showConfirm(
       t("confirm_delete", { count }) || 
       `Are you sure you want to delete ${count} item(s)?`
     );
@@ -161,7 +186,7 @@ export default function Users() {
       await Promise.all(selectedIds.map((id) => usersApi.delete(id)));
       toast.success(t("deleted_successfully") || `Successfully deleted ${count} item(s)`);
       setRowSelection({});
-      refreshFn?.();
+      tableMethods?.refresh();
     } catch (error) {
       console.error("Error deleting users:", error);
       toast.error(t("delete_failed") || "Failed to delete items");
@@ -198,7 +223,7 @@ export default function Users() {
         idField="_id"
         extraFilters={advancedFilters}
         organazitionId={organization?._id}
-        onRefreshReady={useCallback((fn) => setRefreshFn(() => fn), [])}
+        onRefreshReady={useCallback((methods) => setTableMethods(methods), [])}
         rowSelection={rowSelection}
         onRowSelectionChange={useCallback((updater: any) => {
           setRowSelection((prev) => {

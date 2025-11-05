@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Router from "@/Router";
 import "@/i18n";
 import "@/assets/styles/index.css";
+import "sweetalert2/dist/sweetalert2.min.css";
 
 const queryClient = new QueryClient();
 

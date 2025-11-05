@@ -422,12 +422,26 @@ export function DataTable<TData>({
     }
   }, [table.getRowModel().rows, visibleRows]);
 
-  // Expose refresh function to parent component
+  // Expose refresh function and addItem/updateItem functions to parent component
   useEffect(() => {
     if (onRefreshReady) {
-      onRefreshReady(() => loadDataMemoized(false));
+      onRefreshReady({
+        refresh: () => loadDataMemoized(false),
+        addItem: (item: TData) => {
+          // Add item directly to table - clean and simple
+          setTableData((prev) => [...prev, item]);
+          // Don't increment totalCount - it will be updated on next fetch if needed
+        },
+        updateItem: (item: TData) => {
+          if (!idField) return;
+          const id = item[idField];
+          setTableData((prev) =>
+            prev.map((row) => ((row as any)[idField] === id ? item : row))
+          );
+        },
+      });
     }
-  }, [onRefreshReady, loadDataMemoized]);
+  }, [onRefreshReady, loadDataMemoized, idField]);
 
   // Trigger refresh when refreshTrigger changes
   useEffect(() => {

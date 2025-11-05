@@ -44,13 +44,13 @@ export function SmartLoadFromExcel({
         className={buttonClassName || defaultButtonClassName}
       >
         <FileUp className="w-4 h-4 mr-2" />
-        {buttonText || t("smart_load_from_excel", "Smart Load from Excel")}
+        {buttonText || t("smart_load_from_excel", "טעינה חכמה מאקסל")}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {title || t("smart_load_from_excel", "Smart Load from Excel")}
+              {title || t("smart_load_from_excel", "טעינה חכמה מאקסל")}
             </DialogTitle>
           </DialogHeader>
           <DialogBody>

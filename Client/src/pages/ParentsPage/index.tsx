@@ -21,6 +21,7 @@ import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDateForEdit } from "@/lib/dateUtils";
+import { showConfirm } from "@/utils/swal";
 
 const parentsApi = createApiService<Parent>("/parents", {
   includeOrgId: true,
@@ -40,7 +41,11 @@ export default function ParentsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isFieldConfigDialogOpen, setIsFieldConfigDialogOpen] = useState(false);
   const [editingParent, setEditingParent] = useState<Parent | null>(null);
-  const [refreshFn, setRefreshFn] = useState<(() => void) | null>(null);
+  const [tableMethods, setTableMethods] = useState<{
+    refresh: () => void;
+    addItem: (item: Parent) => void;
+    updateItem: (item: Parent) => void;
+  } | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [tableRows, setTableRows] = useState<Parent[]>([]);
 
@@ -169,15 +174,34 @@ export default function ParentsPage() {
       };
       console.log("newParent to send:", newParent);
       const res = await parentsApi.create(newParent);
-      if (res.status === 200 || res.data) {
+      
+      // Check for errors in response
+      if (res.error) {
+        const errorMessage = res.error || t("error") || "Failed to create parent";
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
+      }
+      
+      // Check if response is successful
+      if (res.status === 200 && res.data) {
+        const createdParent = res.data;
         toast.success(t("form_created_success"));
         setIsAddDialogOpen(false);
-        // Trigger table refresh
-        refreshFn?.();
+        // Add item directly to table without refresh
+        tableMethods?.addItem(createdParent);
+      } else {
+        const errorMessage = res.error || t("error") || "Failed to create parent";
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error("Error creating parent:", error);
-      toast.error(t("error"));
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : (error as any)?.response?.data?.message 
+        || (error as any)?.error 
+        || t("error") || "An error occurred";
+      toast.error(errorMessage);
       throw error;
     }
   };
@@ -199,11 +223,12 @@ export default function ParentsPage() {
       };
       const res = await parentsApi.update(updatedParent);
       if (res.status === 200 || res.data) {
+        const updatedParentData = res.data;
         toast.success(t("updated_successfully") || "Record updated successfully");
         setIsEditDialogOpen(false);
         setEditingParent(null);
-        // Trigger table refresh
-        refreshFn?.();
+        // Update item directly in table without refresh
+        tableMethods?.updateItem(updatedParentData);
       }
     } catch (error) {
       console.error("Error updating parent:", error);
@@ -220,7 +245,7 @@ export default function ParentsPage() {
     if (selectedIds.length === 0) return;
     
     const count = selectedIds.length;
-    const confirmed = window.confirm(
+    const confirmed = await showConfirm(
       t("confirm_delete", { count }) || 
       `Are you sure you want to delete ${count} item(s)?`
     );
@@ -231,7 +256,7 @@ export default function ParentsPage() {
       await Promise.all(selectedIds.map((id) => parentsApi.delete(id)));
       toast.success(t("deleted_successfully") || `Successfully deleted ${count} item(s)`);
       setRowSelection({});
-      refreshFn?.();
+      tableMethods?.refresh();
     } catch (error) {
       console.error("Error deleting parents:", error);
       toast.error(t("delete_failed") || "Failed to delete items");
@@ -266,7 +291,7 @@ export default function ParentsPage() {
         extraFilters={advancedFilters}
         organazitionId={organization?._id}
         entityType="parents"
-        onRefreshReady={useCallback((fn) => setRefreshFn(() => fn), [])}
+        onRefreshReady={useCallback((methods) => setTableMethods(methods), [])}
         rowSelection={rowSelection}
         onRowSelectionChange={useCallback((updater: any) => {
           setRowSelection((prev) => {
@@ -360,7 +385,7 @@ export default function ParentsPage() {
         entityType="parents"
         organizationId={organization?._id || ""}
         onSave={() => {
-          refreshFn?.();
+          tableMethods?.refresh();
         }}
       />
     </div>

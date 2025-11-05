@@ -8,6 +8,8 @@ import { formatDateForEdit, parseDateForSubmit, isDateValue } from "@/lib/dateUt
 import { MultiSelect } from "@/components/ui/multi-select";
 import { AddressInput } from "@/components/ui/address-input";
 import { isValidIsraeliID } from "@/lib/israeliIdValidator";
+import { toast } from "sonner";
+import { showError } from "@/utils/swal";
 
 interface AddRecordDialogProps {
   open: boolean;
@@ -65,8 +67,8 @@ export function AddRecordDialog({
     if (column && (column.meta as any)?.isDate) {
       return true;
     }
-    // Check common date field names
-    if (accessorKey === "birthdate" || accessorKey.toLowerCase().includes("date")) {
+    // Check common date field names (excluding birthdate which is removed)
+    if (accessorKey.toLowerCase().includes("date")) {
       return true;
     }
     return false;
@@ -158,7 +160,7 @@ export function AddRecordDialog({
       // Validate Israeli ID if present
       if (form.idNumber && form.idNumber.trim() !== "") {
         if (!isValidIsraeliID(form.idNumber)) {
-          alert(t("invalid_israeli_id") || "תעודת זהות לא תקינה. אנא בדוק את המספר שהוזן.");
+          await showError(t("invalid_israeli_id") || "תעודת זהות לא תקינה. אנא בדוק את המספר שהוזן.");
           // Clear the invalid ID number
           setForm({ ...form, idNumber: "" });
           setSaving(false);
@@ -234,15 +236,36 @@ export function AddRecordDialog({
       
       console.log("Final data to send:", finalData);
       
-      if (editMode && onEdit) {
-        await onEdit(finalData);
-      } else {
-        await onAdd(finalData);
+      // Validate that we have at least some data
+      if (Object.keys(processedData).length === 0 && Object.keys(dynamicFields).length === 0) {
+        toast.error(t("error") || "Please fill in at least one field");
+        setSaving(false);
+        return;
       }
-      onOpenChange(false);
-      setForm({});
+      
+      try {
+        if (editMode && onEdit) {
+          await onEdit(finalData);
+        } else {
+          await onAdd(finalData);
+        }
+        // Only close dialog if no error was thrown
+        onOpenChange(false);
+        setForm({});
+      } catch (error) {
+        // Error was thrown by onAdd/onEdit - re-throw to outer catch
+        throw error;
+      }
     } catch (error) {
       console.error(editMode ? "Error editing record:" : "Error adding record:", error);
+      // Show error to user - don't close dialog
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : (error as any)?.response?.data?.message 
+        || (error as any)?.error 
+        || t("error") || "An error occurred";
+      toast.error(errorMessage);
+      // Don't re-throw - we've handled it, just keep dialog open
     } finally {
       setSaving(false);
     }
@@ -268,6 +291,9 @@ export function AddRecordDialog({
             const options = (col.meta as any)?.options;
             const isDynamic = (col.meta as any)?.isDynamic || isDynamicField(accessorKey);
             const fieldDefinition = (col.meta as any)?.fieldDefinition;
+            
+            // Determine if field is required - check for required fields like firstname, lastname
+            const isRequiredField = !isDynamic && (accessorKey === "firstname" || accessorKey === "lastname");
             
             // Get field value - handle dynamic fields differently
             const fieldValue = form[accessorKey] !== undefined ? form[accessorKey] : (defaultValues[accessorKey] || "");
@@ -296,7 +322,7 @@ export function AddRecordDialog({
                     value={fieldValue}
                     onChange={handleChange}
                     className="w-full border rounded px-2 py-1"
-                    required={fieldDefinition?.required}
+                    required={isRequiredField || fieldDefinition?.required}
                   >
                     <option value="">{t("select_option")}</option>
                     {options.map((opt: any) => (
@@ -324,7 +350,7 @@ export function AddRecordDialog({
                         setForm({ ...form, [accessorKey]: e.target.checked });
                       }}
                       className="w-4 h-4"
-                      required={fieldDefinition?.required}
+                      required={isRequiredField || fieldDefinition?.required}
                     />
                     <span>{t("checked", "סומן")}</span>
                   </label>
@@ -338,7 +364,7 @@ export function AddRecordDialog({
                     pattern="\d{2}/\d{2}/\d{4}"
                     title="Please enter date in DD/MM/YYYY format"
                     className="w-full border border-border rounded-md placeholder:text-muted-foreground font-normal rtl:text-right ltr:text-left focus:outline-border outline-none px-3 py-2"
-                    required={fieldDefinition?.required}
+                    required={isRequiredField || fieldDefinition?.required}
                   />
                 ) : (accessorKey === "email" || (isDynamic && fieldDefinition?.type === "EMAIL")) ? (
                   <Input
@@ -347,7 +373,7 @@ export function AddRecordDialog({
                     value={fieldValue}
                     onChange={handleChange}
                     className="w-full"
-                    required={fieldDefinition?.required}
+                    required={isRequiredField || fieldDefinition?.required}
                   />
                 ) : (accessorKey === "phone" || (isDynamic && fieldDefinition?.type === "PHONE")) ? (
                   <Input
@@ -356,7 +382,7 @@ export function AddRecordDialog({
                     value={fieldValue}
                     onChange={handleChange}
                     className="w-full"
-                    required={fieldDefinition?.required}
+                    required={isRequiredField || fieldDefinition?.required}
                   />
                 ) : (isDynamic && fieldDefinition?.type === "TIME") ? (
                   <input
@@ -365,7 +391,7 @@ export function AddRecordDialog({
                     value={fieldValue}
                     onChange={handleChange}
                     className="w-full border border-border rounded-md placeholder:text-muted-foreground font-normal rtl:text-right ltr:text-left focus:outline-border outline-none px-3 py-2"
-                    required={fieldDefinition?.required}
+                    required={isRequiredField || fieldDefinition?.required}
                   />
                 ) : (isDynamic && fieldDefinition?.type === "ADDRESS") ? (
                   <AddressInput
@@ -375,7 +401,7 @@ export function AddRecordDialog({
                     }}
                     placeholder={t("enter_address", "הכנס כתובת")}
                     className="w-full"
-                    required={fieldDefinition?.required}
+                    required={isRequiredField || fieldDefinition?.required}
                     name={accessorKey}
                   />
                 ) : (isDynamic && fieldDefinition?.type === "MONEY") ? (
@@ -387,7 +413,7 @@ export function AddRecordDialog({
                       value={fieldValue}
                       onChange={handleChange}
                       className="w-full"
-                      required={fieldDefinition?.required}
+                      required={isRequiredField || fieldDefinition?.required}
                     />
                     <span className="text-sm font-medium whitespace-nowrap">₪</span>
                   </div>
@@ -398,7 +424,7 @@ export function AddRecordDialog({
                     value={fieldValue}
                     onChange={handleChange}
                     className="w-full"
-                    required={fieldDefinition?.required}
+                    required={isRequiredField || fieldDefinition?.required}
                   />
                 ) : (
                   <Input
@@ -407,7 +433,7 @@ export function AddRecordDialog({
                     value={fieldValue}
                     onChange={handleChange}
                     className="w-full"
-                    required={fieldDefinition?.required}
+                    required={isRequiredField || fieldDefinition?.required}
                   />
                 )}
               </div>

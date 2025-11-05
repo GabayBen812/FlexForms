@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import apiClient from "@/api/apiClient";
+import { showError } from "@/utils/swal";
 
 const formsApi = createApiService<Form>("/forms");
 
@@ -225,7 +226,7 @@ export default function Forms() {
       }
     } catch (error) {
       console.error("שגיאה בשכפול הטופס:", error);
-      alert("שגיאה בשכפול הטופס");
+      showError(t("error") || "שגיאה בשכפול הטופס");
     }
   };
 

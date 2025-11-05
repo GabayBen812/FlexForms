@@ -31,9 +31,24 @@ export const handleApiError = (error: unknown): MutationResponse<never> => {
   console.error("API Error:", error);
 
   if (axios.isAxiosError(error)) {
+    const status = error.response?.status || 500;
+    const errorMessage = error.response?.data?.message 
+      || error.response?.data?.error
+      || error.response?.data?.error?.message
+      || (Array.isArray(error.response?.data?.message) ? error.response.data.message.join(", ") : null)
+      || error.message 
+      || "Unknown error";
+    
+    console.error("API Error Details:", {
+      status,
+      message: errorMessage,
+      responseData: error.response?.data,
+      fullError: error,
+    });
+    
     return {
-      status: error.response?.status || 500,
-      error: error.response?.data?.message || error.message || "Unknown error",
+      status,
+      error: errorMessage,
     };
   }
 

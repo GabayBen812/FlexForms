@@ -21,6 +21,7 @@ import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDateForEdit } from "@/lib/dateUtils";
+import { showConfirm } from "@/utils/swal";
 
 const kidsApi = createApiService<Kid>("/kids", {
   includeOrgId: true,
@@ -40,7 +41,11 @@ export default function KidsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isFieldConfigDialogOpen, setIsFieldConfigDialogOpen] = useState(false);
   const [editingKid, setEditingKid] = useState<Kid | null>(null);
-  const [refreshFn, setRefreshFn] = useState<(() => void) | null>(null);
+  const [tableMethods, setTableMethods] = useState<{
+    refresh: () => void;
+    addItem: (item: Kid) => void;
+    updateItem: (item: Kid) => void;
+  } | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [tableRows, setTableRows] = useState<Kid[]>([]);
 
@@ -171,15 +176,63 @@ export default function KidsPage() {
       };
       console.log("newKid to send:", newKid);
       const res = await kidsApi.create(newKid);
-      if (res.status === 200 || res.data) {
-        toast.success(t("form_created_success"));
-        setIsAddDialogOpen(false);
-        // Trigger table refresh
-        refreshFn?.();
+      
+      console.log("API Response:", res);
+      console.log("API Response status:", res.status);
+      console.log("API Response data:", res.data);
+      console.log("API Response error:", res.error);
+      
+      // Check for errors first - if there's an error field, it means the API call failed
+      if (res.error) {
+        const errorMessage = res.error || t("error") || "Failed to create kid";
+        console.error("API Error:", errorMessage);
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
+      }
+      
+      // Check if response is successful (200 or 201)
+      if ((res.status === 200 || res.status === 201)) {
+        if (res.data) {
+          // We have data - use it directly
+          const createdKid = res.data;
+          console.log("Created kid:", createdKid);
+          toast.success(t("form_created_success"));
+          setIsAddDialogOpen(false);
+          // Add item directly to table without refresh
+          tableMethods?.addItem(createdKid);
+        } else {
+          // Status is OK but no data - refresh table to get the new record
+          console.log("API returned success (status " + res.status + ") but no data - refreshing table");
+          toast.success(t("form_created_success"));
+          setIsAddDialogOpen(false);
+          // Refresh table to get the new record
+          tableMethods?.refresh();
+        }
+      } else {
+        // Response has unexpected status
+        const errorMessage = res.error || `API returned unexpected status ${res.status}` || t("error") || "Failed to create kid";
+        console.error("API Error - unexpected status:", res);
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error("Error creating kid:", error);
-      toast.error(t("error"));
+      console.error("Error details:", {
+        message: error instanceof Error ? error.message : undefined,
+        response: (error as any)?.response,
+        error: (error as any)?.error,
+      });
+      
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : (error as any)?.response?.data?.message 
+        || (error as any)?.response?.data?.error
+        || (error as any)?.error 
+        || JSON.stringify(error)
+        || t("error") || "An error occurred";
+      
+      console.error("Final error message:", errorMessage);
+      toast.error(errorMessage);
       throw error;
     }
   };
@@ -201,11 +254,12 @@ export default function KidsPage() {
       };
       const res = await kidsApi.update(updatedKid);
       if (res.status === 200 || res.data) {
+        const updatedKidData = res.data;
         toast.success(t("updated_successfully") || "Record updated successfully");
         setIsEditDialogOpen(false);
         setEditingKid(null);
-        // Trigger table refresh
-        refreshFn?.();
+        // Update item directly in table without refresh
+        tableMethods?.updateItem(updatedKidData);
       }
     } catch (error) {
       console.error("Error updating kid:", error);
@@ -222,7 +276,7 @@ export default function KidsPage() {
     if (selectedIds.length === 0) return;
     
     const count = selectedIds.length;
-    const confirmed = window.confirm(
+    const confirmed = await showConfirm(
       t("confirm_delete", { count }) || 
       `Are you sure you want to delete ${count} item(s)?`
     );
@@ -233,7 +287,7 @@ export default function KidsPage() {
       await Promise.all(selectedIds.map((id) => kidsApi.delete(id)));
       toast.success(t("deleted_successfully") || `Successfully deleted ${count} item(s)`);
       setRowSelection({});
-      refreshFn?.();
+      tableMethods?.refresh();
     } catch (error) {
       console.error("Error deleting kids:", error);
       toast.error(t("delete_failed") || "Failed to delete items");
@@ -268,7 +322,7 @@ export default function KidsPage() {
         extraFilters={advancedFilters}
         organazitionId={organization?._id}
         entityType="kids"
-        onRefreshReady={useCallback((fn) => setRefreshFn(() => fn), [])}
+        onRefreshReady={useCallback((methods) => setTableMethods(methods), [])}
         rowSelection={rowSelection}
         onRowSelectionChange={useCallback((updater: any) => {
           setRowSelection((prev) => {
@@ -362,7 +416,7 @@ export default function KidsPage() {
         entityType="kids"
         organizationId={organization?._id || ""}
         onSave={() => {
-          refreshFn?.();
+          tableMethods?.refresh();
         }}
       />
     </div>

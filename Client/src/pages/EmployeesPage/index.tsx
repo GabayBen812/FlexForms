@@ -16,6 +16,7 @@ import { TableFieldConfigDialog } from "@/components/ui/completed/dialogs/TableF
 import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import { showConfirm } from "@/utils/swal";
 
 export interface Employee {
   _id?: string;
@@ -44,7 +45,11 @@ export default function EmployeesPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isFieldConfigDialogOpen, setIsFieldConfigDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-  const [refreshFn, setRefreshFn] = useState<(() => void) | null>(null);
+  const [tableMethods, setTableMethods] = useState<{
+    refresh: () => void;
+    addItem: (item: Employee) => void;
+    updateItem: (item: Employee) => void;
+  } | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [tableRows, setTableRows] = useState<Employee[]>([]);
 
@@ -137,15 +142,34 @@ export default function EmployeesPage() {
       };
       console.log("newEmployee to send:", newEmployee);
       const res = await employeesApi.create(newEmployee);
-      if (res.status === 200 || res.data) {
+      
+      // Check for errors in response
+      if (res.error) {
+        const errorMessage = res.error || t("error") || "Failed to create employee";
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
+      }
+      
+      // Check if response is successful
+      if (res.status === 200 && res.data) {
+        const createdEmployee = res.data;
         toast.success(t("form_created_success"));
         setIsAddDialogOpen(false);
-        // Trigger table refresh
-        refreshFn?.();
+        // Add item directly to table without refresh
+        tableMethods?.addItem(createdEmployee);
+      } else {
+        const errorMessage = res.error || t("error") || "Failed to create employee";
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error("Error creating employee:", error);
-      toast.error(t("error"));
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : (error as any)?.response?.data?.message 
+        || (error as any)?.error 
+        || t("error") || "An error occurred";
+      toast.error(errorMessage);
       throw error;
     }
   };
@@ -162,11 +186,12 @@ export default function EmployeesPage() {
       };
       const res = await employeesApi.update(updatedEmployee);
       if (res.status === 200 || res.data) {
+        const updatedEmployeeData = res.data;
         toast.success(t("updated_successfully") || "Record updated successfully");
         setIsEditDialogOpen(false);
         setEditingEmployee(null);
-        // Trigger table refresh
-        refreshFn?.();
+        // Update item directly in table without refresh
+        tableMethods?.updateItem(updatedEmployeeData);
       }
     } catch (error) {
       console.error("Error updating employee:", error);
@@ -183,7 +208,7 @@ export default function EmployeesPage() {
     if (selectedIds.length === 0) return;
     
     const count = selectedIds.length;
-    const confirmed = window.confirm(
+    const confirmed = await showConfirm(
       t("confirm_delete", { count }) || 
       `Are you sure you want to delete ${count} item(s)?`
     );
@@ -194,7 +219,7 @@ export default function EmployeesPage() {
       await Promise.all(selectedIds.map((id) => employeesApi.delete(id)));
       toast.success(t("deleted_successfully") || `Successfully deleted ${count} item(s)`);
       setRowSelection({});
-      refreshFn?.();
+      tableMethods?.refresh();
     } catch (error) {
       console.error("Error deleting employees:", error);
       toast.error(t("delete_failed") || "Failed to delete items");
@@ -229,7 +254,7 @@ export default function EmployeesPage() {
         extraFilters={advancedFilters}
         organazitionId={organization?._id}
         entityType="employees"
-        onRefreshReady={useCallback((fn) => setRefreshFn(() => fn), [])}
+        onRefreshReady={useCallback((methods) => setTableMethods(methods), [])}
         rowSelection={rowSelection}
         onRowSelectionChange={useCallback((updater: any) => {
           setRowSelection((prev) => {
@@ -307,7 +332,7 @@ export default function EmployeesPage() {
         entityType="employees"
         organizationId={organization?._id || ""}
         onSave={() => {
-          refreshFn?.();
+          tableMethods?.refresh();
         }}
       />
     </div>

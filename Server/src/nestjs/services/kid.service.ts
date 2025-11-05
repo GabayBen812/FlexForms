@@ -23,8 +23,6 @@ export class KidService {
       const kidData: any = {
         firstname: createKidDto.firstname,
         lastname: createKidDto.lastname,
-        birthdate: new Date(createKidDto.birthdate),
-        sex: createKidDto.sex,
         organizationId: new Types.ObjectId(createKidDto.organizationId),
         linked_parents: [],
       };

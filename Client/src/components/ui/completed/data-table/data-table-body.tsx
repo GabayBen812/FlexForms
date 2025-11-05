@@ -29,6 +29,7 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { AddressInput } from "@/components/ui/address-input";
 import { cn } from "@/lib/utils";
 import { isValidIsraeliID } from "@/lib/israeliIdValidator";
+import { showError, showConfirm } from "@/utils/swal";
 import "./data-table-row.css";
 
 interface BaseData {
@@ -309,7 +310,7 @@ function EditableCell<T>({
     // Validate Israeli ID if editing idNumber field
     if (accessorKey === "idNumber" && processedValue && processedValue.trim() !== "") {
       if (!isValidIsraeliID(processedValue)) {
-        alert(t("invalid_israeli_id") || "תעודת זהות לא תקינה. אנא בדוק את המספר שהוזן.");
+        showError(t("invalid_israeli_id") || "תעודת זהות לא תקינה. אנא בדוק את המספר שהוזן.");
         // Clear the invalid value and cancel editing
         setValue("");
         onCancel();
@@ -327,7 +328,7 @@ function EditableCell<T>({
       // Validate and format time as HH:MM
       const timeRegex = /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/;
       if (!timeRegex.test(value)) {
-        alert(t("invalid_time_format") || "פורמט זמן לא תקין. אנא השתמש בפורמט HH:MM");
+        showError(t("invalid_time_format") || "פורמט זמן לא תקין. אנא השתמש בפורמט HH:MM");
         return;
       }
       processedValue = value;
@@ -735,10 +736,12 @@ const RowComponent = React.memo(function RowComponent<T>({
         const meta = table.options.meta as any;
         // @ts-ignore
         if (meta?.handleDelete && (row.original.id || row.original._id)) {
-          if (window.confirm(t("confirm_delete"))) {
-            // @ts-ignore
-            meta.handleDelete(row.original.id || row.original._id);
-          }
+          showConfirm(t("confirm_delete") || t("common:confirm_delete") || "Are you sure you want to delete this item?").then((confirmed) => {
+            if (confirmed) {
+              // @ts-ignore
+              meta.handleDelete(row.original.id || row.original._id);
+            }
+          });
         }
         break;
       case "duplicate":
@@ -760,15 +763,14 @@ const RowComponent = React.memo(function RowComponent<T>({
       <TableRow
         key={row.id}
         data-state={row.getIsSelected() && "selected"}
-        className="transition-colors cursor-pointer data-table-row"
-        style={{ width: "100%", backgroundColor: "white", height: "auto" }}
+        className="cursor-pointer data-table-row"
+        style={{ width: "100%", height: "auto" }}
       >
         {row.getVisibleCells().map((cell, cellIndex) => {
           const isFirst = cellIndex === 0;
           const isLast = cellIndex === row.getVisibleCells().length - 1;
           const effectiveStickyColumnCount = stickyColumnCount ?? 0;
           const isSticky = cellIndex < effectiveStickyColumnCount;
-          const stickyBg = "white";
 
           let stickyStyles: React.CSSProperties = {};
           if (isSticky) {
@@ -785,18 +787,11 @@ const RowComponent = React.memo(function RowComponent<T>({
               position: "sticky",
               right: `${rightOffset}px`,
               zIndex: 20 - cellIndex,
-              backgroundColor: stickyBg,
             };
           }
 
-          // Border radius: rightmost for RTL, leftmost for LTR
-          const roundedClass = direction
-            ? isFirst
-              ? "rounded-r-lg"
-              : ""
-            : isLast
-            ? "rounded-l-lg"
-            : "";
+          // Border radius handled by CSS - cells inherit from row
+          const roundedClass = "";
 
           // Render the first cell
           if (cellIndex === 0) {
@@ -807,9 +802,8 @@ const RowComponent = React.memo(function RowComponent<T>({
                     ...stickyStyles,
                     width: cell.column.getSize(),
                     maxWidth: cell.column.getSize(),
-                    padding: "0.5rem 1rem",
                   }}
-                  className={`text-center data-table-row-cell ${roundedClass}`}
+                  className={`text-center data-table-row-cell ${roundedClass} ${isSticky ? "sticky-column" : ""}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     if (onRowClick) {
@@ -864,9 +858,8 @@ const RowComponent = React.memo(function RowComponent<T>({
                 ...stickyStyles,
                 width: cell.column.getSize(),
                 maxWidth: cell.column.getSize(),
-                padding: "0.5rem 1rem",
               }}
-              className={`text-center data-table-row-cell ${roundedClass}`}
+              className={`text-center data-table-row-cell ${roundedClass} ${isSticky ? "sticky-column" : ""}`}
               onClick={(e) => {
                 e.stopPropagation();
                 if (onRowClick) {

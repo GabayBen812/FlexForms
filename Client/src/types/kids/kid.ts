@@ -3,8 +3,6 @@ export interface Kid {
   id?: string;
   firstname: string;
   lastname: string;
-  birthdate: string | Date;
-  sex: string;
   linked_parents?: string[];
   address?: string;
   idNumber?: string;

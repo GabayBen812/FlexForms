@@ -85,6 +85,7 @@ export function DataTable<TData>({
   organazitionId,
   onRefreshReady,
   refreshTrigger,
+  entityType,
 
 }: DataTableProps<TData> & { extraFilters?: Record<string, any>; customLeftButtons?: React.ReactNode }) {
   const [tableData, setTableData] = useState<TData[]>([]);
@@ -103,6 +104,22 @@ export function DataTable<TData>({
     pageSize: defaultPageSize,
   });
   const [specialRow, setSpecialRow] = useState<"add" | null>(null);
+  
+  // Internal state for column order - persist it even if parent doesn't manage it
+  const defaultColumnOrder = useMemo(
+    () => columns.map((col) => (col as any).id || (col as any).accessorKey as string),
+    [columns]
+  );
+  const [internalColumnOrder, setInternalColumnOrder] = useState<string[]>(
+    columnOrder || defaultColumnOrder
+  );
+  
+  // Update internal state when prop changes
+  useEffect(() => {
+    if (columnOrder) {
+      setInternalColumnOrder(columnOrder);
+    }
+  }, [columnOrder]);
 
   // Determine excludeFields and pass to DataTableAddButton
   let excludeFields = [];
@@ -204,6 +221,16 @@ export function DataTable<TData>({
     }
   };
 
+  // Handle column order change - update internal state and call callback
+  const handleColumnOrderChange = (updater: any) => {
+    const newOrder = typeof updater === 'function' 
+      ? updater(internalColumnOrder) 
+      : updater;
+    
+    setInternalColumnOrder(newOrder);
+    onColumnOrderChange?.(newOrder);
+  };
+
   const table = useReactTable({
     data: tableData,
     columns,
@@ -212,11 +239,10 @@ export function DataTable<TData>({
       globalFilter,
       pagination,
       rowSelection,
-      columnOrder:
-        columnOrder || columns.map((col) => (col as any).id || (col as any).accessorKey as string),
+      columnOrder: internalColumnOrder,
     },
     globalFilterFn: globalFilterFn,
-    onColumnOrderChange: onColumnOrderChange,
+    onColumnOrderChange: handleColumnOrderChange,
     enableRowSelection: !!onRowSelectionChange,
     onRowSelectionChange: onRowSelectionChange,
     pageCount: Math.ceil(totalCount / pagination.pageSize),
@@ -522,6 +548,9 @@ export function DataTable<TData>({
               selectedRowCount={selectedRowCount}
               enableRowSelection={!!onRowSelectionChange}
               isPagination={isPagination}
+              organizationId={organazitionId}
+              entityType={entityType}
+              onColumnOrderChange={onColumnOrderChange}
             />
             <DataTableBody<TData>
               columns={columns}

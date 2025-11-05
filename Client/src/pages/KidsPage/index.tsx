@@ -92,9 +92,7 @@ export default function KidsPage() {
     selectionColumn,
     { accessorKey: "firstname", header: t("firstname"), meta: { editable: true } },
     { accessorKey: "lastname", header: t("lastname"), meta: { editable: true } },
-    { accessorKey: "birthdate", header: t("birthdate"), meta: { isDate: true, editable: true } },
-    { accessorKey: "sex", header: t("sex"), meta: { editable: true } },
-    { accessorKey: "address", header: t("address"), meta: { editable: true } },
+    { accessorKey: "idNumber", header: t("id_number"), meta: { editable: true } },
     { accessorKey: "linked_parents", header: t("linked_parents"), meta: { editable: false } }, // Complex field, not editable inline
     { accessorKey: "organizationId", header: "", meta: { hidden: true, editable: false } },
     // Place selectionColumn as the last item so it renders at the right side of the table.
@@ -224,6 +222,7 @@ export default function KidsPage() {
         idField="_id"
         extraFilters={advancedFilters}
         organazitionId={organization?._id}
+        entityType="kids"
         onRefreshReady={useCallback((fn) => setRefreshFn(() => fn), [])}
         rowSelection={rowSelection}
         onRowSelectionChange={useCallback((updater: any) => {
@@ -289,9 +288,7 @@ export default function KidsPage() {
         editData={editingKid ? {
           firstname: editingKid.firstname,
           lastname: editingKid.lastname,
-          birthdate: formatDateForEdit(editingKid.birthdate),
-          sex: editingKid.sex,
-          address: editingKid.address || "",
+          idNumber: editingKid.idNumber || "",
           ...(editingKid.dynamicFields ? { dynamicFields: editingKid.dynamicFields } : {}),
         } : undefined}
         excludeFields={["linked_parents", "organizationId"]}

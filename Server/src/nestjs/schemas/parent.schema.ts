@@ -23,6 +23,9 @@ export class Parent {
   @Prop()
   address?: string;
 
+  @Prop()
+  idNumber?: string;
+
   @Prop({ type: Types.ObjectId, ref: 'Organization', required: true })
   organizationId!: Types.ObjectId;
 

@@ -91,9 +91,7 @@ export default function ParentsPage() {
     selectionColumn,
     { accessorKey: "firstname", header: t("firstname") },
     { accessorKey: "lastname", header: t("lastname") },
-    { accessorKey: "birthdate", header: t("birthdate"), meta: { isDate: true } },
-    { accessorKey: "sex", header: t("sex") },
-    { accessorKey: "address", header: t("address") },
+    { accessorKey: "idNumber", header: t("id_number") },
     { accessorKey: "linked_kids", header: t("linked_kids") },
     { accessorKey: "organizationId", header: "", meta: { hidden: true } },
   ];
@@ -220,6 +218,7 @@ export default function ParentsPage() {
         idField="_id"
         extraFilters={advancedFilters}
         organazitionId={organization?._id}
+        entityType="parents"
         onRefreshReady={useCallback((fn) => setRefreshFn(() => fn), [])}
         rowSelection={rowSelection}
         onRowSelectionChange={useCallback((updater: any) => {
@@ -285,9 +284,7 @@ export default function ParentsPage() {
         editData={editingParent ? {
           firstname: editingParent.firstname,
           lastname: editingParent.lastname,
-          birthdate: formatDateForEdit(editingParent.birthdate),
-          sex: editingParent.sex,
-          address: editingParent.address || "",
+          idNumber: editingParent.idNumber || "",
           ...(editingParent.dynamicFields ? { dynamicFields: editingParent.dynamicFields } : {}),
         } : undefined}
         excludeFields={["linked_kids", "organizationId"]}

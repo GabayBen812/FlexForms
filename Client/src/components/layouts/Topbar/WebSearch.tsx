@@ -74,7 +74,7 @@ export function CommandDialogDemo() {
   };
 
   return (
-    <Command className="rounded-lg border shadow-sm md:min-w-[450px]">
+    <Command className="rounded-lg border shadow-sm md:min-w-[300px] max-w-[400px]">
       <CommandInput
         className="shadow-none"
         placeholder={t("search")}

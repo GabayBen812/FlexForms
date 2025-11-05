@@ -52,6 +52,7 @@ export class Organization {
         choices?: string[]; // for SELECT type
         defaultValue?: any;
       }>;
+      fieldOrder?: string[]; // Array of field names in the desired order
     }
   >;
 }

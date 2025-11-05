@@ -25,6 +25,10 @@ export class CreateKidDto {
   @IsOptional()
   address?: string;
 
+  @IsString()
+  @IsOptional()
+  idNumber?: string;
+
   @IsMongoId()
   @IsNotEmpty()
   organizationId!: string;
@@ -54,6 +58,10 @@ export class UpdateKidDto {
   @IsString()
   @IsOptional()
   address?: string;
+
+  @IsString()
+  @IsOptional()
+  idNumber?: string;
 
   @IsOptional()
   dynamicFields?: Record<string, any>;

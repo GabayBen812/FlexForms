@@ -102,9 +102,6 @@ export default function EmployeesPage() {
     selectionColumn,
     { accessorKey: "firstname", header: t("firstname") },
     { accessorKey: "lastname", header: t("lastname") },
-    { accessorKey: "address", header: t("address") },
-    { accessorKey: "phone", header: t("phone") },
-    { accessorKey: "email", header: t("email") },
     { accessorKey: "idNumber", header: t("id") },
     { accessorKey: "organizationId", header: "", meta: { hidden: true } },
   ];
@@ -231,6 +228,7 @@ export default function EmployeesPage() {
         idField="_id"
         extraFilters={advancedFilters}
         organazitionId={organization?._id}
+        entityType="employees"
         onRefreshReady={useCallback((fn) => setRefreshFn(() => fn), [])}
         rowSelection={rowSelection}
         onRowSelectionChange={useCallback((updater: any) => {
@@ -295,9 +293,6 @@ export default function EmployeesPage() {
         editData={editingEmployee ? {
           firstname: editingEmployee.firstname,
           lastname: editingEmployee.lastname,
-          address: editingEmployee.address || "",
-          phone: editingEmployee.phone || "",
-          email: editingEmployee.email,
           idNumber: editingEmployee.idNumber || "",
           ...(editingEmployee.dynamicFields ? { dynamicFields: editingEmployee.dynamicFields } : {}),
         } : undefined}

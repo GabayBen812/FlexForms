@@ -7,6 +7,7 @@ export interface Kid {
   sex: string;
   linked_parents?: string[];
   address?: string;
+  idNumber?: string;
   organizationId: string;
   dynamicFields?: Record<string, any>;
   createdAt?: string;

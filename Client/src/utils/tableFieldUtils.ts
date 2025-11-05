@@ -18,11 +18,29 @@ export function mergeColumnsWithDynamicFields<T>(
   organization: Organization | null,
   t: (key: string) => string
 ): ColumnDef<T>[] {
-  const dynamicFields = organization?.tableFieldDefinitions?.[entityType]?.fields || {};
+  const dynamicFieldsConfig = organization?.tableFieldDefinitions?.[entityType];
+  const dynamicFields = dynamicFieldsConfig?.fields || {};
+  const fieldOrder = dynamicFieldsConfig?.fieldOrder || [];
   
-  const dynamicColumns: ColumnDef<T>[] = Object.entries(dynamicFields).map(([fieldName, fieldDef]) => {
+  // Determine the order of dynamic fields
+  let orderedFieldNames: string[];
+  if (fieldOrder.length > 0) {
+    // Use saved order, but include any new fields that might not be in the order
+    const existingFields = new Set(fieldOrder);
+    const newFields = Object.keys(dynamicFields).filter(name => !existingFields.has(name));
+    // Keep only fields that still exist
+    const validOrderedFields = fieldOrder.filter(name => name in dynamicFields);
+    orderedFieldNames = [...validOrderedFields, ...newFields];
+  } else {
+    // No saved order, use default order (Object.keys)
+    orderedFieldNames = Object.keys(dynamicFields);
+  }
+  
+  const dynamicColumns: ColumnDef<T>[] = orderedFieldNames.map((fieldName) => {
+    const fieldDef = dynamicFields[fieldName];
     const column: ColumnDef<T> = {
       accessorKey: `dynamicFields.${fieldName}`,
+      id: `dynamicFields.${fieldName}`, // Explicit id for drag and drop
       header: fieldDef.label || fieldName,
       meta: {
         isDynamic: true,

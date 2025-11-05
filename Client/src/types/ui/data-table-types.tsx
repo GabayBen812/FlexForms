@@ -77,6 +77,7 @@ export interface DataTableProps<TData> {
   visibleRows?: (rows: TData[]) => void;
   onRefreshReady?: (refreshFn: () => void) => void;
   refreshTrigger?: number;
+  entityType?: string;
 }
 
 export interface TableAction<TData> {

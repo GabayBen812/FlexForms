@@ -235,6 +235,7 @@
   "tasks": "Tasks",
   "parents": "Parents",
   "id": "ID",
+  "id_number": "ID Number",
   "tasks:create_task": "Create Task",
   "tasks:edit_task": "Edit Task",
   "tasks:title": "Title",

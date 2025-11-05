@@ -11,17 +11,8 @@ export class Parent {
   @Prop({ required: true })
   lastname!: string;
 
-  @Prop({ required: true })
-  birthdate!: Date;
-
-  @Prop({ required: true })
-  sex!: string;
-
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Kid' }], default: [] })
   linked_kids!: Types.ObjectId[];
-
-  @Prop()
-  address?: string;
 
   @Prop()
   idNumber?: string;

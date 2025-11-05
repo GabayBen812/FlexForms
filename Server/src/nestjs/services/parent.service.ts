@@ -23,14 +23,12 @@ export class ParentService {
       const parentData: any = {
         firstname: createParentDto.firstname,
         lastname: createParentDto.lastname,
-        birthdate: new Date(createParentDto.birthdate),
-        sex: createParentDto.sex,
         organizationId: new Types.ObjectId(createParentDto.organizationId),
         linked_kids: [],
       };
       
-      if (createParentDto.address) {
-        parentData.address = createParentDto.address;
+      if (createParentDto.idNumber) {
+        parentData.idNumber = createParentDto.idNumber;
       }
       
       if (createParentDto.linked_kids && Array.isArray(createParentDto.linked_kids) && createParentDto.linked_kids.length > 0) {
@@ -97,9 +95,6 @@ export class ParentService {
         Object.assign(updateData, dynamicFieldsUpdate);
       }
       
-      if (updateParentDto.birthdate) {
-        updateData.birthdate = new Date(updateParentDto.birthdate);
-      }
       if (updateParentDto.linked_kids) {
         updateData.linked_kids = updateParentDto.linked_kids.map(kidId => new Types.ObjectId(kidId));
       }

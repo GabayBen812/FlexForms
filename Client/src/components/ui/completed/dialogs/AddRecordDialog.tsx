@@ -8,7 +8,7 @@ import { formatDateForEdit, parseDateForSubmit, isDateValue } from "@/lib/dateUt
 import { MultiSelect } from "@/components/ui/multi-select";
 import { AddressInput } from "@/components/ui/address-input";
 import { isValidIsraeliID } from "@/lib/israeliIdValidator";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { showError } from "@/utils/swal";
 
 interface AddRecordDialogProps {

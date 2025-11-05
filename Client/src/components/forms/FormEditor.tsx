@@ -3,7 +3,7 @@ import { FieldConfig } from "@/components/forms/DynamicForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import {
   Trash2,
   ArrowUp,

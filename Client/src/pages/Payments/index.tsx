@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 export type Payment = {
   id: string;

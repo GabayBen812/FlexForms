@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DataTablePaginationControls } from "./data-table-pagination-controls";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchTableFieldDefinitions, updateTableFieldDefinitions } from "@/api/organizations";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import {
   DndContext,
   closestCenter,

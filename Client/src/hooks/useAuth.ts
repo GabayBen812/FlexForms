@@ -8,7 +8,7 @@ import {
 } from "@/types/api/auth";
 import { fetchUser } from "@/api/users/fetchUser";
 import { login } from "@/api/auth";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 export function useAuth() {
   const queryClient = useQueryClient();

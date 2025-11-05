@@ -29,10 +29,18 @@ export default function OrganizationsTable() {
       cell: ({ row }) => {
         const owner = row.original.owner;
         if (typeof owner === "object" && owner !== null) {
-          return (owner as any).name || (owner as any).email || String(owner);
+          // Ensure we always return a string, not an object
+          const ownerName = (owner as any).name;
+          const ownerEmail = (owner as any).email;
+          if (ownerName) return String(ownerName);
+          if (ownerEmail) return String(ownerEmail);
+          // If both are falsy, return a safe string representation
+          return (owner as any)._id ? `User (${(owner as any)._id})` : "";
         }
         return owner ? String(owner) : "";
       },
+      // Make sure the column is not editable to prevent object rendering
+      meta: { editable: false },
     },
   ];
 

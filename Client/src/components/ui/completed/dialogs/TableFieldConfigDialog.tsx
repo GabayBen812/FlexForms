@@ -11,7 +11,7 @@ import { Plus, Save, Trash, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DynamicFieldDefinition } from "@/utils/tableFieldUtils";
 import { fetchTableFieldDefinitions, updateTableFieldDefinitions } from "@/api/organizations";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 

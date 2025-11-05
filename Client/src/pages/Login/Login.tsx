@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/Input";
 import { useContext, useState, useEffect } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Toaster } from "sonner";
 import { Mail, Lock } from "lucide-react";
 import footerSvg from "@/assets/landing/footer.svg";
 import heroIllustration from "@/assets/landing/hero-illustration.svg";
@@ -47,7 +46,6 @@ export default function Login() {
 
   return (
     <div className="flex flex-col min-h-screen overflow-hidden">
-      <Toaster />
       {/* HEADER */}
       <header className="absolute w-full z-30">
         <div className="relative w-full h-20 overflow-hidden">

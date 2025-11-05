@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsMongoId, IsDateString, IsOptional, IsArray } from 'class-validator';
+import { IsString, IsNotEmpty, IsMongoId, IsOptional, IsArray } from 'class-validator';
 import { IsValidIsraeliID } from '../../common/decorators/is-valid-israeli-id';
 
 export class CreateParentDto {
@@ -10,21 +10,9 @@ export class CreateParentDto {
   @IsNotEmpty()
   lastname!: string;
 
-  @IsDateString()
-  @IsNotEmpty()
-  birthdate!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  sex!: string;
-
   @IsArray()
   @IsOptional()
   linked_kids?: string[];
-
-  @IsString()
-  @IsOptional()
-  address?: string;
 
   @IsString()
   @IsOptional()
@@ -45,21 +33,9 @@ export class UpdateParentDto {
   @IsOptional()
   lastname?: string;
 
-  @IsDateString()
-  @IsOptional()
-  birthdate?: string;
-
-  @IsString()
-  @IsOptional()
-  sex?: string;
-
   @IsArray()
   @IsOptional()
   linked_kids?: string[];
-
-  @IsString()
-  @IsOptional()
-  address?: string;
 
   @IsString()
   @IsOptional()

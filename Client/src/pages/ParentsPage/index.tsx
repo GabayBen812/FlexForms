@@ -18,7 +18,7 @@ import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDial
 import { TableFieldConfigDialog } from "@/components/ui/completed/dialogs/TableFieldConfigDialog";
 import { SmartLoadFromExcel } from "@/components/ui/completed/dialogs/SmartLoadFromExcel";
 import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDateForEdit } from "@/lib/dateUtils";
 import { showConfirm } from "@/utils/swal";
@@ -182,13 +182,21 @@ export default function ParentsPage() {
         throw new Error(errorMessage);
       }
       
-      // Check if response is successful
-      if (res.status === 200 && res.data) {
-        const createdParent = res.data;
-        toast.success(t("form_created_success"));
-        setIsAddDialogOpen(false);
-        // Add item directly to table without refresh
-        tableMethods?.addItem(createdParent);
+      // Check if response is successful (200 or 201)
+      if ((res.status === 200 || res.status === 201)) {
+        if (res.data) {
+          // We have data - use it directly
+          const createdParent = res.data;
+          toast.success(t("form_created_success"));
+          setIsAddDialogOpen(false);
+          // Add item directly to table without refresh
+          tableMethods?.addItem(createdParent);
+        } else {
+          // Status is OK but no data - refresh table to get the new record
+          toast.success(t("form_created_success"));
+          setIsAddDialogOpen(false);
+          tableMethods?.refresh();
+        }
       } else {
         const errorMessage = res.error || t("error") || "Failed to create parent";
         toast.error(errorMessage);

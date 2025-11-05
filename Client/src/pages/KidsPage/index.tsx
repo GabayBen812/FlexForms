@@ -18,7 +18,7 @@ import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDial
 import { TableFieldConfigDialog } from "@/components/ui/completed/dialogs/TableFieldConfigDialog";
 import { SmartLoadFromExcel } from "@/components/ui/completed/dialogs/SmartLoadFromExcel";
 import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDateForEdit } from "@/lib/dateUtils";
 import { showConfirm } from "@/utils/swal";

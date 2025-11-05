@@ -10,7 +10,7 @@ import { User } from "@/types/users/user";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TableAction } from "@/types/ui/data-table-types";
 import { showConfirm } from "@/utils/swal";

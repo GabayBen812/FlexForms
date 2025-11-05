@@ -4,9 +4,11 @@
 import * as React from "react";
 
 import type { ToastProps } from "@/components/ui/toast";
+import { ToastAction } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 1;
 const TOAST_REMOVE_DELAY = 100000;
+const DEFAULT_TOAST_DURATION = 1500; // - default auto-close duration
 
 type ToasterToast = ToastProps & {
   id: string;
@@ -55,18 +57,19 @@ interface State {
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
-const addToRemoveQueue = (toastId: string) => {
+const addToRemoveQueue = (toastId: string, duration?: number) => {
   if (toastTimeouts.has(toastId)) {
     return;
   }
 
+  const delay = duration ?? TOAST_REMOVE_DELAY;
   const timeout = setTimeout(() => {
     toastTimeouts.delete(toastId);
     dispatch({
       type: "REMOVE_TOAST",
       toastId: toastId,
     });
-  }, TOAST_REMOVE_DELAY);
+  }, delay);
 
   toastTimeouts.set(toastId, timeout);
 };
@@ -139,7 +142,7 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">;
 
-function toast({ ...props }: Toast) {
+function toast({ duration = DEFAULT_TOAST_DURATION, ...props }: Toast) {
   const id = genId();
 
   const update = (props: ToasterToast) =>
@@ -160,6 +163,13 @@ function toast({ ...props }: Toast) {
       },
     },
   });
+
+  // Auto-dismiss after duration if provided
+  if (duration !== undefined && duration > 0) {
+    setTimeout(() => {
+      dispatch({ type: "DISMISS_TOAST", toastId: id });
+    }, duration);
+  }
 
   return {
     id: id,
@@ -188,4 +198,79 @@ function useToast() {
   };
 }
 
-export { useToast, toast };
+// Helper functions for compatibility with sonner API
+type ToastOptions = {
+  description?: string;
+  duration?: number;
+  className?: string;
+  richColors?: boolean; // Ignored, kept for compatibility
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+};
+
+const toastHelpers = {
+  success: (message: string, options?: ToastOptions) => {
+    return toast({
+      title: message,
+      description: options?.description,
+      variant: "success",
+      duration: options?.duration ?? DEFAULT_TOAST_DURATION,
+      className: options?.className,
+      action: options?.action
+        ? React.createElement(
+            ToastAction,
+            {
+              onClick: options.action.onClick,
+              altText: options.action.label,
+            },
+            options.action.label
+          )
+        : undefined,
+    });
+  },
+  error: (message: string, options?: ToastOptions) => {
+    return toast({
+      title: message,
+      description: options?.description,
+      variant: "destructive",
+      duration: options?.duration ?? DEFAULT_TOAST_DURATION,
+      className: options?.className,
+      action: options?.action
+        ? React.createElement(
+            ToastAction,
+            {
+              onClick: options.action.onClick,
+              altText: options.action.label,
+            },
+            options.action.label
+          )
+        : undefined,
+    });
+  },
+  info: (message: string, options?: ToastOptions) => {
+    return toast({
+      title: message,
+      description: options?.description,
+      variant: "default",
+      duration: options?.duration ?? DEFAULT_TOAST_DURATION,
+      className: options?.className,
+      action: options?.action
+        ? React.createElement(
+            ToastAction,
+            {
+              onClick: options.action.onClick,
+              altText: options.action.label,
+            },
+            options.action.label
+          )
+        : undefined,
+    });
+  },
+};
+
+// Export toast with helper methods
+const toastWithHelpers = Object.assign(toast, toastHelpers);
+
+export { useToast, toastWithHelpers as toast };

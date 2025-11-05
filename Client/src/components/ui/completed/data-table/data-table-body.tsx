@@ -264,12 +264,34 @@ function EditableCell<T>({
   
   // Get the current value
   const cellValue = cell.getValue();
+  
+  // Helper function to safely convert object to string
+  const safeStringify = (val: any): string => {
+    if (val == null) return "";
+    if (typeof val === "string") return val;
+    if (typeof val === "number" || typeof val === "boolean") return String(val);
+    if (Array.isArray(val)) return val.join(", ");
+    if (typeof val === "object") {
+      // Try common object properties first
+      if (val.name) return String(val.name);
+      if (val.email) return String(val.email);
+      if (val._id) return String(val._id);
+      // Fallback to JSON stringification
+      try {
+        return JSON.stringify(val);
+      } catch {
+        return String(val);
+      }
+    }
+    return String(val);
+  };
+  
   const displayValue = isDate ? formatDateForDisplay(cellValue) : 
                       isTime ? (cellValue || "") :
                       isMoney ? (cellValue ? `₪${parseFloat(cellValue).toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : "") :
                       fieldType === "CHECKBOX" ? (cellValue === true || cellValue === "true" || cellValue === "1" ? "✓" : "") :
                       fieldType === "MULTI_SELECT" && Array.isArray(cellValue) ? cellValue.join(", ") :
-                      (cellValue ?? "");
+                      safeStringify(cellValue);
 
   useEffect(() => {
     if (isEditing) {
@@ -281,7 +303,11 @@ function EditableCell<T>({
       } else if (fieldType === "CHECKBOX") {
         setValue(cellValue === true || cellValue === "true" || cellValue === "1" ? "true" : "false");
       } else {
-        setValue(String(cellValue ?? ""));
+        // Safely convert cellValue to string, handling objects
+        const stringValue = typeof cellValue === "object" && cellValue !== null && !Array.isArray(cellValue)
+          ? (cellValue.name || cellValue.email || cellValue._id || JSON.stringify(cellValue))
+          : String(cellValue ?? "");
+        setValue(stringValue);
       }
       // Focus the input
       setTimeout(() => {
@@ -721,6 +747,14 @@ const RowComponent = React.memo(function RowComponent<T>({
           {formattedValue}
         </span>
       );
+    }
+
+    // Check if value is an object that shouldn't be rendered directly
+    if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+      // Try to get a string representation
+      const objValue = value as any;
+      const stringValue = objValue.name || objValue.email || objValue._id || JSON.stringify(value);
+      return <span>{String(stringValue)}</span>;
     }
 
     return flexRender(columnDef.cell, cell.getContext());

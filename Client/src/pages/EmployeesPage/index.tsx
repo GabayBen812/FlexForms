@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
 import { TableFieldConfigDialog } from "@/components/ui/completed/dialogs/TableFieldConfigDialog";
 import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { showConfirm } from "@/utils/swal";
 

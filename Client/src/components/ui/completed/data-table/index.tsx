@@ -24,7 +24,7 @@ import {
   ColumnMeta,
   ExpandedContentProps,
 } from "@/types/ui/data-table-types";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { AdvancedSearchModal } from "./AdvancedSearchModal";
 import { DataTablePaginationControls } from "./data-table-pagination-controls";

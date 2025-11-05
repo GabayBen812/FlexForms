@@ -71,7 +71,7 @@ export function getDynamicFieldDefinitions(
   organization: Organization | null,
   entityType: string
 ): Record<string, DynamicFieldDefinition> {
-  return organization?.tableFieldDefinitions?.[entityType]?.fields || {};
+  return (organization?.tableFieldDefinitions?.[entityType]?.fields || {}) as Record<string, DynamicFieldDefinition>;
 }
 
 /**

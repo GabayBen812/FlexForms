@@ -9,7 +9,7 @@ export const fetchAllTasks = async (): Promise<Task[]> => {
 
 export const createTask = async (taskData: CreateTaskDto): Promise<Task> => {
   // Don't send organizationId - backend sets it from JWT token
-  const { organizationId, ...rest } = taskData;
+  const { organizationId, ...rest } = taskData as CreateTaskDto & { organizationId?: string };
   const { data } = await apiClient.post<Task>("/tasks", rest);
   return data;
 };

@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { DynamicFieldDefinition } from "@/utils/tableFieldUtils";
 import { fetchTableFieldDefinitions, updateTableFieldDefinitions } from "@/api/organizations";
 import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface TableFieldConfigDialogProps {
   open: boolean;
@@ -38,8 +39,28 @@ export function TableFieldConfigDialog({
   onSave,
 }: TableFieldConfigDialogProps) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [fields, setFields] = useState<FieldInput[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // React Query mutation with automatic cache invalidation
+  const updateMutation = useMutation({
+    mutationFn: async (updatedDefinitions: Record<string, any>) => {
+      return await updateTableFieldDefinitions(organizationId, updatedDefinitions);
+    },
+    onSuccess: () => {
+      // Automatically invalidate and refetch organization data
+      // This will trigger a refetch of the organization query, which will update mergedColumns
+      queryClient.invalidateQueries({ queryKey: ["organization"] });
+      toast.success(t("saved_successfully") || "Field definitions saved successfully");
+      onSave?.();
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      console.error("Error saving table field definitions:", error);
+      toast.error(t("error") || "Failed to save field definitions");
+    },
+  });
 
   useEffect(() => {
     if (!open || !organizationId) return;
@@ -161,13 +182,11 @@ export function TableFieldConfigDialog({
         },
       };
 
-      await updateTableFieldDefinitions(organizationId, updatedDefinitions);
-      toast.success(t("saved_successfully") || "Field definitions saved successfully");
-      onSave?.();
-      onOpenChange(false);
+      // Use mutation instead of direct API call
+      // This will automatically invalidate the organization query and refetch it
+      await updateMutation.mutateAsync(updatedDefinitions);
     } catch (error) {
-      console.error("Error saving table field definitions:", error);
-      toast.error(t("error") || "Failed to save field definitions");
+      // Error is handled by mutation's onError callback
     } finally {
       setLoading(false);
     }
@@ -288,7 +307,11 @@ export function TableFieldConfigDialog({
         </div>
 
         <DialogFooter className="mt-6 flex justify-center">
-          <Button onClick={handleSubmit} disabled={loading} className="flex gap-2">
+          <Button 
+            onClick={handleSubmit} 
+            disabled={loading || updateMutation.isPending} 
+            className="flex gap-2"
+          >
             <Save className="w-4 h-4" />
             {t("save", "Save")}
           </Button>

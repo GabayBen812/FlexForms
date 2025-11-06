@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import apiClient from "@/api/apiClient";
-import { showError } from "@/utils/swal";
 
 const formsApi = createApiService<Form>("/forms");
 
@@ -226,7 +225,7 @@ export default function Forms() {
       }
     } catch (error) {
       console.error("שגיאה בשכפול הטופס:", error);
-      showError(t("error") || "שגיאה בשכפול הטופס");
+      alert("שגיאה בשכפול הטופס");
     }
   };
 
@@ -263,8 +262,9 @@ export default function Forms() {
   const CustomAddButton = useMemo(
     () => (
       <Button 
-        variant="info" 
+        variant="outline" 
         onClick={() => navigate("/create-form")}
+        className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 hover:border-blue-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
       >
         <Plus className="w-4 h-4 mr-2" /> {t("create_new_form")}
       </Button>

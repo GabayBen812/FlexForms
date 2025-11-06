@@ -98,7 +98,7 @@ export function EditClubDialog({ open, onClose, rowData, columns, onSave }: Edit
         
         <DialogFooter style={{ position: "sticky", bottom: 0 }}>
           <Button onClick={handleSubmit}>{t("save_changes")}</Button>
-          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
+          <Button variant="outline" onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium">{t("cancel")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

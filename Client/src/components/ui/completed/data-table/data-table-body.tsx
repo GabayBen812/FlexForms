@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Ghost, MoreVertical, Pencil, Trash, Copy, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { TableEditButton } from "./TableEditButton";
 import { Input } from "@/components/ui/Input";
 import { Checkbox } from "@/components/ui/checkbox";
 import DataTableBodyRowExpanded from "./data-table-body-row-expanded";
@@ -30,6 +31,7 @@ import { AddressInput } from "@/components/ui/address-input";
 import { cn } from "@/lib/utils";
 import { isValidIsraeliID } from "@/lib/israeliIdValidator";
 import { showError, showConfirm } from "@/utils/swal";
+import { handleImageUpload } from "@/lib/imageUtils";
 import "./data-table-row.css";
 
 interface BaseData {
@@ -260,7 +262,9 @@ function EditableCell<T>({
   const isDate = meta.isDate || isDateValue(cell.getValue());
   const isTime = meta.isTime;
   const isMoney = meta.isMoney;
+  const isImage = meta.isImage;
   const isDynamic = accessorKey?.startsWith("dynamicFields.");
+  const fieldDefinition = meta.fieldDefinition;
   
   // Get the current value
   const cellValue = cell.getValue();
@@ -286,6 +290,7 @@ function EditableCell<T>({
     return String(val);
   };
   
+  // For IMAGE type, we'll handle it separately in the render
   const displayValue = isDate ? formatDateForDisplay(cellValue) : 
                       isTime ? (cellValue || "") :
                       isMoney ? (cellValue ? `₪${parseFloat(cellValue).toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : "") :
@@ -415,6 +420,33 @@ function EditableCell<T>({
   };
 
   if (!isEditing) {
+    // For IMAGE fields, show image preview
+    if (isDynamic && fieldDefinition?.type === "IMAGE") {
+      return (
+        <div
+          className={cn(
+            "cursor-pointer group relative px-2 py-1 rounded min-h-[1.5rem] transition-all duration-200",
+            "hover:bg-blue-50 hover:border hover:border-blue-200 hover:shadow-sm",
+            "flex items-center justify-center"
+          )}
+        >
+          {cellValue ? (
+            <img 
+              src={String(cellValue)} 
+              alt="Preview" 
+              className="max-w-16 max-h-16 object-contain rounded cursor-pointer hover:opacity-80" 
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(String(cellValue), '_blank');
+              }}
+            />
+          ) : (
+            <span className="text-muted-foreground text-sm">{t("no_image", "אין תמונה")}</span>
+          )}
+        </div>
+      );
+    }
+    
     // For checkbox fields, show an actual checkbox component and allow direct editing
     if (fieldType === "CHECKBOX") {
       // Use optimistic value if set, otherwise use cellValue
@@ -606,6 +638,54 @@ function EditableCell<T>({
           placeholder={t("enter_address", "הכנס כתובת")}
           className="w-full"
         />
+      </div>
+    );
+  }
+
+  if (isDynamic && fieldDefinition?.type === "IMAGE") {
+    return (
+      <div onClick={(e) => e.stopPropagation()} className="w-full">
+        {!isEditing ? (
+          <div className="flex items-center gap-2">
+            {value ? (
+              <img 
+                src={value} 
+                alt="Preview" 
+                className="max-w-16 max-h-16 object-contain rounded cursor-pointer hover:opacity-80" 
+                onClick={() => window.open(value, '_blank')} 
+              />
+            ) : (
+              <span className="text-muted-foreground text-sm">{t("no_image", "אין תמונה")}</span>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  try {
+                    const fieldName = accessorKey.replace("dynamicFields.", "");
+                    const timestamp = Date.now();
+                    const uuid = crypto.randomUUID();
+                    const path = `dynamic-fields/${fieldName}/${timestamp}_${uuid}`;
+                    const imageUrl = await handleImageUpload(file, path);
+                    setValue(imageUrl);
+                  } catch (error) {
+                    console.error("Error uploading image:", error);
+                    showError(t("error_uploading_image", "שגיאה בהעלאת תמונה") || "Error uploading image");
+                  }
+                }
+              }}
+              className="w-full text-sm"
+            />
+            {value && (
+              <img src={value} alt="Preview" className="max-w-32 max-h-32 object-contain rounded border" />
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -850,13 +930,9 @@ const RowComponent = React.memo(function RowComponent<T>({
                 {showActionColumn && (
                   <TableCell className="text-center data-table-row-cell">
                     {showEditButton && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
+                      <TableEditButton
                         onClick={(e) => handleActionClick(e, "edit")}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
+                      />
                     )}
                     {showDeleteButton && (
                       <Button

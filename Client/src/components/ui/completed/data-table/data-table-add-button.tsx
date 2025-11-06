@@ -47,7 +47,7 @@ export function DataTableAddButton({ showAddButton, onToggleAddRow, columns = []
       <Button 
         variant="outline" 
         onClick={() => setOpen(true)}
-        className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 hover:border-blue-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+        className="bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600 hover:border-green-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
       >
         <Plus className="w-4 h-4 mr-2" /> הוסף
       </Button>
@@ -87,7 +87,7 @@ export function DataTableAddButton({ showAddButton, onToggleAddRow, columns = []
   </div>
 ))}
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)} className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium">
                 ביטול
               </Button>
               <Button type="submit" disabled={saving}>

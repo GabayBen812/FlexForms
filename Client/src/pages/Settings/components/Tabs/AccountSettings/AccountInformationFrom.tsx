@@ -123,6 +123,7 @@ function AccountInformationFrom() {
             variant="outline"
             onClick={handleCancel}
             disabled={!form.formState.isDirty || form.formState.isSubmitting}
+            className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium disabled:bg-gray-300 disabled:border-gray-300 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed"
           >
             {t("cancel")}
           </Button>

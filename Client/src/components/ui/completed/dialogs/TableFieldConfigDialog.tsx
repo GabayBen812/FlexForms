@@ -5,15 +5,50 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Save, Trash, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  Plus, 
+  Save, 
+  Trash, 
+  X, 
+  Type, 
+  Hash, 
+  Calendar, 
+  Clock, 
+  Mail, 
+  Phone, 
+  List, 
+  ListChecks, 
+  CheckSquare, 
+  MapPin, 
+  DollarSign,
+  Image,
+  Check,
+  ChevronDown,
+  LucideIcon
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DynamicFieldDefinition } from "@/utils/tableFieldUtils";
 import { fetchTableFieldDefinitions, updateTableFieldDefinitions } from "@/api/organizations";
 import { toast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 interface TableFieldConfigDialogProps {
   open: boolean;
@@ -26,10 +61,17 @@ interface TableFieldConfigDialogProps {
 interface FieldInput {
   name: string;
   label: string;
-  type: "TEXT" | "SELECT" | "DATE" | "NUMBER" | "EMAIL" | "PHONE" | "MULTI_SELECT" | "TIME" | "CHECKBOX" | "ADDRESS" | "MONEY";
+  type: "TEXT" | "SELECT" | "DATE" | "NUMBER" | "EMAIL" | "PHONE" | "MULTI_SELECT" | "TIME" | "CHECKBOX" | "ADDRESS" | "MONEY" | "IMAGE";
   required: boolean;
   choices?: string[];
   rawChoices?: string;
+}
+
+// Field type configuration with icons
+interface FieldTypeOption {
+  value: FieldInput["type"];
+  label: string;
+  icon: LucideIcon;
 }
 
 // Colors for chips display
@@ -95,6 +137,92 @@ function ChoiceInput({ onAddChoice, placeholder, existingChoices }: ChoiceInputP
         <Plus className="w-4 h-4" />
       </Button>
     </div>
+  );
+}
+
+// Field Type Selector Component with autocomplete and icons
+interface FieldTypeSelectorProps {
+  value: FieldInput["type"];
+  onChange: (value: FieldInput["type"]) => void;
+  t: ReturnType<typeof useTranslation>["t"];
+}
+
+function FieldTypeSelector({ value, onChange, t }: FieldTypeSelectorProps) {
+  const [open, setOpen] = useState(false);
+
+  const fieldTypes: FieldTypeOption[] = [
+    { value: "TEXT", label: t("text", "Text"), icon: Type },
+    { value: "NUMBER", label: t("number", "Number"), icon: Hash },
+    { value: "DATE", label: t("date", "Date"), icon: Calendar },
+    { value: "TIME", label: t("time", "Time"), icon: Clock },
+    { value: "EMAIL", label: t("email", "Email"), icon: Mail },
+    { value: "PHONE", label: t("phone", "Phone"), icon: Phone },
+    { value: "SELECT", label: t("select", "Select"), icon: List },
+    { value: "MULTI_SELECT", label: t("multi_select", "Multiple Choice"), icon: ListChecks },
+    { value: "CHECKBOX", label: t("checkbox", "Checkbox"), icon: CheckSquare },
+    { value: "ADDRESS", label: t("address", "Address"), icon: MapPin },
+    { value: "MONEY", label: t("money", "Money"), icon: DollarSign },
+    { value: "IMAGE", label: t("image", "Image"), icon: Image },
+  ];
+
+  const selectedField = fieldTypes.find((ft) => ft.value === value);
+  const SelectedIcon = selectedField?.icon || Type;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-[200px] justify-between hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
+        >
+          <div className="flex items-center gap-2">
+            <SelectedIcon className="h-4 w-4 shrink-0" />
+            <span className="truncate">{selectedField?.label || t("text", "Text")}</span>
+          </div>
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[200px] p-0" align="start">
+        <Command>
+          <CommandInput placeholder={t("search_field_type", "חפש סוג שדה...")} />
+          <CommandList className="max-h-[300px] overflow-y-auto overflow-x-hidden">
+            <CommandEmpty>{t("no_field_type_found", "לא נמצא סוג שדה.")}</CommandEmpty>
+            <CommandGroup>
+              {fieldTypes.map((fieldType) => {
+                const Icon = fieldType.icon;
+                const isSelected = value === fieldType.value;
+                return (
+                  <CommandItem
+                    key={fieldType.value}
+                    value={`${fieldType.value} ${fieldType.label}`}
+                    onSelect={() => {
+                      onChange(fieldType.value);
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      "cursor-pointer transition-colors",
+                      "hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900/20 dark:hover:text-blue-300",
+                      isSelected && "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                    )}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        isSelected ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <Icon className="mr-2 h-4 w-4" />
+                    {fieldType.label}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -299,142 +427,133 @@ export function TableFieldConfigDialog({
         }
       }}
     >
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-6">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 flex flex-col">
+        <DialogHeader className="sticky top-0 z-10 bg-background border-b flex-shrink-0">
           <DialogTitle className="text-center text-2xl">
-            {t("configure_dynamic_fields", "Configure Dynamic Fields")} - {entityType}
+            {t("configure_dynamic_fields", "עדכן שדות דינאמיים")} - {t(entityType)}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 mt-4">
-          {loading && fields.length === 0 ? (
-            <div className="text-center py-4">{t("loading") || "Loading..."}</div>
-          ) : (
-            <>
-              {fields.map((field, index) => (
-                <div key={index} className="flex flex-col gap-2 border rounded p-4">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 space-y-2">
-                      <input
-                        type="text"
-                        value={field.name}
-                        onChange={(e) =>
-                          handleFieldChange(index, { name: e.target.value })
-                        }
-                        placeholder={t("field_name", "Field Name")}
-                        className="w-full border rounded px-3 py-2"
-                      />
-                      <input
-                        type="text"
-                        value={field.label}
-                        onChange={(e) =>
-                          handleFieldChange(index, { label: e.target.value })
-                        }
-                        placeholder={t("field_label", "Field Label")}
-                        className="w-full border rounded px-3 py-2"
-                      />
-                    </div>
-                    <select
-                      value={field.type}
-                      onChange={(e) =>
-                        handleFieldChange(index, {
-                          type: e.target.value as FieldInput["type"],
-                        })
-                      }
-                      className="w-40 border rounded px-3 py-2"
-                    >
-                      <option value="TEXT">{t("text", "Text")}</option>
-                      <option value="NUMBER">{t("number", "Number")}</option>
-                      <option value="DATE">{t("date", "Date")}</option>
-                      <option value="TIME">{t("time", "Time")}</option>
-                      <option value="EMAIL">{t("email", "Email")}</option>
-                      <option value="PHONE">{t("phone", "Phone")}</option>
-                      <option value="SELECT">{t("select", "Select")}</option>
-                      <option value="MULTI_SELECT">{t("multi_select", "Multiple Choice")}</option>
-                      <option value="CHECKBOX">{t("checkbox", "Checkbox")}</option>
-                      <option value="ADDRESS">{t("address", "Address")}</option>
-                      <option value="MONEY">{t("money", "Money")}</option>
-                    </select>
+        <DialogBody className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-4">
+            {loading && fields.length === 0 ? (
+              <div className="text-center py-4">{t("loading") || "Loading..."}</div>
+            ) : (
+              <>
+                {fields.map((field, index) => (
+                  <div key={index} className="flex flex-col gap-2 border rounded p-4">
                     <div className="flex items-center gap-2">
-                      <label className="text-sm whitespace-nowrap">
+                      <div className="flex-1 space-y-2">
                         <input
-                          type="checkbox"
-                          checked={field.required}
+                          type="text"
+                          value={field.name}
                           onChange={(e) =>
-                            handleFieldChange(index, { required: e.target.checked })
+                            handleFieldChange(index, { name: e.target.value })
                           }
-                          className="mr-1"
+                          placeholder={t("field_name", "Field Name")}
+                          className="w-full border rounded px-3 py-2"
                         />
-                        {t("required", "Required")}
-                      </label>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveField(index)}
-                        className="h-8 w-8"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {(field.type === "SELECT" || field.type === "MULTI_SELECT") && (
-                    <div className="mt-3 space-y-3">
-                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {t("select_options", "Select Options")}
-                      </label>
-                      
-                      {/* Display existing choices as chips */}
-                      {field.choices && field.choices.length > 0 && (
-                        <div className="flex flex-wrap gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 min-h-[60px]">
-                          {field.choices.map((choice, choiceIndex) => (
-                            <div
-                              key={choiceIndex}
-                              className={cn(
-                                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all hover:shadow-sm",
-                                chipColors[choiceIndex % chipColors.length]
-                              )}
-                            >
-                              <span>{choice}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveChoice(index, choiceIndex)}
-                                className="ml-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-full p-0.5 transition-colors"
-                                aria-label={t("remove_option", "Remove option")}
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {/* Input for adding new choices */}
-                      <ChoiceInput
-                        onAddChoice={(value) => handleAddChoice(index, value)}
-                        placeholder={t("add_option_placeholder", "Type an option and press Enter")}
-                        existingChoices={field.choices || []}
+                        <input
+                          type="text"
+                          value={field.label}
+                          onChange={(e) =>
+                            handleFieldChange(index, { label: e.target.value })
+                          }
+                          placeholder={t("field_label", "Field Label")}
+                          className="w-full border rounded px-3 py-2"
+                        />
+                      </div>
+                      <FieldTypeSelector
+                        value={field.type}
+                        onChange={(newType) =>
+                          handleFieldChange(index, { type: newType })
+                        }
+                        t={t}
                       />
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id={`required-${index}`}
+                            checked={field.required}
+                            onCheckedChange={(checked) =>
+                              handleFieldChange(index, { required: checked === true })
+                            }
+                          />
+                          <label
+                            htmlFor={`required-${index}`}
+                            className="text-sm font-medium cursor-pointer whitespace-nowrap"
+                          >
+                            {t("required_field", "שדה חובה")}
+                          </label>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveField(index)}
+                          className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                        >
+                          <Trash className="h-5 w-5" />
+                        </Button>
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleAddField}
-                className="flex items-center gap-2 mx-auto"
-              >
-                <Plus className="w-4 h-4" />
-                {t("add_field", "Add Field")}
-              </Button>
-            </>
-          )}
-        </div>
+                    {(field.type === "SELECT" || field.type === "MULTI_SELECT") && (
+                      <div className="mt-3 space-y-3">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {t("select_options", "Select Options")}
+                        </label>
+                        
+                        {/* Display existing choices as chips */}
+                        {field.choices && field.choices.length > 0 && (
+                          <div className="flex flex-wrap gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 min-h-[60px]">
+                            {field.choices.map((choice, choiceIndex) => (
+                              <div
+                                key={choiceIndex}
+                                className={cn(
+                                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all hover:shadow-sm",
+                                  chipColors[choiceIndex % chipColors.length]
+                                )}
+                              >
+                                <span>{choice}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveChoice(index, choiceIndex)}
+                                  className="ml-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-full p-0.5 transition-colors"
+                                  aria-label={t("remove_option", "Remove option")}
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Input for adding new choices */}
+                        <ChoiceInput
+                          onAddChoice={(value) => handleAddChoice(index, value)}
+                          placeholder={t("add_option_placeholder", "Type an option and press Enter")}
+                          existingChoices={field.choices || []}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </DialogBody>
 
-        <DialogFooter className="mt-6 flex justify-center">
+        <DialogFooter className="sticky bottom-0 z-10 bg-background border-t flex-shrink-0 flex justify-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleAddField}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600 hover:border-green-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            {t("add_field", "Add Field")}
+          </Button>
           <Button 
             onClick={handleSubmit} 
             disabled={loading || updateMutation.isPending} 

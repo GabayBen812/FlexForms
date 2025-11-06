@@ -44,6 +44,7 @@ export function DeleteRoomDialog({
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
+            className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
           >
             {t("cancel")}
           </Button>

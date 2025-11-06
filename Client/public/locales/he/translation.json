@@ -23,7 +23,7 @@
   "request_status": "סטטוס הבקשה",
   "number": "מספר",
   "date": "תאריך",
-  "checkbox": "תיבת סימון",
+  "checkbox": "תיבת סימון צ'קבוקס",
   "dropdown": "רשימה נפתחת",
   "options": "אפשרויות",
   "option": "אפשרות",
@@ -292,5 +292,15 @@
   "remove_option": "הסר אפשרות",
   "add_option_placeholder": "הקלד אפשרות ולחץ Enter",
   "dark_mode": "מצב כהה",
-  "toggle_dark_mode": "החלף את המערכת למצב כהה"
+  "toggle_dark_mode": "החלף את המערכת למצב כהה",
+  "image": "תמונה",
+  "no_image": "אין תמונה",
+  "image_uploaded_successfully": "תמונה הועלתה בהצלחה",
+  "error_uploading_image": "שגיאה בהעלאת תמונה",
+  "uploading": "מעלה...",
+  "click_to_upload": "לחץ להעלאת תמונה",
+  "drag_and_drop_or_click": "גרור ושחרר תמונה או לחץ לבחירה",
+  "supported_formats": "PNG, JPG, GIF עד 10MB",
+  "yes_no": "כן / לא",
+  "saving": "שומר..."
 }

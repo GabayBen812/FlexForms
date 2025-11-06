@@ -393,16 +393,15 @@ const handleAddClubClick = () => {
               placeholder={t("search_by_name", "חיפוש לפי שם עמותה")}
               className="border border-gray-300 rounded px-4 py-2 w-full max-w-sm"
             />
-          <Button 
-            variant="info" 
-            onClick={() => setIsAdvancedOpen(true)}
-          >
-            {t("advanced_search")}
-            <Search className="w-4 h-4 mr-2" strokeWidth={2.5}/>
+          <Button variant="outline" onClick={() => setIsAdvancedOpen(true)}
+          className="bg-sky-600 hover:bg-sky-700 text-white hover:text-white border-sky-600 hover:border-sky-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium">
+          {t("advanced_search")}
+          <Search className="w-4 h-4 mr-2" strokeWidth={2.5}/>
           </Button>
           <Button 
-  variant="info"
+  variant="default"
   onClick={handleAddClubClick}
+          className="bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600 hover:border-green-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
 >
   {t("add_club")}
   <CirclePlus className="w-4 h-4 mr-2" strokeWidth={2.5}/>

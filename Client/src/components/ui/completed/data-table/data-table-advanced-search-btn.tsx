@@ -40,7 +40,7 @@ export function DataTableAdvancedSearchBtn({
       <Button
         variant="outline"
         onClick={() => onOpenChange?.(true)}
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white hover:text-white border-sky-600 hover:border-sky-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
       >
         <Search className="h-4 w-4" />
         {t("advanced_search", "חיפוש מתקדם")}

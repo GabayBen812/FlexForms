@@ -2,8 +2,9 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { useNavigate } from "react-router-dom";
 import { useState, useCallback } from "react";
-import { Plus, Trash, Pencil } from "lucide-react";
+import { Plus, Trash } from "lucide-react";
 import DataTable from "@/components/ui/completed/data-table";
+import { TableEditButton } from "@/components/ui/completed/data-table/TableEditButton";
 import { useOrganization } from "@/hooks/useOrganization";
 import { createApiService } from "@/api/utils/apiFactory";
 import { User } from "@/types/users/user";
@@ -71,18 +72,13 @@ export default function Users() {
           onClick={(e) => e.stopPropagation()}
           aria-label="Select row"
         />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
+        <TableEditButton
           onClick={(e) => {
             e.stopPropagation();
             setEditingUser(row.original);
             setIsEditDialogOpen(true);
           }}
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
+        />
       </div>
     ),
     enableHiding: false,
@@ -236,15 +232,17 @@ export default function Users() {
         customLeftButtons={
           <div className="flex gap-2">
             <Button 
-              variant="info" 
+              variant="outline" 
               onClick={() => setIsAddDialogOpen(true)}
+              className="bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600 hover:border-green-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
             >
               <Plus className="w-4 h-4 mr-2" /> {t("add")}
             </Button>
             <Button 
-              variant="destructive" 
+              variant="outline" 
               onClick={handleBulkDelete}
               disabled={Object.keys(rowSelection).length === 0}
+              className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium disabled:bg-gray-300 disabled:border-gray-300 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed"
             >
               <Trash className="w-4 h-4 mr-2" /> {t("delete")}
             </Button>

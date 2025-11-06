@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/Input";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from '@tanstack/react-table';
 import { MultiSelect } from "@/components/ui/multi-select";
+import { Check, RotateCcw, X } from "lucide-react";
 
 interface AdvancedSearchModalProps<T> {
   open: boolean;
@@ -233,21 +234,24 @@ export function AdvancedSearchModal<T = any>({ open, onClose, columns, onApply, 
               })}
           </div>
            
-          <DialogFooter className="flex gap-2 justify-end">
+          <DialogFooter className="flex gap-2 justify-center">
             <Button type="button" variant="ghost" 
               onClick={() => {
                     setFilters({});
                     onApply({});
                     onClose();
                   }}
-              className="rounded-lg px-4 py-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
+              className="rounded-lg px-4 py-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 flex items-center gap-2"
               >
+                <X className="w-4 h-4" />
                 {t("remove_filter", " הסר סינון")}
               </Button>
-            <Button type="button" variant="outline" onClick={handleReset} className="rounded-lg px-4 py-2">
+            <Button type="button" variant="outline" onClick={handleReset} className="rounded-lg px-4 py-2 flex items-center gap-2">
+              <RotateCcw className="w-4 h-4" />
               {t("reset", "אפס")}
             </Button>
-            <Button type="submit" className="rounded-lg px-4 py-2">
+            <Button type="submit" className="rounded-lg px-4 py-2 flex items-center gap-2">
+              <Check className="w-4 h-4" />
               {t("apply_filtering", "החל סינון")}
             </Button>
           </DialogFooter>

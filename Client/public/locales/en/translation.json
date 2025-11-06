@@ -276,5 +276,9 @@
   "remove_option": "Remove option",
   "add_option_placeholder": "Type an option and press Enter",
   "dark_mode": "Dark Mode",
-  "toggle_dark_mode": "Toggle the system to dark mode"
+  "toggle_dark_mode": "Toggle the system to dark mode",
+  "image": "Image",
+  "no_image": "No image",
+  "image_uploaded_successfully": "Image uploaded successfully",
+  "error_uploading_image": "Error uploading image"
 }

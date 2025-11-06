@@ -59,7 +59,7 @@ const AreYouSureDialog: React.FC<AreYouSureDialogProps> = ({
             >
               {loading ? <Loader className="animate-spin" /> : confirmText}
             </Button>
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button variant="outline" onClick={() => setOpen(false)} className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium">
               {cancelText}
             </Button>
           </DialogFooter>

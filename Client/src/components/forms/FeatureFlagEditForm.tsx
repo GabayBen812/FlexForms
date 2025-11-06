@@ -66,7 +66,7 @@ export default function FeatureFlagEditForm({ flag, onClose, onUpdated }: Props)
             </div>
           </div>
           <div className="flex gap-2 justify-end mt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium">
               {t("cancel", "Cancel")}
             </Button>
             <Button type="submit" disabled={saving}>

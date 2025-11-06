@@ -1,4 +1,4 @@
-import { useState, useEffect, ChangeEvent, FormEvent, useMemo } from "react";
+import { useState, useEffect, ChangeEvent, FormEvent, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,9 @@ import { AddressInput } from "@/components/ui/address-input";
 import { isValidIsraeliID } from "@/lib/israeliIdValidator";
 import { toast } from "@/hooks/use-toast";
 import { showError } from "@/utils/swal";
+import { Save, X, Upload, Image as ImageIcon, XCircle } from "lucide-react";
+import { handleImageUpload } from "@/lib/imageUtils";
+import { cn } from "@/lib/utils";
 
 interface AddRecordDialogProps {
   open: boolean;
@@ -26,6 +29,137 @@ interface AddRecordDialogProps {
       options: { value: string; label: string }[];
     };
   };
+}
+
+// Custom File Upload Component
+interface FileUploadProps {
+  value?: string;
+  onChange: (file: File | null) => Promise<void>;
+  accept?: string;
+  required?: boolean;
+  label?: string;
+}
+
+function FileUpload({ value, onChange, accept = "image/*", required, label }: FileUploadProps) {
+  const { t } = useTranslation();
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith("image/")) {
+      setIsUploading(true);
+      try {
+        await onChange(file);
+      } finally {
+        setIsUploading(false);
+      }
+    }
+  };
+
+  const handleFileSelect = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsUploading(true);
+      try {
+        await onChange(file);
+      } finally {
+        setIsUploading(false);
+      }
+    }
+  };
+
+  const handleRemove = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    // Clear the value by calling onChange with null
+    await onChange(null);
+  };
+
+  return (
+    <div className="w-full">
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => !value && fileInputRef.current?.click()}
+        className={cn(
+          "relative border-2 border-dashed rounded-lg transition-all duration-200",
+          "hover:border-primary/50 hover:bg-accent/50",
+          isDragging && "border-primary bg-primary/5",
+          value && "border-primary/30",
+          isUploading && "opacity-50 pointer-events-none",
+          !value && "cursor-pointer"
+        )}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={accept}
+          onChange={handleFileSelect}
+          className="hidden"
+          required={required}
+        />
+        
+        {value ? (
+          <div className="relative p-4">
+            <div className="relative w-full aspect-video rounded-md overflow-hidden bg-muted">
+              <img
+                src={value}
+                alt={label || t("image")}
+                className="w-full h-full object-contain"
+              />
+              <button
+                type="button"
+                onClick={handleRemove}
+                className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm hover:bg-destructive hover:text-destructive-foreground transition-colors"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-center text-muted-foreground">
+              {t("image_uploaded_successfully")}
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <div className="p-3 rounded-full bg-primary/10 mb-3 group-hover:bg-primary/20 transition-colors">
+              {isUploading ? (
+                <Upload className="w-6 h-6 text-primary animate-pulse" />
+              ) : (
+                <ImageIcon className="w-6 h-6 text-primary" />
+              )}
+            </div>
+            <p className="text-sm font-medium text-foreground mb-1">
+              {isUploading ? t("uploading", "מעלה...") : t("click_to_upload", "לחץ להעלאת תמונה")}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("drag_and_drop_or_click", "גרור ושחרר תמונה או לחץ לבחירה")}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {t("supported_formats", "PNG, JPG, GIF עד 10MB")}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function AddRecordDialog({
@@ -276,14 +410,37 @@ export function AddRecordDialog({
     onOpenChange(false);
   };
 
+  const handleImageFieldChange = async (accessorKey: string, file: File | null) => {
+    // Handle file removal
+    if (!file) {
+      setForm({ ...form, [accessorKey]: "" });
+      return;
+    }
+
+    try {
+      const fieldName = getDynamicFieldName(accessorKey);
+      const timestamp = Date.now();
+      const uuid = crypto.randomUUID();
+      const path = `dynamic-fields/${fieldName}/${timestamp}_${uuid}`;
+      const imageUrl = await handleImageUpload(file, path);
+      setForm({ ...form, [accessorKey]: imageUrl });
+      toast.success(t("image_uploaded_successfully", "תמונה הועלתה בהצלחה") || "Image uploaded successfully");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error(t("error_uploading_image", "שגיאה בהעלאת תמונה") || "Error uploading image");
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg w-full">
-        <DialogHeader>
-          <DialogTitle>{editMode ? t("edit") : t("add")}</DialogTitle>
+      <DialogContent className="max-w-2xl w-full max-h-[90vh]">
+        <DialogHeader className="pb-4 border-b">
+          <DialogTitle className="text-xl font-semibold text-foreground">
+            {editMode ? t("edit") : t("add")}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <DialogBody className="space-y-4">
+          <DialogBody className="space-y-6 py-6 overflow-y-auto">
             {dataColumns.map((col) => {
             const accessorKey = (col as any).accessorKey as string;
             const header = typeof col.header === "string" ? col.header : col.header?.toString() || accessorKey;
@@ -302,10 +459,12 @@ export function AddRecordDialog({
             const relationshipOptions = isRelationshipField?.options || [];
 
             return (
-              <div key={accessorKey}>
-                <label className="block mb-1 font-medium">
+              <div key={accessorKey} className="space-y-2">
+                <label className="block text-sm font-medium text-foreground">
                   {header}
-                  {isDynamic && fieldDefinition?.required && <span className="text-red-500 ml-1">*</span>}
+                  {((isDynamic && fieldDefinition?.required) || isRequiredField) && (
+                    <span className="text-destructive mr-1">*</span>
+                  )}
                 </label>
                 {isRelationshipField ? (
                   <MultiSelect
@@ -321,7 +480,7 @@ export function AddRecordDialog({
                     name={accessorKey}
                     value={fieldValue}
                     onChange={handleChange}
-                    className="w-full border rounded px-2 py-1"
+                    className="w-full h-10 px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
                     required={isRequiredField || fieldDefinition?.required}
                   >
                     <option value="">{t("select_option")}</option>
@@ -341,7 +500,7 @@ export function AddRecordDialog({
                     placeholder={t("select_options") || "בחר אפשרויות..."}
                   />
                 ) : (isDynamic && fieldDefinition?.type === "CHECKBOX") ? (
-                  <label className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer group">
                     <input
                       type="checkbox"
                       name={accessorKey}
@@ -349,10 +508,10 @@ export function AddRecordDialog({
                       onChange={(e) => {
                         setForm({ ...form, [accessorKey]: e.target.checked });
                       }}
-                      className="w-4 h-4"
+                      className="w-4 h-4 rounded border-input text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer"
                       required={isRequiredField || fieldDefinition?.required}
                     />
-                    <span>כן / לא</span>
+                    <span className="text-sm text-foreground">{t("yes_no", "כן / לא")}</span>
                   </label>
                 ) : (isDateField(accessorKey) || (isDynamic && fieldDefinition?.type === "DATE")) ? (
                   <input
@@ -415,7 +574,7 @@ export function AddRecordDialog({
                       className="w-full"
                       required={isRequiredField || fieldDefinition?.required}
                     />
-                    <span className="text-sm font-medium whitespace-nowrap">₪</span>
+                    <span className="text-sm font-medium whitespace-nowrap text-muted-foreground">₪</span>
                   </div>
                 ) : (isDynamic && fieldDefinition?.type === "NUMBER") ? (
                   <Input
@@ -425,6 +584,14 @@ export function AddRecordDialog({
                     onChange={handleChange}
                     className="w-full"
                     required={isRequiredField || fieldDefinition?.required}
+                  />
+                ) : (isDynamic && fieldDefinition?.type === "IMAGE") ? (
+                  <FileUpload
+                    value={fieldValue}
+                    onChange={(file) => handleImageFieldChange(accessorKey, file)}
+                    accept="image/*"
+                    required={isRequiredField || fieldDefinition?.required}
+                    label={header}
                   />
                 ) : (
                   <Input
@@ -440,12 +607,24 @@ export function AddRecordDialog({
             );
           })}
           </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose} disabled={saving}>
+          <DialogFooter className="pt-4 border-t gap-3">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleClose} 
+              disabled={saving} 
+              className="min-w-[100px] bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+            >
+              <X className="w-4 h-4 ml-2" />
               {t("cancel")}
             </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? t("saving") || "Saving..." : t("save")}
+            <Button 
+              type="submit" 
+              disabled={saving} 
+              className="min-w-[100px]"
+            >
+              <Save className="w-4 h-4 ml-2" />
+              {saving ? t("saving", "שומר...") : t("save")}
             </Button>
           </DialogFooter>
         </form>

@@ -172,7 +172,7 @@ export default function FeatureFlagsTable() {
               >
                 {t("delete", "Delete")}
               </Button>
-              <Button variant="outline" onClick={() => setDeletingFlag(null)}>
+              <Button variant="outline" onClick={() => setDeletingFlag(null)} className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium">
                 {t("cancel", "Cancel")}
               </Button>
             </div>

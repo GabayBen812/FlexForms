@@ -104,7 +104,7 @@ export const InlineEditPopup = ({
         )}
 
         <div className="flex gap-2 justify-end mt-2">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium">
             {t("cancel")}
           </Button>
         <Button onClick={() => {

@@ -18,6 +18,7 @@ import { DataTableSearch } from "./data-table-search";
 import { DataTableAddButton } from "./data-table-add-button";
 import { DataTableDownloadButton } from "./data-table-download-button";
 import { DataTableAdvancedSearchBtn } from "./data-table-advanced-search-btn";
+import { DataTableAdvancedUpdateBtn } from "./data-table-advanced-update-btn";
 import {
   ApiQueryParams,
   DataTableProps,
@@ -536,6 +537,10 @@ export function DataTable<TData>({
             onAdvancedSearchChange={onAdvancedSearchChange}
             initialAdvancedFilters={initialAdvancedFilters}
             onOpenChange={setIsAdvancedOpen}
+          />
+          <DataTableAdvancedUpdateBtn
+            showAdvancedSearch={showAdvancedSearch}
+            rowSelection={rowSelection}
           />
           {customLeftButtons}
         </div>

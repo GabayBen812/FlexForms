@@ -51,8 +51,8 @@ export const showConfirm = (
     text: message,
     icon: 'question',
     showCancelButton: true,
-    confirmButtonText: confirmText || i18n.t('common:confirm') || 'Confirm',
-    cancelButtonText: cancelText || i18n.t('common:cancel') || 'Cancel',
+    confirmButtonText: confirmText || i18n.t('common:confirm', { ns: 'translation', defaultValue: 'Confirm' }) || 'Confirm',
+    cancelButtonText: cancelText || i18n.t('common:cancel', { ns: 'translation', defaultValue: 'Cancel' }) || 'Cancel',
   }).then((result) => {
     return result.isConfirmed;
   });

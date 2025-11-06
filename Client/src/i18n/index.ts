@@ -11,6 +11,8 @@ i18n
     fallbackLng: "he",
     debug: true,
     load: "all",
+    defaultNS: "translation",
+    ns: ["translation"],
     backend: { loadPath: "/locales/{{lng}}/{{ns}}.json" }, // Adjust path as needed
     interpolation: { escapeValue: false },
     detection: {

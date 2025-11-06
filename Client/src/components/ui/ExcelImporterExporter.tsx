@@ -152,17 +152,9 @@ export default function ExcelImporterExporter({
         {!onlyExport && (
           <Button
             onClick={() => setShowDialog(true)}
-            //@ts-ignore
-            variant="contained"
+            variant="success"
             disabled={disabled}
-            style={{
-              backgroundColor: color,
-              color: "white",
-              marginRight: "10px",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
+            className="gap-2"
           >
             {t("read_from_excel_file")}
             <FileDown className="w-5 h-5" />
@@ -172,14 +164,8 @@ export default function ExcelImporterExporter({
         {!onlyImport && (
           <Button
             onClick={handleExport}
-            variant="default"
-            style={{
-            backgroundColor: color,
-            color: "white",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-          }}
+            variant="success"
+            className="gap-2"
           >
             {t("export_to_excel_file")}
             <Download className="w-5 h-5" />

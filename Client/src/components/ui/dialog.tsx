@@ -60,8 +60,8 @@ const DialogHeader = ({
     {...props}
   >
     <div className="flex flex-col">{children}</div>
-    <DialogPrimitive.Close className=" m-0 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-      <X className="h-4 w-4" />
+    <DialogPrimitive.Close className="m-0 p-2 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+      <X className="h-5 w-5" />
       <span className="sr-only">Close</span>
     </DialogPrimitive.Close>
   </div>
@@ -72,7 +72,7 @@ const DialogFooter = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("flex flex-row-reverse gap-2 p-4 flex-shrink-0 bg-background border-t border-border", className)} {...props} />
+  <div className={cn("flex justify-center gap-2 p-4 flex-shrink-0 bg-background border-t border-border", className)} {...props} />
 );
 DialogFooter.displayName = "DialogFooter";
 

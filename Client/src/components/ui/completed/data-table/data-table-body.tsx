@@ -770,7 +770,7 @@ const RowComponent = React.memo(function RowComponent<T>({
         const meta = table.options.meta as any;
         // @ts-ignore
         if (meta?.handleDelete && (row.original.id || row.original._id)) {
-          showConfirm(t("confirm_delete") || t("common:confirm_delete") || "Are you sure you want to delete this item?").then((confirmed) => {
+          showConfirm(t("confirm_delete") || t("common:confirm_delete") || "Are you sure?").then((confirmed) => {
             if (confirmed) {
               // @ts-ignore
               meta.handleDelete(row.original.id || row.original._id);

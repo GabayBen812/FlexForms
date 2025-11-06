@@ -204,17 +204,15 @@ export default function EmployeesPage() {
     
     if (selectedIds.length === 0) return;
     
-    const count = selectedIds.length;
     const confirmed = await showConfirm(
-      t("confirm_delete", { count }) || 
-      `Are you sure you want to delete ${count} item(s)?`
+      t("confirm_delete") || t("common:confirm_delete") || "Are you sure?"
     );
     
     if (!confirmed) return;
     
     try {
       await Promise.all(selectedIds.map((id) => employeesApi.delete(id)));
-      toast.success(t("deleted_successfully") || `Successfully deleted ${count} item(s)`);
+      toast.success(t("deleted_successfully") || "Successfully deleted item(s)");
       setRowSelection({});
       tableMethods?.refresh();
     } catch (error) {
@@ -266,24 +264,21 @@ export default function EmployeesPage() {
         customLeftButtons={
           <div className="flex gap-2">
             <Button 
-              variant="outline" 
+              variant="info" 
               onClick={() => setIsAddDialogOpen(true)}
-              className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 hover:border-blue-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
             >
               <Plus className="w-4 h-4 mr-2" /> {t("add")}
             </Button>
             <Button 
-              variant="outline" 
+              variant="destructive" 
               onClick={handleBulkDelete}
               disabled={Object.keys(rowSelection).length === 0}
-              className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium disabled:bg-gray-300 disabled:border-gray-300 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed"
             >
               <Trash className="w-4 h-4 mr-2" /> {t("delete")}
             </Button>
             <Button 
-              variant="outline" 
+              variant="secondary" 
               onClick={() => setIsFieldConfigDialogOpen(true)}
-              className="bg-gray-500 hover:bg-gray-600 text-white border-gray-500 hover:border-gray-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
             >
               <Settings className="w-4 h-4 mr-2" /> {t("configure_fields", "ערוך שדות דינאמיים")}
             </Button>

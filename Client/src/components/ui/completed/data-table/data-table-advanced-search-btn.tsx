@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { AdvancedSearchModal } from "./AdvancedSearchModal";
 import { ColumnDef } from "@tanstack/react-table";
 import { Search } from "lucide-react";
 
@@ -10,40 +9,47 @@ interface DataTableAdvancedSearchProps {
   columns: ColumnDef<any>[];
   onAdvancedSearchChange?: (filters: Record<string, any>) => void;
   initialAdvancedFilters?: Record<string, any>;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function DataTableAdvancedSearchBtn({
   showAdvancedSearch,
-  columns,
-  onAdvancedSearchChange,
+  onOpenChange,
   initialAdvancedFilters = {},
 }: DataTableAdvancedSearchProps) {
   const { t } = useTranslation();
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+
+  // Count active filters (non-empty, non-null, non-undefined)
+  const activeFilterCount = useMemo(() => {
+    if (!initialAdvancedFilters || Object.keys(initialAdvancedFilters).length === 0) {
+      return 0;
+    }
+    return Object.keys(initialAdvancedFilters).filter(key => {
+      const value = initialAdvancedFilters[key];
+      return value !== undefined && 
+             value !== null && 
+             value !== '' && 
+             !(Array.isArray(value) && value.length === 0);
+    }).length;
+  }, [initialAdvancedFilters]);
 
   if (!showAdvancedSearch) return null;
 
   return (
-    <>
+    <div className="relative inline-block">
       <Button
         variant="outline"
-        onClick={() => setIsAdvancedOpen(true)}
+        onClick={() => onOpenChange?.(true)}
         className="flex items-center gap-2"
       >
         <Search className="h-4 w-4" />
         {t("advanced_search", "חיפוש מתקדם")}
       </Button>
-
-      <AdvancedSearchModal
-        open={isAdvancedOpen}
-        onClose={() => setIsAdvancedOpen(false)}
-        columns={columns}
-        onApply={(filters) => {
-          onAdvancedSearchChange?.(filters);
-          setIsAdvancedOpen(false);
-        }}
-        initialFilters={initialAdvancedFilters}
-      />
-    </>
+      {activeFilterCount > 0 && (
+        <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-blue-500 text-white text-xs font-semibold z-10">
+          {activeFilterCount}
+        </span>
+      )}
+    </div>
   );
 }

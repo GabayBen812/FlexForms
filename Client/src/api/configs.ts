@@ -24,6 +24,24 @@ export const buildQueryParams = (
     queryParams.search = params.search;
   }
 
+  // Include all other query parameters (advanced filters, etc.)
+  Object.keys(params).forEach(key => {
+    // Skip already processed fields
+    if (key !== 'page' && key !== 'pageSize' && key !== 'sortField' && 
+        key !== 'sortDirection' && key !== 'search' && key !== 'sortBy' && 
+        key !== 'sortOrder') {
+      const value = params[key as keyof ApiQueryParams];
+      if (value !== undefined && value !== null && value !== '') {
+        // Handle boolean values - convert to string 'true' or 'false'
+        if (typeof value === 'boolean') {
+          queryParams[key] = value ? 'true' : 'false';
+        } else {
+          queryParams[key] = String(value);
+        }
+      }
+    }
+  });
+
   return queryParams;
 };
 

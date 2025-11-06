@@ -94,6 +94,7 @@ export function DataTable<TData>({
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState<string>("");
+  const [debouncedSearch, setDebouncedSearch] = useState<string>("");
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState(
     initialAdvancedFilters
@@ -120,6 +121,15 @@ export function DataTable<TData>({
       setInternalColumnOrder(columnOrder);
     }
   }, [columnOrder]);
+
+  // Debounce search for API calls while keeping immediate client-side filtering
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(globalFilter);
+    }, 400); // 400ms delay
+
+    return () => clearTimeout(timer);
+  }, [globalFilter]);
 
   // Determine excludeFields and pass to DataTableAddButton
   let excludeFields = [];
@@ -319,7 +329,7 @@ export function DataTable<TData>({
           sortBy: sorting.length > 0 ? sorting[0].id : undefined,
           sortOrder:
             sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : undefined,
-          search: globalFilter,
+          search: debouncedSearch,
           ...memoizedAdvancedFilters,
           ...memoizedExtraFilters,
         };
@@ -366,7 +376,7 @@ export function DataTable<TData>({
       isLazyLoading,
       pagination.pageSize,
       sorting,
-      globalFilter,
+      debouncedSearch,
       memoizedAdvancedFilters,
       memoizedExtraFilters,
     ]
@@ -375,7 +385,7 @@ export function DataTable<TData>({
   // Track previous values to detect actual changes
   const prevDepsRef = useRef({
     sorting: JSON.stringify(sorting),
-    globalFilter,
+    debouncedSearch,
     advancedFilters: JSON.stringify(memoizedAdvancedFilters),
     extraFilters: JSON.stringify(memoizedExtraFilters),
     pageSize: pagination.pageSize,
@@ -384,7 +394,7 @@ export function DataTable<TData>({
   useEffect(() => {
     const currentDeps = {
       sorting: JSON.stringify(sorting),
-      globalFilter,
+      debouncedSearch,
       advancedFilters: JSON.stringify(memoizedAdvancedFilters),
       extraFilters: JSON.stringify(memoizedExtraFilters),
       pageSize: pagination.pageSize,
@@ -393,7 +403,7 @@ export function DataTable<TData>({
     // Check if any dependency actually changed
     const hasChanged = 
       prevDepsRef.current.sorting !== currentDeps.sorting ||
-      prevDepsRef.current.globalFilter !== currentDeps.globalFilter ||
+      prevDepsRef.current.debouncedSearch !== currentDeps.debouncedSearch ||
       prevDepsRef.current.advancedFilters !== currentDeps.advancedFilters ||
       prevDepsRef.current.extraFilters !== currentDeps.extraFilters ||
       prevDepsRef.current.pageSize !== currentDeps.pageSize;
@@ -407,7 +417,7 @@ export function DataTable<TData>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     sorting,
-    globalFilter,
+    debouncedSearch,
     memoizedAdvancedFilters,
     memoizedExtraFilters,
     pagination.pageSize,
@@ -525,6 +535,7 @@ export function DataTable<TData>({
             columns={columns}
             onAdvancedSearchChange={onAdvancedSearchChange}
             initialAdvancedFilters={initialAdvancedFilters}
+            onOpenChange={setIsAdvancedOpen}
           />
           {customLeftButtons}
         </div>

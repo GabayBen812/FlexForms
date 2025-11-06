@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Put, Query } from '@nestjs/common';
 import { KidService } from '../services/kid.service';
 import { CreateKidDto } from '../dto/kid.dto';
 import { UpdateKidDto } from '../dto/kid.dto';
@@ -26,12 +26,12 @@ export class KidController {
   }
 
   @Get()
-  findAll(@Req() req: Request) {
+  findAll(@Req() req: Request, @Query() query: any) {
     const user = req.user as { organizationId?: string };
     if (!user || !user.organizationId) {
       throw new Error('User organizationId not found');
     }
-    return this.kidService.findAll(user.organizationId);
+    return this.kidService.findAll(user.organizationId, query);
   }
 
   @Get(':id')

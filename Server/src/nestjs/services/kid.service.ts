@@ -68,8 +68,46 @@ export class KidService {
     }
   }
 
-  async findAll(organizationId: string): Promise<Kid[]> {
-    return this.kidModel.find({ organizationId: new Types.ObjectId(organizationId) }).exec();
+  async findAll(organizationId: string, query: any = {}): Promise<Kid[]> {
+    const filter: any = {
+      organizationId: new Types.ObjectId(organizationId)
+    };
+
+    // Apply advanced search filters
+    if (query.firstname) {
+      filter.firstname = { $regex: query.firstname, $options: 'i' };
+    }
+    if (query.lastname) {
+      filter.lastname = { $regex: query.lastname, $options: 'i' };
+    }
+    if (query.idNumber) {
+      filter.idNumber = { $regex: query.idNumber, $options: 'i' };
+    }
+    if (query.address) {
+      filter.address = { $regex: query.address, $options: 'i' };
+    }
+    
+    // Handle dynamicFields filters (dot notation)
+    Object.keys(query).forEach(key => {
+      if (key.startsWith('dynamicFields.') && query[key] !== undefined && query[key] !== '') {
+        // Handle boolean values (from checkbox fields)
+        if (query[key] === 'true' || query[key] === 'false') {
+          filter[key] = query[key] === 'true';
+        } else {
+          // Handle text/number values with regex
+          filter[key] = { $regex: query[key], $options: 'i' };
+        }
+      }
+    });
+
+    // Remove empty filters
+    Object.keys(filter).forEach(key => {
+      if (filter[key] === undefined || filter[key] === "") {
+        delete filter[key];
+      }
+    });
+
+    return this.kidModel.find(filter).exec();
   }
 
   async findOne(id: string): Promise<Kid | null> {

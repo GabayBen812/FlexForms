@@ -44,6 +44,7 @@ export const AdvancedUpdateDialog = <TData,>({
   const { t } = useTranslation();
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [updateValue, setUpdateValue] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -63,15 +64,32 @@ export const AdvancedUpdateDialog = <TData,>({
   const options = fieldMeta.options || [];
 
   const handleUpdate = async () => {
-    if (!selectedField) return;
-    if (onUpdate) {
-      await onUpdate(selectedField, updateValue);
+    if (!selectedField || updateValue === "" || isSubmitting) return;
+
+    if (!onUpdate) {
+      onOpenChange(false);
+      return;
     }
-    onOpenChange(false);
+
+    try {
+      setIsSubmitting(true);
+      await onUpdate(selectedField, updateValue);
+      onOpenChange(false);
+    } catch (error) {
+      console.error("AdvancedUpdateDialog failed to update field", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (isSubmitting) return;
+        onOpenChange(nextOpen);
+      }}
+    >
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto p-6">
         <DialogHeader>
           <DialogTitle className="text-lg">{t("advanced_update")}</DialogTitle>
@@ -83,8 +101,12 @@ export const AdvancedUpdateDialog = <TData,>({
             </p>
           <div>
             <Label className="text-lg text-center">{t("select_field_to_update", "בחר שדה לעדכון")}</Label>
-            <Select  value={selectedField ?? undefined} onValueChange={setSelectedField}>
-            <SelectTrigger className="w-full h-12">
+            <Select
+              value={selectedField ?? undefined}
+              onValueChange={setSelectedField}
+              disabled={isSubmitting}
+            >
+            <SelectTrigger className="w-full h-12" disabled={isSubmitting}>
                 {selectedField
                 ? toHeaderLabel(columns.find(col => (col as any).accessorKey === selectedField || col.id === selectedField)?.header)
                 : t("select_field_to_update", "בחר שדה לעדכון")}
@@ -107,8 +129,8 @@ export const AdvancedUpdateDialog = <TData,>({
             <div>
               <Label className="text-lg text-center">{t("new_value_to_update", "ערך לעדכון")}</Label>
               {fieldType === "SELECT" ? (
-                <Select value={updateValue} onValueChange={setUpdateValue}>
-                    <SelectTrigger className="w-full">
+                <Select value={updateValue} onValueChange={setUpdateValue} disabled={isSubmitting}>
+                    <SelectTrigger className="w-full" disabled={isSubmitting}>
                     <SelectValue placeholder={t("select_value", "בחר ערך")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -125,6 +147,7 @@ export const AdvancedUpdateDialog = <TData,>({
                     value={updateValue}
                     onChange={(e) => setUpdateValue(e.target.value)}
                     className="w-full p-2 border rounded mt-1"
+                    disabled={isSubmitting}
                 />
                 )}
             </div>
@@ -136,12 +159,14 @@ export const AdvancedUpdateDialog = <TData,>({
             variant="outline" 
             onClick={() => onOpenChange(false)}
             className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+            disabled={isSubmitting}
           >
             {t("cancel", "בטל")}
           </Button>
           <Button
             onClick={handleUpdate}
             disabled={!selectedField || updateValue === ""}
+            loading={isSubmitting}
           >
             {t("update", "עדכן")}
           </Button>

@@ -45,6 +45,8 @@ export default function EmployeesPage() {
   const [isFieldConfigDialogOpen, setIsFieldConfigDialogOpen] = useState(false);
   const [isAdvancedUpdateOpen, setIsAdvancedUpdateOpen] = useState(false);
   const [advancedUpdateCount, setAdvancedUpdateCount] = useState(0);
+  const [advancedUpdateRows, setAdvancedUpdateRows] = useState<Employee[]>([]);
+  const [isAdvancedUpdating, setIsAdvancedUpdating] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [tableMethods, setTableMethods] = useState<{
     refresh: () => void;
@@ -229,9 +231,74 @@ export default function EmployeesPage() {
     }
   };
 
+  const getFallbackSelectedRows = useCallback((): Employee[] => {
+    return Object.keys(rowSelection)
+      .map(Number)
+      .map((index) => tableRows[index])
+      .filter((row): row is Employee => !!row);
+  }, [rowSelection, tableRows]);
+
   const handleBulkAdvancedUpdate = (selectedRowsParam: Employee[]) => {
-    setAdvancedUpdateCount(selectedRowsParam.length);
+    const rowsToUpdate = selectedRowsParam.length
+      ? selectedRowsParam
+      : getFallbackSelectedRows();
+
+    if (!rowsToUpdate.length) {
+      toast.error(t("select_rows_first", "בחר רשומות לעדכון"));
+      return;
+    }
+
+    setAdvancedUpdateRows(rowsToUpdate);
+    setAdvancedUpdateCount(rowsToUpdate.length);
     setIsAdvancedUpdateOpen(true);
+  };
+
+  const handleAdvancedUpdateConfirm = async (field: string, value: string) => {
+    const rowsToUpdate = advancedUpdateRows.length
+      ? advancedUpdateRows
+      : getFallbackSelectedRows();
+
+    const ids = rowsToUpdate
+      .map((row) => row._id)
+      .filter((id): id is string => !!id);
+
+    if (!ids.length) {
+      toast.error(t("select_rows_first", "בחר רשומות לעדכון"));
+      return;
+    }
+
+    const payload: Record<string, any> = field.startsWith("dynamicFields.")
+      ? {
+          dynamicFields: {
+            [field.replace("dynamicFields.", "")]: value,
+          },
+        }
+      : { [field]: value };
+
+    try {
+      setIsAdvancedUpdating(true);
+
+      await Promise.all(
+        ids.map((id) =>
+          employeesApi.update({
+            id,
+            organizationId: organization?._id || "",
+            ...payload,
+          })
+        )
+      );
+
+      toast.success(t("updated_successfully"));
+      tableMethods?.refresh();
+      setRowSelection({});
+      setAdvancedUpdateRows([]);
+    } catch (error) {
+      console.error("Advanced update failed", error);
+      toast.error(t("error"));
+      throw error;
+    } finally {
+      setIsAdvancedUpdating(false);
+    }
   };
 
   return (
@@ -340,13 +407,18 @@ export default function EmployeesPage() {
       <AdvancedUpdateDialog
         open={isAdvancedUpdateOpen}
         onOpenChange={(open) => {
+          if (!open && isAdvancedUpdating) {
+            return;
+          }
           setIsAdvancedUpdateOpen(open);
           if (!open) {
             setAdvancedUpdateCount(0);
+            setAdvancedUpdateRows([]);
           }
         }}
         columns={mergedColumns}
         selectedRowCount={advancedUpdateCount}
+        onUpdate={handleAdvancedUpdateConfirm}
       />
     </div>
   );

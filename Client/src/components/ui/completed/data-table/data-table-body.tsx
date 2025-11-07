@@ -83,17 +83,11 @@ interface EditableCellProps<T> {
   onCancel: () => void;
 }
 
-// Colors for chips display
-const chipColors = [
-  "bg-pink-100 text-pink-800 border-pink-200",
-  "bg-blue-100 text-blue-800 border-blue-200",
-  "bg-green-100 text-green-800 border-green-200",
-  "bg-orange-100 text-orange-800 border-orange-200",
-  "bg-red-100 text-red-800 border-red-200",
-  "bg-purple-100 text-purple-800 border-purple-200",
-  "bg-yellow-100 text-yellow-800 border-yellow-200",
-  "bg-indigo-100 text-indigo-800 border-indigo-200",
-];
+const relationshipChipClass =
+  "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800";
+
+const multiSelectChipClass =
+  "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-800";
 
 // Component to display relationship chips
 function RelationshipChipsDisplay({ 
@@ -128,7 +122,63 @@ function RelationshipChipsDisplay({
           key={values[index]}
           className={cn(
             "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border",
-            chipColors[index % chipColors.length]
+            relationshipChipClass
+          )}
+        >
+          <span>{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MultiSelectChipsDisplay({
+  values,
+  options,
+}: {
+  values: unknown[];
+  options?: { value: string; label: string }[];
+}) {
+  const normalizedValues = Array.isArray(values) ? values : [];
+
+  const labels = normalizedValues
+    .map((value) => {
+      if (typeof value === "object" && value !== null) {
+        const objectValue = value as Record<string, unknown>;
+        const candidate =
+          (typeof objectValue.label === "string" && objectValue.label) ||
+          (typeof objectValue.name === "string" && objectValue.name) ||
+          (typeof objectValue.value === "string" && objectValue.value) ||
+          (typeof objectValue._id === "string" && objectValue._id);
+
+        if (candidate) {
+          const optionLabel = options?.find((opt) => opt.value === candidate)?.label;
+          return optionLabel ?? candidate;
+        }
+      }
+
+      if (value == null) {
+        return "";
+      }
+
+      const stringValue = String(value);
+      const optionLabel = options?.find((opt) => opt.value === stringValue)?.label;
+      return optionLabel ?? stringValue;
+    })
+    .filter((label) => typeof label === "string" && label.trim().length > 0);
+
+  if (!labels.length) {
+    return <div className="px-2 py-1 rounded min-h-[1.5rem]" />;
+  }
+
+  return (
+    <div className="px-2 py-1 rounded min-h-[1.5rem] flex flex-wrap gap-1 justify-center items-center">
+      {labels.map((label, index) => (
+        <div
+          key={`${label}-${index}`}
+          className={cn(
+            "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border",
+            multiSelectChipClass
           )}
         >
           <span>{label}</span>
@@ -489,6 +539,36 @@ function EditableCell<T>({
             }}
             className="cursor-pointer"
           />
+        </div>
+      );
+    }
+
+    if (fieldType === "MULTI_SELECT") {
+      const rawValues = Array.isArray(cellValue)
+        ? cellValue
+        : typeof cellValue === "string" && cellValue !== ""
+          ? cellValue.split(",").map((value) => value.trim()).filter(Boolean)
+          : [];
+
+      const multiSelectOptions =
+        options ??
+        (Array.isArray(fieldDefinition?.choices)
+          ? fieldDefinition.choices.map((choice) => ({ value: choice, label: choice }))
+          : undefined);
+
+      return (
+        <div
+          className={cn(
+            "cursor-pointer group relative px-2 py-1 rounded min-h-[1.5rem] transition-all duration-200",
+            "hover:bg-blue-50 hover:border hover:border-blue-200 hover:shadow-sm"
+          )}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+        >
+          <MultiSelectChipsDisplay values={rawValues} options={multiSelectOptions} />
+          <Pencil className="w-3.5 h-3.5 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute top-1 right-1" />
         </div>
       );
     }

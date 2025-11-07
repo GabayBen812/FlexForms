@@ -24,16 +24,8 @@ interface MultiSelectProps {
   className?: string;
 }
 
-const colors = [
-  "bg-pink-100 text-pink-800 border-pink-200",
-  "bg-blue-100 text-blue-800 border-blue-200",
-  "bg-green-100 text-green-800 border-green-200",
-  "bg-orange-100 text-orange-800 border-orange-200",
-  "bg-red-100 text-red-800 border-red-200",
-  "bg-purple-100 text-purple-800 border-purple-200",
-  "bg-yellow-100 text-yellow-800 border-yellow-200",
-  "bg-indigo-100 text-indigo-800 border-indigo-200",
-];
+const chipClassName =
+  "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800";
 
 export function MultiSelect({
   options,
@@ -83,7 +75,7 @@ export function MultiSelect({
                   key={selected[index]}
                   className={cn(
                     "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border",
-                    colors[index % colors.length]
+                    chipClassName
                   )}
                 >
                   <span>{label}</span>

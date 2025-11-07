@@ -28,8 +28,8 @@ export function DataTableSelectionBar({
       <div
         className={cn(
           "pointer-events-auto flex w-full max-w-5xl flex-wrap items-center justify-center gap-3 rounded-t-2xl",
-          "bg-white/90 backdrop-blur-md shadow-2xl border border-muted/40",
-          "px-6 py-4 text-sm text-foreground transition-transform duration-300 ease-out",
+          "bg-secondary/90 border border-border backdrop-blur-lg shadow-2xl",
+          "px-6 py-4 text-sm text-secondary-foreground transition-transform duration-300 ease-out",
           "animate-in slide-in-from-bottom-6 fade-in"
         )}
       >

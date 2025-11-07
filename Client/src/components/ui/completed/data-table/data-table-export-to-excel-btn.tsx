@@ -304,8 +304,8 @@ export function DataTableExportToExcelBtn<TData>({
       onClick={handleExport}
       disabled={!hasSelectedRows || isExporting}
       className={cn(
-        "flex items-center gap-2 bg-blue-600 text-white",
-        "hover:bg-blue-700 hover:text-white border-blue-600 hover:border-blue-700",
+        "flex items-center gap-2 bg-green-600 text-white",
+        "hover:bg-green-700 hover:text-white border-green-600 hover:border-green-700",
         "shadow-md hover:shadow-lg transition-all duration-200 font-medium",
         "disabled:bg-gray-300 disabled:border-gray-300 disabled:text-gray-500",
         "disabled:shadow-none disabled:cursor-not-allowed",

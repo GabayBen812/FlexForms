@@ -203,7 +203,7 @@ export default function Home() {
     <div className="min-h-screen w-full bg-muted/50 flex flex-col">
       <div className="w-full max-w-7xl mx-auto px-4 py-8 flex-1 flex flex-col">
         <WelcomeBanner />
-        <div className="bg-background rounded-xl shadow-sm p-6 mt-6">
+        <div className="bg-background rounded-xl shadow-sm p-6 mt-2">
           <DashboardWidgets cards={visibleCards} />
         </div>
       </div>

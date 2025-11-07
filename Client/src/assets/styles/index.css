@@ -4,15 +4,28 @@
 
 @font-face {
   font-family: "Noto Sans Hebrew";
-  /* src: url("../src/assets/fonts/NotoSansHebrew/NotoSansHebrew-VariableFont_wdth,wght.ttf") */
-  src: url("../fonts//NotoSansHebrew/NotoSansHebrew-VariableFont_wdth\,wght.ttf")
+  src: url("../fonts/NotoSansHebrew/NotoSansHebrew-VariableFont_wdth\,wght.ttf")
     format("truetype");
-  font-weight: 100 200 300 400 500 600 700 800 900;
-  font-size: normal;
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
 }
 
-* {
-  /* font-family: "Noto Sans Hebrew", Arial, Helvetica, sans-serif; */
+@font-face {
+  font-family: "Rubik";
+  src: url("../fonts/Rubik/Rubik-VariableFont_wght.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Rubik";
+  src: url("../fonts/Rubik/Rubik-Italic-VariableFont_wght.ttf")
+    format("truetype");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
 }
 @layer base {
   :root {
@@ -96,5 +109,22 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "Noto Sans Hebrew", "Rubik", "Assistant", "Alef", sans-serif;
+    font-variation-settings: "wdth" 100;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Rubik", "Noto Sans Hebrew", "Assistant", sans-serif;
+    letter-spacing: -0.01em;
+  }
+  strong,
+  b {
+    font-family: "Rubik", "Noto Sans Hebrew", sans-serif;
   }
 }

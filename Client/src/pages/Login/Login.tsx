@@ -1,20 +1,24 @@
-// import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
-import { useContext, useState, useEffect } from "react";
+import { useContext, useState } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock } from "lucide-react";
-import footerSvg from "@/assets/landing/footer.svg";
 import heroIllustration from "@/assets/landing/hero-illustration.svg";
-import logoNoBG from "@/assets/landing/logoNoBG.svg";
 import { useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 export default function Login() {
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const auth = useContext(AuthContext);
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  const stats = t("landing.hero.stats", { returnObjects: true }) as Array<{
+    value: string;
+    label: string;
+  }>;
 
   if (!auth) throw new Error("AuthContext must be used within an AuthProvider");
   const { isLoginLoading, login } = auth;
@@ -31,7 +35,7 @@ export default function Login() {
     });
 
     if (!response || response.status !== 200) {
-      setErrorMessage(response?.error || "אירעה שגיאה, נסה שוב.");
+      setErrorMessage(response?.error || t("landing.login.error.generic"));
       return;
     }
 
@@ -44,77 +48,119 @@ export default function Login() {
     navigate("/home");
   };
 
+  const logoSrc = "/paradize-logo.svg";
+
   return (
     <div className="flex flex-col min-h-screen overflow-hidden">
-      {/* HEADER */}
-      <header className="absolute w-full z-30">
-        <div className="relative w-full h-20 overflow-hidden">
-          <div className="absolute top-0 bg-gradient-to-tr from-blue-600 to-blue-500 w-full h-20 -z-10" />
-          <img
-            src={heroIllustration}
-            alt="hero"
-            width={960}
-            height={960}
-            className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 -mt-40 ml-20 pointer-events-none -z-10 max-w-none mix-blend-lighten"
-          />
-        </div>
-        <div className="absolute w-full h-20 top-10 flex justify-center items-end">
-          <div className="bg-blue-950 border-2 border-slate-400 rounded-lg p-3 flex items-center justify-center text-white gap-2">
-            <h1 className="text-2xl">Paradize</h1>
-            <img src={logoNoBG} alt="logo" className="w-10" />
+      <div className="absolute inset-0 bg-black" />
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-32 -right-24 h-[420px] w-[420px] rounded-full bg-gradient-to-br from-pink-300 via-orange-300 to-emerald-300 opacity-40 blur-3xl" />
+        <div className="absolute bottom-[-160px] left-1/4 h-[520px] w-[520px] rounded-full bg-gradient-to-tr from-sky-400 via-teal-300 to-emerald-200 opacity-35 blur-3xl" />
+      </div>
+      <img
+        src={heroIllustration}
+        alt=""
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-10 mix-blend-screen"
+      />
+
+      <header className="relative z-10">
+        <div className="mx-auto flex max-w-6xl items-center justify-center px-4 pt-14 sm:px-6">
+          <div className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/10 px-6 py-3 text-white shadow-[0_20px_45px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+            <img
+              src={logoSrc}
+              alt="Paradize"
+              className="h-10 w-10 rounded-full ring-1 ring-white/50"
+            />
+            <span className="text-lg font-semibold">Paradize</span>
           </div>
         </div>
       </header>
 
-      {/* CONTENT */}
-      <main className="grow w-full flex flex-col justify-between">
-        <section className="w-full">
-          <div className="pt-36 pb-12">
-            <div className="flex pt-12 lg:pt-0 justify-center">
-              <div className="w-full max-w-[480px] bg-white p-6 shadow-2xl">
-                <div className="space-y-4 flex flex-col justify-center items-center">
-                  <h1>התחברו באמצעות מייל וסיסמה</h1>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-                  <Input
-                    name="mail"
-                    placeholder="מייל"
-                    icon={<Mail className="text-[#606876]" />}
-                  />
-                  <Input
-                    name="password"
-                    placeholder="סיסמה"
-                    type="password"
-                    icon={<Lock className="text-[#606876]" />}
-                  />
-                  {errorMessage && (
-                    <p className="text-red-500 text-right font-normal">
-                      {errorMessage}
-                    </p>
-                  )}
-                  <div className="text-right">
-                    <Button
-                      type="submit"
-                      loading={isLoginLoading}
-                      className="btn-sm inline-flex items-center text-blue-50 bg-blue-500 hover:bg-blue-600"
-                    >
-                      התחבר
-                    </Button>
-                  </div>
-                </form>
-              </div>
+      <main className="relative z-10 mx-auto flex w-full grow items-center justify-center px-4 pb-16 pt-12 sm:px-6">
+        <motion.div
+          className="grid w-full max-w-5xl gap-10 rounded-4xl border border-white/10 bg-white/5 p-8 shadow-[0_55px_120px_rgba(0,0,0,0.45)] backdrop-blur-2xl lg:grid-cols-[minmax(0,460px)_minmax(0,260px)] lg:p-12"
+          initial={{ opacity: 0, y: 35 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        >
+          <div className="flex flex-col">
+            <div className="flex flex-col gap-3 text-right text-white">
+              <span className="inline-flex items-center gap-2 self-end rounded-full border border-white/20 bg-white/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-white/75">
+                {t("landing.login.badge")}
+              </span>
+              <h1 className="text-3xl font-black leading-tight md:text-4xl">
+                <span className="bg-gradient-to-l from-emerald-200 via-teal-200 to-pink-200 bg-clip-text text-transparent">
+                  {t("landing.login.title")}
+                </span>
+              </h1>
+              <p className="text-sm text-white/70 md:text-base">
+                {t("landing.login.subtitle")}
+              </p>
             </div>
-          </div>
-        </section>
 
-        <footer className="h-32 justify-center flex w-full relative">
-          <img
-            src={footerSvg}
-            alt="footer"
-            className="absolute md:-top-[20%] h-60"
-          />
-        </footer>
+            <form onSubmit={handleSubmit} className="mt-10 space-y-4 text-right">
+              <Input
+                name="mail"
+                placeholder={t("landing.login.emailPlaceholder")}
+                icon={<Mail className="text-white/60" />}
+                className="h-12 rounded-full border-white/20 bg-white/10 text-white placeholder:text-white/50 focus-visible:ring-white/40"
+              />
+              <Input
+                name="password"
+                placeholder={t("landing.login.passwordPlaceholder")}
+                type="password"
+                icon={<Lock className="text-white/60" />}
+                className="h-12 rounded-full border-white/20 bg-white/10 text-white placeholder:text-white/50 focus-visible:ring-white/40"
+              />
+              {errorMessage && (
+                <p className="text-sm font-medium text-rose-300">{errorMessage}</p>
+              )}
+              <Button
+                type="submit"
+                loading={isLoginLoading}
+                className="mt-2 inline-flex w-full justify-center rounded-full border border-white/20 bg-gradient-to-r from-pink-400 via-orange-300 to-emerald-300 px-6 py-3 text-base font-semibold text-slate-900 shadow-[0_30px_65px_rgba(236,72,153,0.35)] hover:scale-[1.01]"
+              >
+                {t("landing.login.submit")}
+              </Button>
+            </form>
+
+            <p className="mt-6 text-sm text-white/60">
+              {t("landing.login.support")}
+            </p>
+          </div>
+
+          <div className="hidden flex-col justify-between gap-6 text-right text-white/80 lg:flex">
+            <motion.div
+              className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-[0_30px_65px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.5, ease: "easeOut" }}
+            >
+              <h3 className="text-lg font-semibold text-white">
+                Paradize Insights
+              </h3>
+              <p className="mt-3 text-sm text-white/65">
+                {t("landing.value.subtitle")}
+              </p>
+            </motion.div>
+            <motion.div
+              className="space-y-4"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35, duration: 0.6, ease: "easeOut" }}
+            >
+              {stats.map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-3xl border border-white/10 bg-white/5 px-6 py-5 shadow-[0_25px_55px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+                >
+                  <div className="text-2xl font-black text-white">{stat.value}</div>
+                  <div className="mt-2 text-xs text-white/60">{stat.label}</div>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </motion.div>
       </main>
     </div>
   );

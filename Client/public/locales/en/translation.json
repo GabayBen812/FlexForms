@@ -282,5 +282,273 @@
   "image": "Image",
   "no_image": "No image",
   "image_uploaded_successfully": "Image uploaded successfully",
-  "error_uploading_image": "Error uploading image"
+  "error_uploading_image": "Error uploading image",
+  "landing": {
+    "nav": {
+      "product": "Product",
+      "industries": "Industries",
+      "workflow": "Operations Journey",
+      "automation": "Automation",
+      "partners": "Partners",
+      "support": "Support",
+      "login": "Login"
+    },
+    "hero": {
+      "badge": "Education ERP Platform",
+      "title": "The digital backbone for every education institute",
+      "subtitle": "Paradize unifies tuition, finances, schedules, communications and student records — in one futuristic workspace built for kindergartens, after-school programs, camps, private schools, colleges and courses.",
+      "highlight": "With Paradize, every operational day becomes calm, precise and insight-driven.",
+      "primaryCta": "Personalized demo",
+      "secondaryCta": "Talk with an expert",
+      "secondaryCtaHint": "24/7 human support in Hebrew",
+      "stats": [
+        {
+          "value": "350+",
+          "label": "Active education institutes"
+        },
+        {
+          "value": "₪120M+",
+          "label": "Payments processed yearly"
+        },
+        {
+          "value": "100%",
+          "label": "Money-back within first year"
+        }
+      ]
+    },
+    "industries": {
+      "title": "Built for every learning environment",
+      "subtitle": "Ready-to-launch modules that speak the language of each education format.",
+      "items": [
+        {
+          "title": "Kindergartens",
+          "tagline": "Registration, parent communications and digital tuition in one tap.",
+          "description": "Automated attendance boards, parent updates, billing dashboards and real-time digital signatures."
+        },
+        {
+          "title": "After-school programs",
+          "tagline": "Shift planning, staffing and payment collection per child.",
+          "description": "Sync the schedule with payments, streamline recurring tuition and keep accounting fully aligned."
+        },
+        {
+          "title": "Seasonal camps",
+          "tagline": "Fast registrations, mobile payments and smart occupancy views.",
+          "description": "Multiple enrollment flows, add-ons and merch, instant invoices and ready-to-export reports."
+        },
+        {
+          "title": "Private schools",
+          "tagline": "Academic, financial and parent operations fully connected.",
+          "description": "Manage grades, tuition, logistics and staff tasks inside one secure workspace."
+        },
+        {
+          "title": "Colleges",
+          "tagline": "Advanced executive tools and course management.",
+          "description": "Custom application forms, tuition plans, scholarships and integrations into existing systems."
+        },
+        {
+          "title": "Clubs & courses",
+          "tagline": "On-going enrollment, recurring billing and attendance tracking.",
+          "description": "Memberships, drop-in bookings, promotional campaigns and churn intelligence."
+        }
+      ]
+    },
+    "features": {
+      "title": "All education operations in one futuristic UI",
+      "subtitle": "Animated, intelligent experiences that cancel bureaucracy and human error.",
+      "items": [
+        {
+          "title": "Smart, secure billing",
+          "highlight": "Invoices, standing orders, one-time charges and payment plans.",
+          "description": "Full cashflow control with bank reconciliation, local acquiring and flexible billing logic."
+        },
+        {
+          "title": "Dynamic forms & digital signatures",
+          "highlight": "Frictionless onboarding for enrollment and compliance.",
+          "description": "Multi-language forms with validation, secure signatures and direct sync into each student record."
+        },
+        {
+          "title": "Workforce attendance & compliance",
+          "highlight": "Policy-aware tracking for every role.",
+          "description": "Digital time clocks, automated wage calculations and anomaly alerts in real time."
+        },
+        {
+          "title": "Schedules & room occupancy",
+          "highlight": "Interactive visual planning for rooms, time slots and staff.",
+          "description": "Allocate resources, prevent conflicts and maintain full visibility across campuses."
+        },
+        {
+          "title": "Multi-channel communications",
+          "highlight": "WhatsApp, SMS and email orchestrated together.",
+          "description": "Behavior-based automations, audience segmentation and engagement insights."
+        },
+        {
+          "title": "Branded enrollment websites",
+          "highlight": "Immersive digital journeys for every institute.",
+          "description": "Template-driven site builder with interactive modules, live data and end-to-end billing."
+        }
+      ]
+    },
+    "workflow": {
+      "title": "A complete digital journey, from deployment to growth",
+      "subtitle": "A guided process connecting leadership, staff and parents with total transparency.",
+      "steps": [
+        {
+          "title": "Blueprint & onboarding",
+          "description": "Our implementation team imports data, builds forms and configures automations tailored to each branch.",
+          "time": "Days 1-3"
+        },
+        {
+          "title": "Enrollment & payments",
+          "description": "Open forms to the public, collect secure payments, capture signatures and guide parents through a clear journey.",
+          "time": "Real time"
+        },
+        {
+          "title": "Daily operations",
+          "description": "Schedules, occupancy, staff attendance, tasks and expenses — all synchronized into a single command center.",
+          "time": "Every day"
+        },
+        {
+          "title": "Insights & scale",
+          "description": "Deep analytics, occupancy forecasting, payment control and decision support dashboards.",
+          "time": "Every month"
+        }
+      ]
+    },
+    "value": {
+      "title": "Future-ready, ready right now",
+      "subtitle": "Israeli cloud technology with uncompromising security, innovation and human-first care.",
+      "pillars": [
+        {
+          "title": "24/7 human support",
+          "description": "Local experts with deep education knowledge across phone, WhatsApp, email and live chat."
+        },
+        {
+          "title": "Powered by leading partners",
+          "description": "We collaborate with top Israeli software providers to integrate seamlessly with your existing stack."
+        },
+        {
+          "title": "Enterprise-grade security",
+          "description": "Strict privacy, end-to-end encryption and granular role-based access."
+        },
+        {
+          "title": "Operational innovation",
+          "description": "Advanced automations, load forecasting and actionable insights that elevate every team."
+        }
+      ],
+      "cta": "Let’s explore how Paradize can transform your institute"
+    },
+    "socialProof": {
+      "title": "Leading education institutes across Israel",
+      "subtitle": "A vibrant client community, complex projects and rapid go-lives that speak for themselves.",
+      "metrics": [
+        {
+          "value": "92%",
+          "label": "Cashflow uplift in first quarter"
+        },
+        {
+          "value": "48h",
+          "label": "Average time to go live"
+        },
+        {
+          "value": "4.9/5",
+          "label": "Support satisfaction score"
+        }
+      ],
+      "logos": [
+        "Ministry of Education",
+        "Maccabi Healthcare",
+        "WIZO",
+        "Aviv High Schools",
+        "Future Campus"
+      ],
+      "supportingText": "More than 350 institutes nationwide trust Paradize to lead their digital transformation.",
+      "badge": "Made in Israel"
+    },
+    "supportSection": {
+      "title": "A full promise from day one",
+      "subtitle": "Guided onboarding, business commitment and complete peace of mind.",
+      "items": [
+        {
+          "title": "100% refund in the first year",
+          "description": "Try Paradize risk-free. If the platform doesn’t deliver value, you get every shekel back."
+        },
+        {
+          "title": "24/7 human support",
+          "description": "Real-time troubleshooting, onsite training sessions and WhatsApp alerts for urgent updates."
+        },
+        {
+          "title": "Guided implementation",
+          "description": "A dedicated consultant handles every milestone until Paradize fits your processes perfectly."
+        },
+        {
+          "title": "Unlimited integrations",
+          "description": "Connect acquiring, accounting, CRM and learning platforms without compromise."
+        }
+      ]
+    },
+    "integrations": {
+      "title": "Connects into your core systems",
+      "subtitle": "Paradize bridges education, finance and communication platforms to build a complete view on every student and payment.",
+      "items": [
+        {
+          "title": "Payments & accounting",
+          "description": "Green Invoice, Hashavshevet, Rivhit, PCI gateways and more."
+        },
+        {
+          "title": "Communications",
+          "description": "WhatsApp Business API, Twilio and your internal contact center."
+        },
+        {
+          "title": "Education platforms",
+          "description": "Sync schedules, LMS platforms and remote learning tools."
+        }
+      ],
+      "cta": "Need a specific integration? Let’s talk."
+    },
+    "faqs": {
+      "title": "Frequently asked questions",
+      "items": [
+        {
+          "question": "How long does it take to implement Paradize?",
+          "answer": "Most institutes launch within 48 hours, including data import, form setup and staff training."
+        },
+        {
+          "question": "How do you protect student and parent data?",
+          "answer": "We comply with strict security standards using end-to-end encryption, daily backups and detailed access controls."
+        },
+        {
+          "question": "Can we operate in multiple languages?",
+          "answer": "Yes — Paradize supports Hebrew, English and additional languages across forms, enrollment sites and messaging."
+        },
+        {
+          "question": "What happens if we need custom workflows?",
+          "answer": "Our product and engineering teams collaborate with each institute to build tailored modules rapidly."
+        }
+      ]
+    },
+    "cta": {
+      "title": "Time for operations that feel futuristic",
+      "subtitle": "Leave your details or book a strategy call — we’ll craft your digital journey in days.",
+      "primaryCta": "Book a live demo",
+      "secondaryCta": "Get a tailored quote"
+    },
+    "footer": {
+      "tagline": "Paradize — transforming Israel’s education institutes into digital powerhouses.",
+      "contact": "Talk to us: support@paradize.co | +972-72-900-9000",
+      "support": "24/7 support",
+      "rights": "© {{year}} Paradize. All rights reserved."
+    },
+    "login": {
+      "badge": "Secure access",
+      "title": "Sign in to Paradize",
+      "subtitle": "Use your institute credentials to step into the futuristic operations hub.",
+      "emailPlaceholder": "Work email",
+      "passwordPlaceholder": "Password",
+      "submit": "Sign in",
+      "support": "Need help? Our support team is available 24/7 via phone, WhatsApp and live chat.",
+      "error": {
+        "generic": "Something went wrong. Please try again."
+      }
+    }
+  }
 }

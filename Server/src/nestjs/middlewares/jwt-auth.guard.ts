@@ -1,5 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { Request } from 'express';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+} from "@nestjs/common";
 import * as jwt from 'jsonwebtoken';
 import { CustomRequest } from '../dto/CustomRequest';
 
@@ -18,9 +22,28 @@ interface DecodedToken {
 export class JwtAuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<CustomRequest>();
-    //@ts-ignore
-    const token = req.cookies.jwt ?? req.headers.authorization ?? '';
-    if (!token) throw new UnauthorizedException('Missing token');
+    const cookieToken = req.cookies?.jwt;
+    const authHeader = req.headers.authorization;
+
+    let token = cookieToken;
+
+    if (!token && typeof authHeader === "string") {
+      token = authHeader.startsWith("Bearer ")
+        ? authHeader.slice(7).trim()
+        : authHeader.trim();
+    } else if (!token && Array.isArray(authHeader) && authHeader.length > 0) {
+      const bearerHeader = authHeader.find((header) =>
+        header?.startsWith("Bearer ")
+      );
+      const rawHeader = bearerHeader ?? authHeader[0];
+      token = rawHeader?.startsWith("Bearer ")
+        ? rawHeader.slice(7).trim()
+        : rawHeader?.trim();
+    }
+
+    if (!token) {
+      throw new UnauthorizedException("Missing token");
+    }
 
     const secret = process.env.ACCESS_TOKEN_SECRET;
     if (!secret) throw new UnauthorizedException('Missing secret');

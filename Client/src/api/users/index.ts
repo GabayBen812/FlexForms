@@ -10,9 +10,18 @@ const usersApi = createApiService<User>("/users", {
   },
 });
 
+export const fetchUsers = (
+  params?: ApiQueryParams,
+  rawDataOnly = false,
+  organizationId?: string
+) => usersApi.fetchAll(params, rawDataOnly, organizationId);
 
+export const fetchUser = (...args: Parameters<typeof usersApi.fetch>) =>
+  usersApi.fetch(...args);
 
-export const adminUpdateUser = async (data: Partial<User> & { id: number }): Promise<MutationResponse<User>> => {
+export const adminUpdateUser = async (
+  data: Partial<User> & { id: number }
+): Promise<MutationResponse<User>> => {
   const response = await apiClient.put<User>(`/users/${data.id}`, data);
   return {
     status: response.status,
@@ -20,9 +29,6 @@ export const adminUpdateUser = async (data: Partial<User> & { id: number }): Pro
   };
 };
 
-
-export const fetchUsers = usersApi.fetchAll();
-export const fetchUser = usersApi.fetch();
 export const fetchUsersParams = async (
   params: ApiQueryParams
 ): Promise<ApiResponse<User>> =>

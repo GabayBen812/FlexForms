@@ -26,8 +26,19 @@ export const getDynamicData = async (
       ...restQuery
     } = req.query;
 
-    const organizationIdNumber = Number(organizationId);
-    console.log(req.query, "req.query");
+    const organizationIdValue = Array.isArray(organizationId)
+      ? organizationId[0]
+      : organizationId;
+
+    if (
+      !organizationIdValue ||
+      typeof organizationIdValue !== "string" ||
+      !Types.ObjectId.isValid(organizationIdValue)
+    ) {
+      return res.status(400).json({ message: "Invalid organizationId" });
+    }
+
+    const organizationObjectId = new Types.ObjectId(organizationIdValue);
 
     const pageNumber = page ? parseInt(page as string, 10) : undefined;
     const pageSizeNumber = pageSize
@@ -40,7 +51,7 @@ export const getDynamicData = async (
     const take = pageSizeNumber;
 
     const whereClause: any = {
-      organizationId: organizationIdNumber,
+      organizationId: organizationObjectId,
     };
 
     // Apply filters
@@ -58,24 +69,28 @@ export const getDynamicData = async (
     // Apply search
     if (search && options.searchFields?.length) {
       whereClause.$or = options.searchFields.map(({ path, field }) => ({
-        [field]: { $regex: search, $options: 'i' }
+        [field]: { $regex: search, $options: "i" },
       }));
     }
 
     // Build sort clause
     const sortClause = sortField
-      ? { [sortField as string]: sortDirection === 'desc' ? -1 : 1 } as { [key: string]: 1 | -1 }
+      ? ({ [sortField as string]: sortDirection === "desc" ? -1 : 1 } as {
+          [key: string]: 1 | -1;
+        })
       : options.defaultSortField
-      ? { [options.defaultSortField]: 1 } as { [key: string]: 1 | -1 }
+      ? ({ [options.defaultSortField]: 1 } as { [key: string]: 1 | -1 })
       : undefined;
 
     // Build include clause
     let populateOptions: any[] = [];
     if (options.include) {
-      populateOptions = Object.entries(options.include).map(([path, select]) => ({
-        path,
-        select: typeof select === 'object' ? select : true
-      }));
+      populateOptions = Object.entries(options.include).map(
+        ([path, select]) => ({
+          path,
+          select: typeof select === "object" ? select : true,
+        })
+      );
     }
 
     const isPaginated = page !== undefined && pageSize !== undefined;
@@ -88,7 +103,7 @@ export const getDynamicData = async (
           .populate(populateOptions)
           .skip(skip || 0)
           .limit(take || 0)
-          .sort(sortClause)
+          .sort(sortClause),
       ]);
 
       const transformedData = options.transformResponse

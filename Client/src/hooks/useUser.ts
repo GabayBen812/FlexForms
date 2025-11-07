@@ -9,7 +9,7 @@ export function useUser() {
   const allUsersQuery = useQuery<MutationResponse<User[]>>({
     queryKey: ["users"],
     queryFn: async () => {
-      const response = await fetchUsers;
+      const response = await fetchUsers();
       return response as MutationResponse<User[]>;
     },
     enabled: false,

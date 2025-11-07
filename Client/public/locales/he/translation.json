@@ -48,6 +48,8 @@
   "select_field_to_update": "בחר שדה לעדכון",
   "selected_rows_total_to_update": "סך השורות שנבחרו לעדכון",
   "advanced_update": "עדכון מתקדם",
+  "export_to_excel": "ייצא לאקסל",
+  "exporting": "מייצא...",
   "select_value": "בחר ערך",
   "update": "עדכן",
   "new_value_to_update": "ערך חדש לעדכון",

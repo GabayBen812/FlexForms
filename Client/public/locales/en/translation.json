@@ -147,6 +147,8 @@
   "select_field_to_update": "Select Field to Update",
   "selected_rows_total_to_update": "Selected rows total to update",
   "advanced_update": "Advanced Update",
+  "export_to_excel": "Export to Excel",
+  "exporting": "Exporting...",
   "select_value": "Select Value",
   "new_value_to_update": "New Value to Update",
   "error_deleting_rows": "Error deleting rows",

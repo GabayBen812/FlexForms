@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { useNavigate } from "react-router-dom";
 import { useState, useCallback } from "react";
-import { Plus, Trash } from "lucide-react";
+import { Plus } from "lucide-react";
 import DataTable from "@/components/ui/completed/data-table";
 import { TableEditButton } from "@/components/ui/completed/data-table/TableEditButton";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -163,10 +163,19 @@ export default function Users() {
     }
   };
 
-  const handleBulkDelete = async () => {
-    const selectedIndices = Object.keys(rowSelection).map(Number);
-    const selectedRows = selectedIndices.map((index) => tableRows[index]).filter((row): row is User => !!row);
-    const selectedIds = selectedRows.map((row) => row._id).filter((id): id is string => !!id);
+  const handleBulkDelete = async (selectedRowsParam?: User[]) => {
+    const fallbackSelectedRows = Object.keys(rowSelection)
+      .map(Number)
+      .map((index) => tableRows[index])
+      .filter((row): row is User => !!row);
+
+    const selectedRows = selectedRowsParam?.length
+      ? selectedRowsParam
+      : fallbackSelectedRows;
+
+    const selectedIds = selectedRows
+      .map((row) => row._id)
+      .filter((id): id is string => !!id);
     
     if (selectedIds.length === 0) return;
     
@@ -238,16 +247,9 @@ export default function Users() {
             >
               <Plus className="w-4 h-4 mr-2" /> {t("add")}
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleBulkDelete}
-              disabled={Object.keys(rowSelection).length === 0}
-              className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium disabled:bg-gray-300 disabled:border-gray-300 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed"
-            >
-              <Trash className="w-4 h-4 mr-2" /> {t("delete")}
-            </Button>
           </div>
         }
+        onBulkDelete={handleBulkDelete}
         onRowClick={(user) => {}}
       />
       <AddRecordDialog

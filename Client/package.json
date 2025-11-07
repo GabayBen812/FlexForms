@@ -54,6 +54,7 @@
     "crypto-js": "^4.2.0",
     "date-fns": "^3.6.0",
     "dayjs": "^1.11.13",
+    "exceljs": "^4.4.0",
     "firebase": "^11.7.1",
     "flag-icons": "^7.3.2",
     "framer-motion": "^12.5.0",

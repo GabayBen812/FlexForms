@@ -1,4 +1,4 @@
-import { ColumnDef, Row, RowSelectionState } from "@tanstack/react-table";
+import { ColumnDef, Row, RowSelectionState, Table } from "@tanstack/react-table";
 import { MutationResponse } from "@/types/api/auth";
 
 export interface ApiQueryParams {
@@ -71,6 +71,9 @@ export interface DataTableProps<TData> {
   actions?: any;
   initialData?: any;
   rowSelection?: any;
+  onBulkDelete?: (selectedRows: TData[]) => Promise<void> | void;
+  onBulkAdvancedUpdate?: (selectedRows: TData[]) => Promise<void> | void;
+  onExportSelected?: (selectedRows: TData[], table: Table<TData>) => Promise<void> | void;
   enableColumnReordering?: boolean;
   columnOrder?: string[];
   [key: string]: any;

@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { z } from "zod";
 import { useState, useCallback, useMemo } from "react";
-import { Plus, Trash, Settings } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 
 import DataTable from "@/components/ui/completed/data-table";
 import { TableEditButton } from "@/components/ui/completed/data-table/TableEditButton";
@@ -14,6 +14,7 @@ import apiClient from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
 import { TableFieldConfigDialog } from "@/components/ui/completed/dialogs/TableFieldConfigDialog";
+import { AdvancedUpdateDialog } from "@/components/AdvancedUpdateDialog";
 import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
 import { toast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -42,6 +43,8 @@ export default function EmployeesPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isFieldConfigDialogOpen, setIsFieldConfigDialogOpen] = useState(false);
+  const [isAdvancedUpdateOpen, setIsAdvancedUpdateOpen] = useState(false);
+  const [advancedUpdateCount, setAdvancedUpdateCount] = useState(0);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [tableMethods, setTableMethods] = useState<{
     refresh: () => void;
@@ -193,10 +196,19 @@ export default function EmployeesPage() {
     }
   };
 
-  const handleBulkDelete = async () => {
-    const selectedIndices = Object.keys(rowSelection).map(Number);
-    const selectedRows = selectedIndices.map((index) => tableRows[index]).filter((row): row is Employee => !!row);
-    const selectedIds = selectedRows.map((row) => row._id).filter((id): id is string => !!id);
+  const handleBulkDelete = async (selectedRowsParam?: Employee[]) => {
+    const fallbackSelectedRows = Object.keys(rowSelection)
+      .map(Number)
+      .map((index) => tableRows[index])
+      .filter((row): row is Employee => !!row);
+
+    const selectedRows = selectedRowsParam?.length
+      ? selectedRowsParam
+      : fallbackSelectedRows;
+
+    const selectedIds = selectedRows
+      .map((row) => row._id)
+      .filter((id): id is string => !!id);
     
     if (selectedIds.length === 0) return;
     
@@ -215,6 +227,11 @@ export default function EmployeesPage() {
       console.error("Error deleting employees:", error);
       toast.error(t("delete_failed") || "Failed to delete items");
     }
+  };
+
+  const handleBulkAdvancedUpdate = (selectedRowsParam: Employee[]) => {
+    setAdvancedUpdateCount(selectedRowsParam.length);
+    setIsAdvancedUpdateOpen(true);
   };
 
   return (
@@ -268,14 +285,6 @@ export default function EmployeesPage() {
             </Button>
             <Button 
               variant="outline" 
-              onClick={handleBulkDelete}
-              disabled={Object.keys(rowSelection).length === 0}
-              className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium disabled:bg-gray-300 disabled:border-gray-300 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed"
-            >
-              <Trash className="w-4 h-4 mr-2" /> {t("delete")}
-            </Button>
-            <Button 
-              variant="outline" 
               onClick={() => setIsFieldConfigDialogOpen(true)}
               className="bg-purple-600 hover:bg-purple-700 text-white hover:text-white border-purple-600 hover:border-purple-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
             >
@@ -283,6 +292,8 @@ export default function EmployeesPage() {
             </Button>
           </div>
         }
+        onBulkDelete={handleBulkDelete}
+        onBulkAdvancedUpdate={handleBulkAdvancedUpdate}
       />
       <AddRecordDialog
         open={isAddDialogOpen}
@@ -325,6 +336,17 @@ export default function EmployeesPage() {
         onSave={() => {
           tableMethods?.refresh();
         }}
+      />
+      <AdvancedUpdateDialog
+        open={isAdvancedUpdateOpen}
+        onOpenChange={(open) => {
+          setIsAdvancedUpdateOpen(open);
+          if (!open) {
+            setAdvancedUpdateCount(0);
+          }
+        }}
+        columns={mergedColumns}
+        selectedRowCount={advancedUpdateCount}
       />
     </div>
   );

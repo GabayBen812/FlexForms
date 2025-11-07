@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { z } from "zod";
 import { useState, useCallback, useMemo } from "react";
-import { Plus, Trash, Settings } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import DataTable from "@/components/ui/completed/data-table";
@@ -241,10 +241,19 @@ export default function ParentsPage() {
     }
   };
 
-  const handleBulkDelete = async () => {
-    const selectedIndices = Object.keys(rowSelection).map(Number);
-    const selectedRows = selectedIndices.map((index) => tableRows[index]).filter((row): row is Parent => !!row);
-    const selectedIds = selectedRows.map((row) => row._id).filter((id): id is string => !!id);
+  const handleBulkDelete = async (selectedRowsParam?: Parent[]) => {
+    const fallbackSelectedRows = Object.keys(rowSelection)
+      .map(Number)
+      .map((index) => tableRows[index])
+      .filter((row): row is Parent => !!row);
+
+    const selectedRows = selectedRowsParam?.length
+      ? selectedRowsParam
+      : fallbackSelectedRows;
+
+    const selectedIds = selectedRows
+      .map((row) => row._id)
+      .filter((id): id is string => !!id);
     
     if (selectedIds.length === 0) return;
     
@@ -316,14 +325,6 @@ export default function ParentsPage() {
             </Button>
             <Button 
               variant="outline" 
-              onClick={handleBulkDelete}
-              disabled={Object.keys(rowSelection).length === 0}
-              className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium disabled:bg-gray-300 disabled:border-gray-300 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed"
-            >
-              <Trash className="w-4 h-4 mr-2" /> {t("delete")}
-            </Button>
-            <Button 
-              variant="outline" 
               onClick={() => setIsFieldConfigDialogOpen(true)}
               className="bg-purple-600 hover:bg-purple-700 text-white hover:text-white border-purple-600 hover:border-purple-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
             >
@@ -332,6 +333,7 @@ export default function ParentsPage() {
             <SmartLoadFromExcel />
           </div>
         }
+        onBulkDelete={handleBulkDelete}
       />
       <AddRecordDialog
         open={isAddDialogOpen}

@@ -19,6 +19,7 @@ import { DataTableAddButton } from "./data-table-add-button";
 import { DataTableDownloadButton } from "./data-table-download-button";
 import { DataTableAdvancedSearchBtn } from "./data-table-advanced-search-btn";
 import { DataTableAdvancedUpdateBtn } from "./data-table-advanced-update-btn";
+import { DataTableExportToExcelBtn } from "./data-table-export-to-excel-btn";
 import {
   ApiQueryParams,
   DataTableProps,
@@ -26,10 +27,11 @@ import {
   ExpandedContentProps,
 } from "@/types/ui/data-table-types";
 import { toast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import { AdvancedSearchModal } from "./AdvancedSearchModal";
 import { DataTablePaginationControls } from "./data-table-pagination-controls";
 import { DataTableLoading } from "./data-table-loading";
+import { DataTableSelectionBar } from "./data-table-selection-bar";
+import { DataTableBulkDeleteBtn } from "./data-table-bulk-delete-btn";
 
 const globalFilterFn: FilterFn<any> = (row, columnId, filterValue) => {
   const search = String(filterValue).toLowerCase();
@@ -87,6 +89,9 @@ export function DataTable<TData>({
   onRefreshReady,
   refreshTrigger,
   entityType,
+  onBulkDelete,
+  onBulkAdvancedUpdate,
+  onExportSelected,
 
 }: DataTableProps<TData> & { extraFilters?: Record<string, any>; customLeftButtons?: React.ReactNode }) {
   const [tableData, setTableData] = useState<TData[]>([]);
@@ -287,7 +292,32 @@ export function DataTable<TData>({
       handleDelete: handleDeleteData,
     },
   });
-  const selectedRowCount = table.getSelectedRowModel?.().rows.length ?? 0;
+  const selectedRowModel = table.getSelectedRowModel?.();
+  const selectedRowCount = selectedRowModel?.rows.length ?? 0;
+
+  const getSelectedRowsData = useCallback(
+    (): TData[] =>
+      (table.getSelectedRowModel?.().rows ?? []).map(
+        (row) => row.original as TData
+      ),
+    [table]
+  );
+
+  const handleBulkDeleteClick = useCallback(async () => {
+    if (!onBulkDelete) return;
+    await onBulkDelete(getSelectedRowsData());
+  }, [getSelectedRowsData, onBulkDelete]);
+
+  const handleBulkAdvancedUpdateClick = useCallback(async () => {
+    if (!onBulkAdvancedUpdate) return;
+    await onBulkAdvancedUpdate(getSelectedRowsData());
+  }, [getSelectedRowsData, onBulkAdvancedUpdate]);
+
+  const rowSelectionState = table.getState().rowSelection;
+  const hasSelectionActions =
+    !!onBulkDelete ||
+    !!onBulkAdvancedUpdate ||
+    !!(showAdvancedSearch || onExportSelected);
 
   const handleLoadMore = () => {
     console.log("handleLoadMore called", { hasMore, isLoading });
@@ -538,10 +568,6 @@ export function DataTable<TData>({
             initialAdvancedFilters={initialAdvancedFilters}
             onOpenChange={setIsAdvancedOpen}
           />
-          <DataTableAdvancedUpdateBtn
-            showAdvancedSearch={showAdvancedSearch}
-            rowSelection={rowSelection}
-          />
           {customLeftButtons}
         </div>
         <div className="flex items-center gap-4">
@@ -624,6 +650,34 @@ export function DataTable<TData>({
       </div>
       {isPagination && !isLazyLoading && (
         <DataTablePaginationControls table={table} />
+      )}
+      {hasSelectionActions && (
+        <DataTableSelectionBar selectedRowCount={selectedRowCount}>
+          <div className="flex w-full flex-wrap items-center justify-center gap-3">
+            {onBulkDelete && (
+              <DataTableBulkDeleteBtn onClick={handleBulkDeleteClick} />
+            )}
+            {onBulkAdvancedUpdate && (
+              <DataTableAdvancedUpdateBtn
+                onClick={handleBulkAdvancedUpdateClick}
+              />
+            )}
+            {(showAdvancedSearch || onExportSelected) && (
+              <DataTableExportToExcelBtn
+                showAdvancedSearch={showAdvancedSearch || !!onExportSelected}
+                rowSelection={rowSelectionState}
+                table={table}
+                onExport={
+                  onExportSelected
+                    ? async ({ selectedRows, table: exportTable }) => {
+                        await onExportSelected(selectedRows, exportTable);
+                      }
+                    : undefined
+                }
+              />
+            )}
+          </div>
+        </DataTableSelectionBar>
       )}
     </div>
   );

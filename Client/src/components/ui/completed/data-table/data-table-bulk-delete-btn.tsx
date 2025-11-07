@@ -1,22 +1,18 @@
-import React from "react";
-import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface DataTableAdvancedUpdateBtnProps {
+interface DataTableBulkDeleteBtnProps {
   disabled?: boolean;
   onClick?: () => void;
   className?: string;
 }
 
-export function DataTableAdvancedUpdateBtn({
+export function DataTableBulkDeleteBtn({
   disabled,
   onClick,
   className,
-}: DataTableAdvancedUpdateBtnProps) {
-  const { t } = useTranslation();
-
+}: DataTableBulkDeleteBtnProps) {
   return (
     <Button
       type="button"
@@ -24,19 +20,19 @@ export function DataTableAdvancedUpdateBtn({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-2 bg-orange-600 text-white",
-        "hover:bg-orange-700 hover:text-white border-orange-600 hover:border-orange-700",
+        "flex items-center gap-2 bg-red-500 text-white",
+        "hover:bg-red-600 hover:text-white border-red-500 hover:border-red-600",
         "shadow-md hover:shadow-lg transition-all duration-200 font-medium",
         "disabled:bg-gray-300 disabled:border-gray-300 disabled:text-gray-500",
         "disabled:shadow-none disabled:cursor-not-allowed",
         className
       )}
     >
-      <RefreshCw className="h-4 w-4" />
-      {t("advanced_update", "עדכון מתקדם")}
+      <Trash2 className="h-4 w-4" />
+      מחק נבחרים
     </Button>
   );
 }
 
-export default DataTableAdvancedUpdateBtn;
+export default DataTableBulkDeleteBtn;
 

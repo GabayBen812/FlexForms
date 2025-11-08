@@ -8,6 +8,7 @@ import Section04 from "@/components/landing/Section04";
 import Section05 from "@/components/landing/Section05";
 import Section06 from "@/components/landing/Section06";
 import Section07 from "@/components/landing/Section07";
+import SectionPayments from "@/components/landing/SectionPayments";
 import Faqs from "@/components/landing/Faqs";
 import Cta from "@/components/landing/Cta";
 import Footer from "@/components/landing/Footer";
@@ -18,6 +19,7 @@ export default function LandingPage() {
       <Header />
       <main className="grow">
         <Hero />
+        <SectionPayments />
         <Section01 />
         <Section02 />
         <Section03 />

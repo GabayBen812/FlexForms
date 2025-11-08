@@ -297,7 +297,7 @@
       "badge": "Education ERP Platform",
       "title": "The digital backbone for every education institute",
       "subtitle": "Paradize unifies tuition, finances, schedules, communications and student records — in one futuristic workspace built for kindergartens, after-school programs, camps, private schools, colleges and courses.",
-      "highlight": "With Paradize, every operational day becomes calm, precise and insight-driven.",
+      "highlight": "Paradize syncs billing, collection and daily operations into one transparent, secure flow.",
       "primaryCta": "Personalized demo",
       "secondaryCta": "Talk with an expert",
       "secondaryCtaHint": "24/7 human support in Hebrew",
@@ -387,6 +387,77 @@
           "description": "Template-driven site builder with interactive modules, live data and end-to-end billing."
         }
       ]
+    },
+    "payments": {
+      "badge": "Financial Suite",
+      "title": "Advanced billing and collections under one roof",
+      "subtitle": "Total control over billing, refunds and settlements with nationwide Israeli acquiring integrations, direct bank debit and smart collections automations that end the payment chase.",
+      "metrics": [
+        {
+          "value": "100%",
+          "label": "Coverage across every Israeli acquiring & banking partner"
+        },
+        {
+          "value": "1 sec",
+          "label": "Instant refunds and credits fired straight from Paradize"
+        },
+        {
+          "value": "0 chasing",
+          "label": "Automated reminders that close every outstanding balance"
+        }
+      ],
+      "cards": [
+        {
+          "badge": "Israeli First",
+          "title": "Connected to every local payments provider",
+          "description": "Deep integrations with Isracard, MAX, CAL, Tranzila, Meshulam and more — plus digital checks and direct-debit (MASAV) built in.",
+          "imageKey": "integrations",
+          "imageAlt": "Paradize advanced payments integrations interface",
+          "features": [
+            "Plug-and-play connectivity to Israeli gateways and banks",
+            "Credit cards, bank debits and digital checks in one console",
+            "Live transaction statuses synced back into Paradize"
+          ]
+        },
+        {
+          "badge": "Vault Engine",
+          "title": "Tokenization, plan changes and refunds in seconds",
+          "description": "Card details are vaulted as encrypted tokens, enabling renewed charges, price updates and full or partial refunds instantly.",
+          "imageKey": "vault",
+          "imageAlt": "Paradize token management and refund screen",
+          "features": [
+            "Encrypted token storage for recurring and updated plans",
+            "One-click full or partial refunds straight to the card issuer",
+            "Fully PCI compliant with a detailed financial audit trail"
+          ]
+        },
+        {
+          "badge": "Control Center",
+          "title": "Payment oversight that guarantees closure",
+          "description": "Track who paid, who is partial and who is overdue — with automated nudges until the balance is cleared and forward-looking cashflow forecasts.",
+          "imageKey": "control",
+          "imageAlt": "Paradize collections and payments tracking dashboard",
+          "features": [
+            "Instant visibility into paid, partial and overdue accounts",
+            "Automated SMS/email reminders until every invoice is closed",
+            "Cashflow forecasting and alerts when collections stall"
+          ]
+        }
+      ],
+      "accounting": {
+        "title": "Accounting Ops",
+        "description": "A full accounting suite with tax invoices, receipts and smart expense management feeding real-time financial reports.",
+        "items": [
+          "Generate tax invoices, receipts and credit notes in Hebrew & English",
+          "Auto-send documents via email, SMS and WhatsApp the moment they’re issued",
+          "Expense tracking with categorized ledgers, digital receipts and smart tagging",
+          "Two-way sync with your accountants plus ready-to-export VAT and budget reports"
+        ]
+      },
+      "cta": {
+        "primary": "Explore the payments hub",
+        "secondary": "See the live collections dashboard"
+      }
     },
     "workflow": {
       "title": "A complete digital journey, from deployment to growth",

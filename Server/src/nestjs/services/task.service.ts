@@ -1,28 +1,35 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Task, TaskStatus } from '../schemas/task.schema';
+import { Task, TaskDocument, TaskStatus } from '../schemas/task.schema';
 import { CreateTaskDto, UpdateTaskDto, MoveTaskDto } from '../dto/task.dto';
 
 @Injectable()
 export class TaskService {
   constructor(
-    @InjectModel(Task.name) private taskModel: Model<Task>,
+    @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
   ) {}
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
-    const taskData: any = {
+    const organizationId = this.asObjectId(createTaskDto.organizationId);
+    const status = createTaskDto.status || TaskStatus.TODO;
+
+    const taskData: Partial<Task> & {
+      createdBy: Types.ObjectId;
+      organizationId: Types.ObjectId;
+      order: number;
+    } = {
       title: createTaskDto.title,
       description: createTaskDto.description,
-      status: createTaskDto.status || TaskStatus.TODO,
-      createdBy: new Types.ObjectId(createTaskDto.createdBy),
-      organizationId: new Types.ObjectId(createTaskDto.organizationId),
-      order: createTaskDto.order || 0,
-      priority: createTaskDto.priority || 0,
+      status,
+      createdBy: this.asObjectId(createTaskDto.createdBy),
+      organizationId,
+      order: await this.getNextOrder(organizationId, status),
+      priority: createTaskDto.priority ?? 0,
     };
 
     if (createTaskDto.assignedTo) {
-      taskData.assignedTo = new Types.ObjectId(createTaskDto.assignedTo);
+      taskData.assignedTo = this.asObjectId(createTaskDto.assignedTo);
     }
 
     if (createTaskDto.dueDate) {
@@ -34,7 +41,12 @@ export class TaskService {
     }
 
     const task = new this.taskModel(taskData);
-    return task.save();
+    await task.save();
+    await task.populate([
+      { path: 'assignedTo', select: 'name email' },
+      { path: 'createdBy', select: 'name email' },
+    ]);
+    return task;
   }
 
   async findAll(organizationId: string): Promise<Task[]> {
@@ -54,45 +66,63 @@ export class TaskService {
       .exec();
   }
 
-  async update(id: string, updateTaskDto: UpdateTaskDto): Promise<Task | null> {
-    const updateData: any = {};
+  async update(id: string, organizationId: string, updateTaskDto: UpdateTaskDto): Promise<Task | null> {
+    const orgObjectId = this.asObjectId(organizationId);
+    const task = await this.taskModel.findOne({
+      _id: new Types.ObjectId(id),
+      organizationId: orgObjectId,
+    });
 
-    if (updateTaskDto.title !== undefined) updateData.title = updateTaskDto.title;
-    if (updateTaskDto.description !== undefined) updateData.description = updateTaskDto.description;
-    if (updateTaskDto.status !== undefined) updateData.status = updateTaskDto.status;
-    if (updateTaskDto.order !== undefined) updateData.order = updateTaskDto.order;
-    if (updateTaskDto.priority !== undefined) updateData.priority = updateTaskDto.priority;
-    if (updateTaskDto.tags !== undefined) updateData.tags = updateTaskDto.tags;
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    if (updateTaskDto.status !== undefined && updateTaskDto.status !== task.status) {
+      const targetOrder =
+        updateTaskDto.order !== undefined
+          ? updateTaskDto.order
+          : await this.getNextOrder(orgObjectId, updateTaskDto.status, task._id);
+      await this.moveTaskInternal(task, orgObjectId, updateTaskDto.status, targetOrder);
+    } else if (updateTaskDto.order !== undefined && updateTaskDto.order !== task.order) {
+      await this.reorderWithinStatus(task, orgObjectId, updateTaskDto.order);
+    }
+
+    if (updateTaskDto.title !== undefined) task.title = updateTaskDto.title;
+    if (updateTaskDto.description !== undefined) task.description = updateTaskDto.description;
+    if (updateTaskDto.priority !== undefined) task.priority = updateTaskDto.priority;
+    if (updateTaskDto.tags !== undefined) task.tags = updateTaskDto.tags;
 
     if (updateTaskDto.assignedTo !== undefined) {
-      updateData.assignedTo = updateTaskDto.assignedTo 
-        ? new Types.ObjectId(updateTaskDto.assignedTo) 
-        : null;
+      task.assignedTo = updateTaskDto.assignedTo ? this.asObjectId(updateTaskDto.assignedTo) : null;
     }
 
     if (updateTaskDto.dueDate !== undefined) {
-      updateData.dueDate = updateTaskDto.dueDate ? new Date(updateTaskDto.dueDate) : null;
+      task.dueDate = updateTaskDto.dueDate ? new Date(updateTaskDto.dueDate) : null;
     }
 
-    return this.taskModel
-      .findByIdAndUpdate(id, updateData, { new: true })
-      .populate('assignedTo', 'name email')
-      .populate('createdBy', 'name email')
-      .exec();
+    await task.save();
+    await task.populate([
+      { path: 'assignedTo', select: 'name email' },
+      { path: 'createdBy', select: 'name email' },
+    ]);
+
+    return task;
   }
 
-  async moveTask(moveTaskDto: MoveTaskDto): Promise<Task | null> {
+  async moveTask(moveTaskDto: MoveTaskDto, organizationId: string): Promise<Task | null> {
     const { taskId, newStatus, newOrder } = moveTaskDto;
+    const orgObjectId = this.asObjectId(organizationId);
 
-    // Update the moved task
-    const task = await this.taskModel.findByIdAndUpdate(
-      taskId,
-      { status: newStatus, order: newOrder },
-      { new: true }
-    );
+    const task = await this.taskModel.findOne({
+      _id: new Types.ObjectId(taskId),
+      organizationId: orgObjectId,
+    });
 
-    // Reorder tasks in the new status column
-    await this.reorderTasksInStatus(newStatus, taskId, newOrder);
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    await this.moveTaskInternal(task, orgObjectId, newStatus, newOrder);
 
     return this.taskModel
       .findById(taskId)
@@ -101,29 +131,161 @@ export class TaskService {
       .exec();
   }
 
-  private async reorderTasksInStatus(
-    status: TaskStatus,
-    excludeTaskId: string,
-    newOrder: number
-  ): Promise<void> {
-    const tasks = await this.taskModel
-      .find({
-        status,
-        _id: { $ne: new Types.ObjectId(excludeTaskId) },
-        order: { $gte: newOrder },
+  async remove(id: string, organizationId: string): Promise<Task | null> {
+    const orgObjectId = this.asObjectId(organizationId);
+    const task = await this.taskModel
+      .findOne({
+        _id: new Types.ObjectId(id),
+        organizationId: orgObjectId,
       })
       .exec();
 
-    // Increment order for tasks that come after the new position
-    for (const task of tasks) {
-      await this.taskModel.findByIdAndUpdate(task._id, {
-        $inc: { order: 1 },
-      });
+    if (!task) {
+      throw new NotFoundException('Task not found');
     }
+
+    await this.taskModel.deleteOne({
+      _id: new Types.ObjectId(id),
+      organizationId: orgObjectId,
+    });
+
+    await this.taskModel.updateMany(
+      {
+        organizationId: orgObjectId,
+        status: task.status,
+        order: { $gt: task.order },
+      },
+      { $inc: { order: -1 } },
+    );
+
+    return task;
   }
 
-  async remove(id: string): Promise<Task | null> {
-    return this.taskModel.findByIdAndDelete(id).exec();
+  private asObjectId(value: string | Types.ObjectId | undefined | null): Types.ObjectId {
+    if (!value) {
+      throw new BadRequestException('Missing identifier');
+    }
+
+    if (value instanceof Types.ObjectId) {
+      return value;
+    }
+
+    return new Types.ObjectId(value);
+  }
+
+  private async getNextOrder(
+    organizationId: Types.ObjectId,
+    status: TaskStatus,
+    excludeTaskId?: Types.ObjectId,
+  ): Promise<number> {
+    const query: Record<string, unknown> = {
+      organizationId,
+      status,
+    };
+
+    if (excludeTaskId) {
+      query._id = { $ne: excludeTaskId };
+    }
+
+    const count = await this.taskModel.countDocuments(query);
+    return count;
+  }
+
+  private async normalizeOrder(
+    organizationId: Types.ObjectId,
+    status: TaskStatus,
+    excludeTaskId: Types.ObjectId | null,
+    desiredOrder: number,
+  ): Promise<number> {
+    const query: Record<string, unknown> = {
+      organizationId,
+      status,
+    };
+
+    if (excludeTaskId) {
+      query._id = { $ne: excludeTaskId };
+    }
+
+    const count = await this.taskModel.countDocuments(query);
+    if (desiredOrder < 0) return 0;
+    if (desiredOrder > count) return count;
+    return desiredOrder;
+  }
+
+  private async moveTaskInternal(
+    task: TaskDocument,
+    organizationId: Types.ObjectId,
+    newStatus: TaskStatus,
+    requestedOrder: number,
+  ): Promise<void> {
+    const currentStatus = task.status;
+    const normalizedOrder = await this.normalizeOrder(
+      organizationId,
+      newStatus,
+      task._id,
+      requestedOrder,
+    );
+
+    if (currentStatus === newStatus) {
+      if (normalizedOrder === task.order) {
+        return;
+      }
+
+      if (normalizedOrder > task.order) {
+        await this.taskModel.updateMany(
+          {
+            organizationId,
+            status: currentStatus,
+            order: { $gt: task.order, $lte: normalizedOrder },
+          },
+          { $inc: { order: -1 } },
+        );
+      } else {
+        await this.taskModel.updateMany(
+          {
+            organizationId,
+            status: currentStatus,
+            order: { $gte: normalizedOrder, $lt: task.order },
+          },
+          { $inc: { order: 1 } },
+        );
+      }
+
+      task.order = normalizedOrder;
+      await task.save();
+      return;
+    }
+
+    await this.taskModel.updateMany(
+      {
+        organizationId,
+        status: currentStatus,
+        order: { $gt: task.order },
+      },
+      { $inc: { order: -1 } },
+    );
+
+    await this.taskModel.updateMany(
+      {
+        organizationId,
+        status: newStatus,
+        _id: { $ne: task._id },
+        order: { $gte: normalizedOrder },
+      },
+      { $inc: { order: 1 } },
+    );
+
+    task.status = newStatus;
+    task.order = normalizedOrder;
+    await task.save();
+  }
+
+  private async reorderWithinStatus(
+    task: TaskDocument,
+    organizationId: Types.ObjectId,
+    requestedOrder: number,
+  ): Promise<void> {
+    await this.moveTaskInternal(task, organizationId, task.status, requestedOrder);
   }
 }
 

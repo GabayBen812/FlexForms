@@ -1,6 +1,12 @@
 import apiClient from "@/api/apiClient";
 import { Task, CreateTaskDto, UpdateTaskDto, TaskStatus } from "@/types/tasks/task";
 
+export interface MoveTaskPayload {
+  taskId: string;
+  newStatus: TaskStatus;
+  newOrder: number;
+}
+
 export const fetchAllTasks = async (): Promise<Task[]> => {
   // Backend gets organizationId from JWT token
   const { data } = await apiClient.get<Task[]>("/tasks");
@@ -23,14 +29,12 @@ export const updateTask = async (
 };
 
 export const moveTask = async (
-  taskId: string,
-  newStatus: TaskStatus,
-  newOrder: number
+  payload: MoveTaskPayload
 ): Promise<Task> => {
   const { data } = await apiClient.post<Task>("/tasks/move", {
-    taskId,
-    newStatus,
-    newOrder,
+    taskId: payload.taskId,
+    newStatus: payload.newStatus,
+    newOrder: payload.newOrder,
   });
   return data;
 };

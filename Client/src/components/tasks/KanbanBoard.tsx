@@ -9,10 +9,9 @@ import {
   useSensors,
   DragStartEvent,
   DragEndEvent,
+  DragCancelEvent,
 } from '@dnd-kit/core';
-import {
-  sortableKeyboardCoordinates,
-} from '@dnd-kit/sortable';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { Task, TaskStatus } from '@/types/tasks/task';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskCard } from './TaskCard';
@@ -24,12 +23,18 @@ interface KanbanBoardProps {
   onTaskClick: (task: Task) => void;
 }
 
+const statusOrder = Object.values(TaskStatus) as TaskStatus[];
+
 export function KanbanBoard({ tasks, onTaskMove, onTaskClick }: KanbanBoardProps) {
   const { t } = useTranslation();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 6,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -47,9 +52,8 @@ export function KanbanBoard({ tasks, onTaskMove, onTaskClick }: KanbanBoardProps
       grouped[task.status].push(task);
     });
 
-    // Sort by order within each status
-    Object.keys(grouped).forEach((status) => {
-      grouped[status as TaskStatus].sort((a, b) => a.order - b.order);
+    statusOrder.forEach((status) => {
+      grouped[status].sort((a, b) => a.order - b.order);
     });
 
     return grouped;
@@ -59,6 +63,62 @@ export function KanbanBoard({ tasks, onTaskMove, onTaskClick }: KanbanBoardProps
     const { active } = event;
     const task = tasks.find((t) => t._id === active.id);
     setActiveTask(task || null);
+  };
+
+  const resolveStatusFromOverId = (overId: string | undefined): TaskStatus | null => {
+    if (!overId) return null;
+    if (statusOrder.includes(overId as TaskStatus)) {
+      return overId as TaskStatus;
+    }
+    const overTask = tasks.find((t) => t._id === overId);
+    return overTask ? overTask.status : null;
+  };
+
+  const calculateNewOrder = (
+    task: Task,
+    newStatus: TaskStatus,
+    overId: string | undefined,
+  ): number | null => {
+    const sourceColumn = tasksByStatus[task.status];
+    const destinationColumn = tasksByStatus[newStatus];
+
+    if (task.status === newStatus) {
+      const currentIndex = sourceColumn.findIndex((t) => t._id === task._id);
+      if (currentIndex === -1) return null;
+
+      let targetIndex: number;
+      if (!overId || overId === newStatus) {
+        targetIndex = destinationColumn.length - 1;
+      } else if (overId === task._id) {
+        return null;
+      } else {
+        targetIndex = destinationColumn.findIndex((t) => t._id === overId);
+        if (targetIndex === -1) {
+          targetIndex = destinationColumn.length - 1;
+        }
+      }
+
+      if (targetIndex === currentIndex) {
+        return null;
+      }
+
+      if (targetIndex > currentIndex) {
+        return targetIndex;
+      }
+      return targetIndex;
+    }
+
+    const filteredDestination =
+      task.status === newStatus
+        ? destinationColumn.filter((t) => t._id !== task._id)
+        : destinationColumn;
+
+    if (!overId || overId === newStatus) {
+      return filteredDestination.length;
+    }
+
+    const foundIndex = filteredDestination.findIndex((t) => t._id === overId);
+    return foundIndex === -1 ? filteredDestination.length : foundIndex;
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -71,42 +131,18 @@ export function KanbanBoard({ tasks, onTaskMove, onTaskClick }: KanbanBoardProps
     const task = tasks.find((t) => t._id === taskId);
     if (!task) return;
 
-    const overId = over.id as string;
-    
-    // Check if dropped on a column
-    const statusKeys = Object.values(TaskStatus) as TaskStatus[];
-    let newStatus = statusKeys.find((status) => status === overId);
-    
-    // If not dropped on a status column, check if dropped on another task
-    if (!newStatus) {
-      const overTask = tasks.find((t) => t._id === overId);
-      if (overTask) {
-        newStatus = overTask.status;
-      } else {
-        return;
-      }
-    }
+    const overId = over.id as string | undefined;
+    const newStatus = resolveStatusFromOverId(overId);
+    if (!newStatus) return;
 
-    // If dropped on same column, calculate new order based on position
-    if (newStatus === task.status) {
-      const tasksInColumn = tasksByStatus[task.status];
-      const overTaskIndex = tasksInColumn.findIndex((t) => t._id === overId);
-      
-      if (overTaskIndex !== -1) {
-        const newOrder = tasksInColumn[overTaskIndex].order;
-        onTaskMove(taskId, newStatus, newOrder);
-      }
-      return;
-    }
+    const newOrder = calculateNewOrder(task, newStatus, overId);
+    if (newOrder === null) return;
 
-    // If dropped on different column
-    if (newStatus !== task.status) {
-      const tasksInNewColumn = tasksByStatus[newStatus];
-      const newOrder = tasksInNewColumn.length > 0 
-        ? Math.max(...tasksInNewColumn.map((t) => t.order)) + 1 
-        : 0;
-      onTaskMove(taskId, newStatus, newOrder);
-    }
+    onTaskMove(taskId, newStatus, newOrder);
+  };
+
+  const handleDragCancel = (_event: DragCancelEvent) => {
+    setActiveTask(null);
   };
 
   const statusLabels: Record<TaskStatus, string> = {
@@ -122,9 +158,10 @@ export function KanbanBoard({ tasks, onTaskMove, onTaskClick }: KanbanBoardProps
       collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
     >
-      <div className="flex gap-4 p-4 overflow-x-auto h-full">
-        {Object.values(TaskStatus).map((status) => (
+      <div className="flex h-full gap-5 overflow-x-auto px-6 pb-6 pt-4">
+        {statusOrder.map((status) => (
           <KanbanColumn
             key={status}
             status={status}
@@ -135,13 +172,8 @@ export function KanbanBoard({ tasks, onTaskMove, onTaskClick }: KanbanBoardProps
         ))}
       </div>
       <DragOverlay>
-        {activeTask ? <TaskCard task={activeTask} isDragging /> : null}
+        {activeTask ? <TaskCard task={activeTask} isDragging onClick={() => {}} /> : null}
       </DragOverlay>
     </DndContext>
   );
 }
-
-
-
-
-

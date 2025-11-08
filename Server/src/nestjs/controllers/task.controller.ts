@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Put } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+  Put,
+} from '@nestjs/common';
 import { TaskService } from '../services/task.service';
 import { CreateTaskDto, UpdateTaskDto, MoveTaskDto } from '../dto/task.dto';
 import { JwtAuthGuard } from '../middlewares/jwt-auth.guard';
@@ -13,10 +24,10 @@ export class TaskController {
   create(@Body() createTaskDto: CreateTaskDto, @Req() req: Request) {
     const user = req.user as { id: string; organizationId?: string };
     if (!user || !user.organizationId) {
-      throw new Error('User organizationId not found');
+      throw new BadRequestException('User organizationId not found');
     }
     if (!user.id) {
-      throw new Error('User id not found');
+      throw new BadRequestException('User id not found');
     }
     createTaskDto.organizationId = user.organizationId;
     createTaskDto.createdBy = user.id;
@@ -27,7 +38,7 @@ export class TaskController {
   findAll(@Req() req: Request) {
     const user = req.user as { organizationId?: string };
     if (!user || !user.organizationId) {
-      throw new Error('User organizationId not found');
+      throw new BadRequestException('User organizationId not found');
     }
     return this.taskService.findAll(user.organizationId);
   }
@@ -38,18 +49,30 @@ export class TaskController {
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() updateTaskDto: UpdateTaskDto) {
-    return this.taskService.update(id, updateTaskDto);
+  update(@Param('id') id: string, @Body() updateTaskDto: UpdateTaskDto, @Req() req: Request) {
+    const user = req.user as { organizationId?: string };
+    if (!user || !user.organizationId) {
+      throw new BadRequestException('User organizationId not found');
+    }
+    return this.taskService.update(id, user.organizationId, updateTaskDto);
   }
 
   @Post('move')
-  moveTask(@Body() moveTaskDto: MoveTaskDto) {
-    return this.taskService.moveTask(moveTaskDto);
+  moveTask(@Body() moveTaskDto: MoveTaskDto, @Req() req: Request) {
+    const user = req.user as { organizationId?: string };
+    if (!user || !user.organizationId) {
+      throw new BadRequestException('User organizationId not found');
+    }
+    return this.taskService.moveTask(moveTaskDto, user.organizationId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.taskService.remove(id);
+  remove(@Param('id') id: string, @Req() req: Request) {
+    const user = req.user as { organizationId?: string };
+    if (!user || !user.organizationId) {
+      throw new BadRequestException('User organizationId not found');
+    }
+    return this.taskService.remove(id, user.organizationId);
   }
 }
 

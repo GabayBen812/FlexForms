@@ -619,7 +619,10 @@ function EditableCell<T>({
   if (fieldType === "MULTI_SELECT" && options) {
     const selectedValues = Array.isArray(value) ? value : (typeof value === "string" && value ? value.split(',').map(v => v.trim()) : []);
     return (
-      <div onClick={(e) => e.stopPropagation()} className="w-full">
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full flex flex-col gap-2 items-stretch"
+      >
         <MultiSelect
           options={options}
           selected={selectedValues}
@@ -627,14 +630,20 @@ function EditableCell<T>({
             setValue(values.join(","));
           }}
           placeholder={t("select_options") || "בחר אפשרויות..."}
-          className="w-full"
+          className="w-full hover:bg-accent/40 hover:text-accent-foreground"
         />
-        <button
-          onClick={handleSave}
-          className="mt-2 text-xs text-primary hover:underline"
+        <Button
+          type="button"
+          size="sm"
+          variant="info"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSave();
+          }}
+          className="self-end h-auto px-3 py-1 text-xs rounded-full shadow-sm"
         >
           {t("save") || "שמור"}
-        </button>
+        </Button>
       </div>
     );
   }

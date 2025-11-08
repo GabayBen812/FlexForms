@@ -27,21 +27,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Task, TaskStatus, CreateTaskDto } from '@/types/tasks/task';
+import { Task, CreateTaskDto, TaskColumn } from '@/types/tasks/task';
 import { User } from '@/types/users/user';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { Trash2, X } from 'lucide-react';
 
 const UNASSIGNED_VALUE = '__unassigned__';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'tasks:validation.title_required'),
   description: z.string().optional(),
-  status: z.nativeEnum(TaskStatus),
+  status: z.string().min(1),
   assignedTo: z.string(),
-  priority: z.number().min(0).max(2),
-  dueDate: z.string().optional(),
-  tags: z.string().optional(),
+  tags: z.array(z.string().min(1)).default([]),
 });
 
 interface TaskDialogProps {
@@ -49,47 +48,57 @@ interface TaskDialogProps {
   onOpenChange: (open: boolean) => void;
   task?: Task;
   users: User[];
+  columns: TaskColumn[];
   onSubmit: (data: CreateTaskDto) => void;
+  onDelete?: () => void;
+  isSubmitting?: boolean;
+  isDeleting?: boolean;
 }
 
-export function TaskDialog({ open, onOpenChange, task, users, onSubmit }: TaskDialogProps) {
+export function TaskDialog({
+  open,
+  onOpenChange,
+  task,
+  users,
+  columns,
+  onSubmit,
+  onDelete,
+  isSubmitting,
+  isDeleting,
+}: TaskDialogProps) {
   const { t } = useTranslation();
+
+  const firstColumnKey = columns[0]?.key ?? '';
+  const defaultStatus = task?.status || firstColumnKey;
 
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
       title: task?.title || '',
       description: task?.description || '',
-      status: task?.status || TaskStatus.TODO,
+      status: defaultStatus,
       assignedTo: task?.assignedTo?._id || UNASSIGNED_VALUE,
-      priority: task?.priority ?? 0,
-      dueDate: task?.dueDate ? task.dueDate.slice(0, 10) : '',
-      tags: task?.tags?.join(', ') || '',
+      tags: task?.tags ?? [],
     },
   });
 
   const handleSubmit = (data: z.infer<typeof taskSchema>) => {
-    const tags = data.tags
-      ?.split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean);
-
     const assignedToValue = data.assignedTo === UNASSIGNED_VALUE ? undefined : data.assignedTo;
 
     const cleanedData: CreateTaskDto = {
       title: data.title,
       description: data.description || undefined,
-      status: data.status || TaskStatus.TODO,
+      status: data.status,
       assignedTo: assignedToValue,
-      priority: data.priority ?? 0,
-      dueDate: data.dueDate && data.dueDate !== '' ? data.dueDate : undefined,
-      tags: tags && tags.length > 0 ? tags : undefined,
+      tags: data.tags && data.tags.length > 0 ? data.tags : undefined,
     };
 
     onSubmit(cleanedData);
   };
 
   React.useEffect(() => {
+    const nextDefaultStatus = task?.status || columns[0]?.key || '';
+
     if (!open) {
       form.reset();
       return;
@@ -99,24 +108,30 @@ export function TaskDialog({ open, onOpenChange, task, users, onSubmit }: TaskDi
       form.reset({
         title: task.title || '',
         description: task.description || '',
-        status: task.status || TaskStatus.TODO,
+        status: nextDefaultStatus,
         assignedTo: task.assignedTo?._id || UNASSIGNED_VALUE,
-        priority: task.priority ?? 0,
-        dueDate: task.dueDate ? task.dueDate.slice(0, 10) : '',
-        tags: task.tags?.join(', ') || '',
+        tags: task.tags ?? [],
       });
     } else {
       form.reset({
         title: '',
         description: '',
-        status: TaskStatus.TODO,
+        status: nextDefaultStatus,
         assignedTo: UNASSIGNED_VALUE,
-        priority: 0,
-        dueDate: '',
-        tags: '',
+        tags: [],
       });
     }
-  }, [open, task, form]);
+  }, [open, task, form, firstColumnKey]);
+
+  const renderColumnName = (column: TaskColumn) => {
+    if (column.name.includes(':')) {
+      const translated = t(column.name);
+      if (translated !== column.name) {
+        return translated;
+      }
+    }
+    return column.name;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -125,9 +140,7 @@ export function TaskDialog({ open, onOpenChange, task, users, onSubmit }: TaskDi
           <DialogTitle className="text-xl font-semibold">
             {task ? t('tasks:edit_task') : t('tasks:create_task')}
           </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
-            {task ? t('tasks:edit_task_description') : t('tasks:create_task_description')}
-          </DialogDescription>
+          
         </DialogHeader>
         <div className="p-1">
           <Form {...form}>
@@ -179,65 +192,21 @@ export function TaskDialog({ open, onOpenChange, task, users, onSubmit }: TaskDi
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('tasks:status')}</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value as TaskStatus)}
-                        value={field.value}
-                      >
+                      <FormLabel>{t('tasks:status_label')}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={!columns.length}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue placeholder={t('tasks:select_board')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value={TaskStatus.TODO}>{t('tasks:status.todo')}</SelectItem>
-                          <SelectItem value={TaskStatus.IN_PROGRESS}>
-                            {t('tasks:status.in_progress')}
-                          </SelectItem>
-                          <SelectItem value={TaskStatus.IN_REVIEW}>
-                            {t('tasks:status.in_review')}
-                          </SelectItem>
-                          <SelectItem value={TaskStatus.DONE}>{t('tasks:status.done')}</SelectItem>
+                          {columns.map((column) => (
+                            <SelectItem key={column.key} value={column.key}>
+                              {renderColumnName(column)}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="priority"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('tasks:priority')}</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(Number(value))}
-                        value={String(field.value ?? 0)}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="0">{t('tasks:priority.low')}</SelectItem>
-                          <SelectItem value="1">{t('tasks:priority.medium')}</SelectItem>
-                          <SelectItem value="2">{t('tasks:priority.high')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="dueDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('tasks:due_date')}</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -249,10 +218,10 @@ export function TaskDialog({ open, onOpenChange, task, users, onSubmit }: TaskDi
                     <FormItem>
                       <FormLabel>{t('tasks:tags')}</FormLabel>
                       <FormControl>
-                        <Input
-                          {...field}
+                        <TagInput
+                          value={field.value ?? []}
+                          onChange={field.onChange}
                           placeholder={t('tasks:tags_placeholder') ?? ''}
-                          className={cn('placeholder:text-muted-foreground')}
                         />
                       </FormControl>
                       <FormMessage />
@@ -277,24 +246,106 @@ export function TaskDialog({ open, onOpenChange, task, users, onSubmit }: TaskDi
                   </FormItem>
                 )}
               />
-              <div className="flex justify-end gap-3 border-t pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  className="border-muted-foreground/30 text-muted-foreground hover:bg-muted"
-                >
-                  {t('common:cancel')}
-                </Button>
-                <Button type="submit" className="min-w-[120px]">
-                  {t('common:save')}
-                </Button>
+              <div
+                className={cn(
+                  'flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center',
+                  task && onDelete ? 'sm:justify-between' : 'sm:justify-end',
+                )}
+              >
+                {task && onDelete && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={onDelete}
+                    disabled={isDeleting}
+                    className="inline-flex items-center gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {t('tasks:delete_task')}
+                  </Button>
+                )}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    className="border-muted-foreground/30 text-muted-foreground hover:bg-muted"
+                  >
+                    {t('common:cancel')}
+                  </Button>
+                  <Button type="submit" className="min-w-[120px]" disabled={isSubmitting}>
+                    {t('common:save')}
+                  </Button>
+                </div>
               </div>
             </form>
           </Form>
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+interface TagInputProps {
+  value: string[];
+  onChange: (tags: string[]) => void;
+  placeholder?: string;
+}
+
+function TagInput({ value, onChange, placeholder }: TagInputProps) {
+  const [inputValue, setInputValue] = React.useState('');
+  const { t } = useTranslation();
+  const chipClassName =
+    'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+
+  const addTag = (tag: string) => {
+    const trimmed = tag.trim();
+    if (!trimmed) return;
+    if (value.includes(trimmed)) return;
+    onChange([...value, trimmed]);
+    setInputValue('');
+  };
+
+  const removeTag = (tag: string) => {
+    onChange(value.filter((item) => item !== tag));
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' || event.key === ',') {
+      event.preventDefault();
+      addTag(inputValue);
+    } else if (event.key === 'Backspace' && inputValue === '' && value.length > 0) {
+      removeTag(value[value.length - 1]);
+    }
+  };
+
+  return (
+    <div
+      className={cn(
+        'flex min-h-[42px] flex-wrap items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20',
+      )}
+    >
+      {value.map((tag) => (
+        <span key={tag} className={chipClassName}>
+          {tag}
+          <button
+            type="button"
+            onClick={() => removeTag(tag)}
+            className="rounded-full p-0.5 transition hover:bg-white/20"
+            aria-label={t('tasks:remove_tag')}
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </span>
+      ))}
+      <input
+        value={inputValue}
+        onChange={(event) => setInputValue(event.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={value.length === 0 ? placeholder : ''}
+        className="flex-1 min-w-[120px] border-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+      />
+    </div>
   );
 }
 

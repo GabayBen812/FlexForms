@@ -3,13 +3,6 @@ import { Document, Types } from 'mongoose';
 
 export type TaskDocument = Task & Document;
 
-export enum TaskStatus {
-  TODO = 'todo',
-  IN_PROGRESS = 'in_progress',
-  IN_REVIEW = 'in_review',
-  DONE = 'done',
-}
-
 @Schema({ timestamps: true })
 export class Task {
   @Prop({ required: true })
@@ -18,12 +11,8 @@ export class Task {
   @Prop()
   description?: string;
 
-  @Prop({ 
-    type: String, 
-    enum: TaskStatus, 
-    default: TaskStatus.TODO 
-  })
-  status!: TaskStatus;
+  @Prop({ type: String, required: true })
+  status!: string;
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
   assignedTo?: Types.ObjectId;

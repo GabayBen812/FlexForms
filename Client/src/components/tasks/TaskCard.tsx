@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Calendar, Tag as TagIcon, UserRound } from 'lucide-react';
+import { Calendar, Tag as TagIcon, Trash2, UserRound } from 'lucide-react';
 import { Task } from '@/types/tasks/task';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -12,9 +12,11 @@ interface TaskCardProps {
   task: Task;
   onClick?: () => void;
   isDragging?: boolean;
+  onDelete?: (task: Task) => void;
+  isDeleting?: boolean;
 }
 
-export function TaskCard({ task, onClick, isDragging }: TaskCardProps) {
+export function TaskCard({ task, onClick, isDragging, onDelete, isDeleting }: TaskCardProps) {
   const { t } = useTranslation();
   const {
     attributes,
@@ -23,7 +25,10 @@ export function TaskCard({ task, onClick, isDragging }: TaskCardProps) {
     transform,
     transition,
     isDragging: isSortableDragging,
-  } = useSortable({ id: task._id });
+  } = useSortable({
+    id: task._id,
+    data: { type: 'task', columnKey: task.status },
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -48,6 +53,16 @@ export function TaskCard({ task, onClick, isDragging }: TaskCardProps) {
       .slice(0, 2);
   };
 
+  const handleDeleteClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    event.preventDefault();
+    onDelete?.(task);
+  };
+
+  const handleDeletePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -70,17 +85,34 @@ export function TaskCard({ task, onClick, isDragging }: TaskCardProps) {
             <p className="line-clamp-2 text-xs text-muted-foreground">{task.description}</p>
           )}
         </div>
-        {priority && (
-          <Badge
-            variant="secondary"
-            className={cn(
-              'shrink-0 border-0 text-[11px] font-medium uppercase tracking-wide',
-              priority.className
-            )}
-          >
-            {priority.label}
-          </Badge>
-        )}
+        <div className="flex items-start gap-2">
+          {onDelete && (
+            <button
+              type="button"
+              onClick={handleDeleteClick}
+              onPointerDown={handleDeletePointerDown}
+              disabled={isDeleting}
+              className={cn(
+                'rounded-md border border-transparent p-1 text-muted-foreground opacity-0 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive',
+                isDeleting && 'cursor-not-allowed opacity-60',
+              )}
+              aria-label={t('tasks:delete_task')}
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+          {priority && (
+            <Badge
+              variant="secondary"
+              className={cn(
+                'shrink-0 border-0 text-[11px] font-medium uppercase tracking-wide',
+                priority.className
+              )}
+            >
+              {priority.label}
+            </Badge>
+          )}
+        </div>
       </div>
 
       {(task.tags && task.tags.length > 0) && (

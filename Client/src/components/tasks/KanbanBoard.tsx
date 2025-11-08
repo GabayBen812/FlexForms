@@ -1,8 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   DndContext,
   DragOverlay,
-  closestCorners,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -10,24 +9,64 @@ import {
   DragStartEvent,
   DragEndEvent,
   DragCancelEvent,
+  pointerWithin,
+  rectIntersection,
+  closestCorners,
+  CollisionDetection,
+  CollisionDetectionArgs,
 } from '@dnd-kit/core';
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { Task, TaskStatus } from '@/types/tasks/task';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { Plus } from 'lucide-react';
+import { Task, TaskColumn } from '@/types/tasks/task';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskCard } from './TaskCard';
 import { useTranslation } from 'react-i18next';
 
 interface KanbanBoardProps {
   tasks: Task[];
-  onTaskMove: (taskId: string, newStatus: TaskStatus, newOrder: number) => void;
+  columns: TaskColumn[];
+  colorOptions: string[];
+  onTaskMove: (taskId: string, newStatus: string, newOrder: number) => void;
   onTaskClick: (task: Task) => void;
+  onTaskDelete: (task: Task) => void;
+  onColumnRename: (column: TaskColumn, name: string) => void;
+  onColumnColorChange: (column: TaskColumn, color: string) => void;
+  onColumnDelete: (column: TaskColumn) => void;
+  onColumnReorder: (columnIds: string[]) => void;
+  onAddColumn: () => void;
+  isDeletingTask?: boolean;
 }
 
-const statusOrder = Object.values(TaskStatus) as TaskStatus[];
-
-export function KanbanBoard({ tasks, onTaskMove, onTaskClick }: KanbanBoardProps) {
+export function KanbanBoard({
+  tasks,
+  columns,
+  colorOptions,
+  onTaskMove,
+  onTaskClick,
+  onTaskDelete,
+  onColumnRename,
+  onColumnColorChange,
+  onColumnDelete,
+  onColumnReorder,
+  onAddColumn,
+  isDeletingTask,
+}: KanbanBoardProps) {
   const { t } = useTranslation();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+
+  const collisionDetection = useCallback<CollisionDetection>((args: CollisionDetectionArgs) => {
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) {
+      return pointerCollisions;
+    }
+
+    const rectCollisions = rectIntersection(args);
+    if (rectCollisions.length > 0) {
+      return rectCollisions;
+    }
+
+    return closestCorners(args);
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -37,27 +76,43 @@ export function KanbanBoard({ tasks, onTaskMove, onTaskClick }: KanbanBoardProps
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
+  const statusOrder = useMemo(() => columns.map((column) => column.key), [columns]);
+  const columnIdOrder = useMemo(() => columns.map((column) => column._id), [columns]);
+
   const tasksByStatus = useMemo(() => {
-    const grouped: Record<TaskStatus, Task[]> = {
-      [TaskStatus.TODO]: [],
-      [TaskStatus.IN_PROGRESS]: [],
-      [TaskStatus.IN_REVIEW]: [],
-      [TaskStatus.DONE]: [],
-    };
+    const grouped: Record<string, Task[]> = {};
+    statusOrder.forEach((key) => {
+      grouped[key] = [];
+    });
 
     tasks.forEach((task) => {
+      if (!grouped[task.status]) {
+        grouped[task.status] = [];
+      }
       grouped[task.status].push(task);
     });
 
-    statusOrder.forEach((status) => {
-      grouped[status].sort((a, b) => a.order - b.order);
+    Object.keys(grouped).forEach((key) => {
+      grouped[key].sort((a, b) => a.order - b.order);
     });
 
     return grouped;
-  }, [tasks]);
+  }, [tasks, statusOrder]);
+
+  const labelMap = useMemo(() => {
+    return columns.reduce<Record<string, string>>((acc, column) => {
+      if (column.name.includes(':')) {
+        const translated = t(column.name);
+        acc[column.key] = translated === column.name ? column.name : translated;
+      } else {
+        acc[column.key] = column.name;
+      }
+      return acc;
+    }, {});
+  }, [columns, t]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
@@ -65,10 +120,10 @@ export function KanbanBoard({ tasks, onTaskMove, onTaskClick }: KanbanBoardProps
     setActiveTask(task || null);
   };
 
-  const resolveStatusFromOverId = (overId: string | undefined): TaskStatus | null => {
+  const resolveStatusFromOverId = (overId: string | undefined): string | null => {
     if (!overId) return null;
-    if (statusOrder.includes(overId as TaskStatus)) {
-      return overId as TaskStatus;
+    if (statusOrder.includes(overId)) {
+      return overId;
     }
     const overTask = tasks.find((t) => t._id === overId);
     return overTask ? overTask.status : null;
@@ -76,11 +131,11 @@ export function KanbanBoard({ tasks, onTaskMove, onTaskClick }: KanbanBoardProps
 
   const calculateNewOrder = (
     task: Task,
-    newStatus: TaskStatus,
+    newStatus: string,
     overId: string | undefined,
   ): number | null => {
-    const sourceColumn = tasksByStatus[task.status];
-    const destinationColumn = tasksByStatus[newStatus];
+    const sourceColumn = tasksByStatus[task.status] ?? [];
+    const destinationColumn = tasksByStatus[newStatus] ?? [];
 
     if (task.status === newStatus) {
       const currentIndex = sourceColumn.findIndex((t) => t._id === task._id);
@@ -102,9 +157,6 @@ export function KanbanBoard({ tasks, onTaskMove, onTaskClick }: KanbanBoardProps
         return null;
       }
 
-      if (targetIndex > currentIndex) {
-        return targetIndex;
-      }
       return targetIndex;
     }
 
@@ -127,6 +179,21 @@ export function KanbanBoard({ tasks, onTaskMove, onTaskClick }: KanbanBoardProps
 
     if (!over) return;
 
+    const activeType = event.active.data.current?.type;
+    if (activeType === 'column') {
+      const activeId = active.id as string;
+      const overId = over.id as string;
+      if (activeId === overId) return;
+
+      const oldIndex = columnIdOrder.indexOf(activeId);
+      const newIndex = columnIdOrder.indexOf(overId);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const newOrder = arrayMove(columnIdOrder, oldIndex, newIndex);
+      onColumnReorder(newOrder);
+      return;
+    }
+
     const taskId = active.id as string;
     const task = tasks.find((t) => t._id === taskId);
     if (!task) return;
@@ -145,35 +212,66 @@ export function KanbanBoard({ tasks, onTaskMove, onTaskClick }: KanbanBoardProps
     setActiveTask(null);
   };
 
-  const statusLabels: Record<TaskStatus, string> = {
-    [TaskStatus.TODO]: t('tasks:status.todo'),
-    [TaskStatus.IN_PROGRESS]: t('tasks:status.in_progress'),
-    [TaskStatus.IN_REVIEW]: t('tasks:status.in_review'),
-    [TaskStatus.DONE]: t('tasks:status.done'),
-  };
+  if (!columns.length) {
+    return (
+      <div className="flex h-full items-center justify-center px-6 pb-6 pt-4">
+        <AddColumnCard onAdd={onAddColumn} />
+      </div>
+    );
+  }
 
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
       <div className="flex h-full gap-5 overflow-x-auto px-6 pb-6 pt-4">
-        {statusOrder.map((status) => (
-          <KanbanColumn
-            key={status}
-            status={status}
-            title={statusLabels[status]}
-            tasks={tasksByStatus[status]}
-            onTaskClick={onTaskClick}
-          />
-        ))}
+        <SortableContext items={columnIdOrder}>
+          {columns.map((column) => (
+            <KanbanColumn
+              key={column._id}
+              column={column}
+              title={labelMap[column.key] ?? column.name}
+              tasks={tasksByStatus[column.key] ?? []}
+              colorOptions={colorOptions}
+              onTaskClick={onTaskClick}
+               onTaskDelete={onTaskDelete}
+              onRename={(name) => onColumnRename(column, name)}
+              onColorChange={(color) => onColumnColorChange(column, color)}
+              onDelete={() => onColumnDelete(column)}
+              canDelete={columns.length > 1}
+              isDeletingTask={isDeletingTask}
+            />
+          ))}
+        </SortableContext>
+        <AddColumnCard onAdd={onAddColumn} />
       </div>
       <DragOverlay>
-        {activeTask ? <TaskCard task={activeTask} isDragging onClick={() => {}} /> : null}
+        {activeTask ? (
+          <TaskCard task={activeTask} isDragging onClick={() => {}} isDeleting={isDeletingTask} />
+        ) : null}
       </DragOverlay>
     </DndContext>
+  );
+}
+
+function AddColumnCard({ onAdd }: { onAdd: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <button
+      type="button"
+      onClick={onAdd}
+      className="flex h-full min-w-[280px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/60 bg-muted/30 text-sm text-muted-foreground transition hover:border-primary/60 hover:bg-primary/5"
+    >
+      <div className="flex flex-col items-center gap-2">
+        <span className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-dashed border-border/60 bg-background text-primary">
+          <Plus className="h-6 w-6" />
+        </span>
+        <span className="font-medium">{t('tasks:add_column')}</span>
+      </div>
+    </button>
   );
 }

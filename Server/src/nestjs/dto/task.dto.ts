@@ -1,5 +1,4 @@
-import { IsString, IsNotEmpty, IsMongoId, IsOptional, IsEnum, IsNumber, IsArray, IsDateString } from 'class-validator';
-import { TaskStatus } from '../schemas/task.schema';
+import { IsString, IsNotEmpty, IsMongoId, IsOptional, IsNumber, IsArray, IsDateString } from 'class-validator';
 
 export class CreateTaskDto {
   @IsString()
@@ -10,20 +9,21 @@ export class CreateTaskDto {
   @IsOptional()
   description?: string;
 
-  @IsEnum(TaskStatus)
+  @IsString()
+  @IsNotEmpty()
   @IsOptional()
-  status?: TaskStatus;
+  status?: string;
 
   @IsMongoId()
   @IsOptional()
   assignedTo?: string;
 
   @IsMongoId()
-  @IsNotEmpty()
+  @IsOptional()
   createdBy!: string;
 
   @IsMongoId()
-  @IsNotEmpty()
+  @IsOptional()
   organizationId!: string;
 
   @IsNumber()
@@ -53,9 +53,9 @@ export class UpdateTaskDto {
   @IsOptional()
   description?: string;
 
-  @IsEnum(TaskStatus)
+  @IsString()
   @IsOptional()
-  status?: TaskStatus;
+  status?: string;
 
   @IsMongoId()
   @IsOptional()
@@ -84,9 +84,9 @@ export class MoveTaskDto {
   @IsNotEmpty()
   taskId!: string;
 
-  @IsEnum(TaskStatus)
+  @IsString()
   @IsNotEmpty()
-  newStatus!: TaskStatus;
+  newStatus!: string;
 
   @IsNumber()
   @IsNotEmpty()

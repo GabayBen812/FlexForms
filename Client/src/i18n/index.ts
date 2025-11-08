@@ -13,6 +13,7 @@ i18n
     load: "all",
     defaultNS: "translation",
     ns: ["translation"],
+    nsSeparator: false,
     backend: { loadPath: "/locales/{{lng}}/{{ns}}.json" }, // Adjust path as needed
     interpolation: { escapeValue: false },
     detection: {

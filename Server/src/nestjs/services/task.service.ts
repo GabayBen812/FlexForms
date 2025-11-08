@@ -1,18 +1,38 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Task, TaskDocument, TaskStatus } from '../schemas/task.schema';
+import { Task, TaskDocument } from '../schemas/task.schema';
 import { CreateTaskDto, UpdateTaskDto, MoveTaskDto } from '../dto/task.dto';
+import { TaskColumnService } from './task-column.service';
+import { TaskColumn } from '../schemas/task-column.schema';
 
 @Injectable()
 export class TaskService {
   constructor(
     @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
+    private readonly taskColumnService: TaskColumnService,
   ) {}
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
     const organizationId = this.asObjectId(createTaskDto.organizationId);
-    const status = createTaskDto.status || TaskStatus.TODO;
+    const columns = await this.taskColumnService.findAllByOrganization(organizationId);
+
+    if (!columns.length) {
+      throw new BadRequestException('No task columns configured');
+    }
+
+    let column: TaskColumn | undefined;
+
+    if (createTaskDto.status) {
+      column = columns.find((c) => c.key === createTaskDto.status);
+      if (!column) {
+        throw new BadRequestException('Invalid task column');
+      }
+    } else {
+      column = columns[0];
+    }
+
+    const status = column.key;
 
     const taskData: Partial<Task> & {
       createdBy: Types.ObjectId;
@@ -78,6 +98,11 @@ export class TaskService {
     }
 
     if (updateTaskDto.status !== undefined && updateTaskDto.status !== task.status) {
+      const column = await this.taskColumnService.findByKey(orgObjectId, updateTaskDto.status);
+      if (!column) {
+        throw new BadRequestException('Invalid task column');
+      }
+
       const targetOrder =
         updateTaskDto.order !== undefined
           ? updateTaskDto.order
@@ -112,6 +137,10 @@ export class TaskService {
   async moveTask(moveTaskDto: MoveTaskDto, organizationId: string): Promise<Task | null> {
     const { taskId, newStatus, newOrder } = moveTaskDto;
     const orgObjectId = this.asObjectId(organizationId);
+    const column = await this.taskColumnService.findByKey(orgObjectId, newStatus);
+    if (!column) {
+      throw new BadRequestException('Invalid task column');
+    }
 
     const task = await this.taskModel.findOne({
       _id: new Types.ObjectId(taskId),
@@ -175,7 +204,7 @@ export class TaskService {
 
   private async getNextOrder(
     organizationId: Types.ObjectId,
-    status: TaskStatus,
+    status: string,
     excludeTaskId?: Types.ObjectId,
   ): Promise<number> {
     const query: Record<string, unknown> = {
@@ -193,7 +222,7 @@ export class TaskService {
 
   private async normalizeOrder(
     organizationId: Types.ObjectId,
-    status: TaskStatus,
+    status: string,
     excludeTaskId: Types.ObjectId | null,
     desiredOrder: number,
   ): Promise<number> {
@@ -215,7 +244,7 @@ export class TaskService {
   private async moveTaskInternal(
     task: TaskDocument,
     organizationId: Types.ObjectId,
-    newStatus: TaskStatus,
+    newStatus: string,
     requestedOrder: number,
   ): Promise<void> {
     const currentStatus = task.status;

@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 
@@ -83,3 +82,5 @@ export default function Section06() {
     </section>
   );
 }
+
+

@@ -1,15 +1,8 @@
-export enum TaskStatus {
-  TODO = 'todo',
-  IN_PROGRESS = 'in_progress',
-  IN_REVIEW = 'in_review',
-  DONE = 'done',
-}
-
 export interface Task {
   _id: string;
   title: string;
   description?: string;
-  status: TaskStatus;
+  status: string;
   assignedTo?: {
     _id: string;
     name: string;
@@ -29,10 +22,18 @@ export interface Task {
   updatedAt?: string;
 }
 
+export interface TaskColumn {
+  _id: string;
+  key: string;
+  name: string;
+  color: string;
+  order: number;
+}
+
 export interface CreateTaskDto {
   title: string;
   description?: string;
-  status?: TaskStatus;
+  status?: string;
   assignedTo?: string;
   dueDate?: string;
   tags?: string[];
@@ -42,7 +43,7 @@ export interface CreateTaskDto {
 export interface UpdateTaskDto {
   title?: string;
   description?: string;
-  status?: TaskStatus;
+  status?: string;
   assignedTo?: string;
   dueDate?: string;
   tags?: string[];

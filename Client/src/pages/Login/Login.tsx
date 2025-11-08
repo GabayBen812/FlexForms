@@ -75,7 +75,7 @@ export default function Login() {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto flex w-full grow items-center justify-center px-4 pb-16 pt-12 sm:px-6">
+      <main className="relative z-10 mx-auto -mt-6 flex w-full grow items-center justify-center px-4 pb-16 pt-12 sm:-mt-10 sm:px-6">
         <motion.div
           className="w-full max-w-3xl rounded-4xl border border-white/10 bg-white/5 p-8 shadow-[0_55px_120px_rgba(0,0,0,0.45)] backdrop-blur-2xl lg:p-12"
           initial={{ opacity: 0, y: 35 }}

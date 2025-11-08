@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 const gradientClasses =
-  "absolute inset-0 opacity-90 bg-gradient-to-r from-pink-400 via-orange-300 to-teal-300 blur-3xl";
+  "pointer-events-none absolute inset-[3px] opacity-70 bg-gradient-to-r from-pink-400/80 via-orange-300/70 to-teal-300/80 blur-2xl";
 
 export default function Header() {
   const { t } = useTranslation();

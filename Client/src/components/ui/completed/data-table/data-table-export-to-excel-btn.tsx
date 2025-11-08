@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { FileDown, Loader2 } from "lucide-react";
-import { RowSelectionState, Table } from "@tanstack/react-table";
+import { ColumnDef, RowSelectionState, Table } from "@tanstack/react-table";
 import ExcelJS from "exceljs/dist/exceljs.min.js";
 import { formatDateForDisplay, isDateValue } from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,41 @@ interface DataTableExportToExcelBtnProps<TData> {
     table: Table<TData>;
   }) => Promise<void> | void;
 }
+
+type ColumnDefWithAccessorKey<TData> = ColumnDef<TData, unknown> & {
+  accessorKey?: string;
+};
+
+const hasAccessorKey = <TData,>(
+  columnDef: ColumnDef<TData, unknown>
+): columnDef is ColumnDefWithAccessorKey<TData> =>
+  typeof (columnDef as ColumnDefWithAccessorKey<TData>).accessorKey === "string";
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const getStringProp = (
+  record: Record<string, unknown>,
+  key: string
+): string | undefined => {
+  const value = record[key];
+  return typeof value === "string" ? value : undefined;
+};
+
+const getMetaBoolean = <TData,>(
+  columnDef: ColumnDef<TData, unknown>,
+  key: string
+): boolean => {
+  const meta = columnDef.meta;
+
+  if (meta && typeof meta === "object") {
+    const record = meta as Record<string, unknown>;
+    const value = record[key];
+    return typeof value === "boolean" ? value : Boolean(value);
+  }
+
+  return false;
+};
 
 export function DataTableExportToExcelBtn<TData>({
   showAdvancedSearch,
@@ -89,7 +124,7 @@ export function DataTableExportToExcelBtn<TData>({
         
         // Fallback to accessorKey or column id
         if (!headerText) {
-          if (columnDef.accessorKey) {
+          if (hasAccessorKey(columnDef) && columnDef.accessorKey) {
             headerText = String(columnDef.accessorKey);
           } else if (column.id) {
             headerText = column.id;
@@ -115,18 +150,22 @@ export function DataTableExportToExcelBtn<TData>({
           const header = headers[index];
           const value = row.getValue(column.id);
           const columnDef = column.columnDef;
-          const meta = (columnDef as any).meta || {};
+          const metaIsDate = getMetaBoolean(columnDef, "isDate");
           
           // Format the value for Excel
           let formattedValue: any = value;
           
           if (value === null || value === undefined) {
             formattedValue = '';
-          } else if (value instanceof Date || (meta.isDate || isDateValue(value))) {
+          } else if (
+            value instanceof Date ||
+            metaIsDate ||
+            isDateValue(value)
+          ) {
             // Format dates using the date utility
             if (value instanceof Date) {
               formattedValue = formatDateForDisplay(value);
-            } else {
+            } else if (typeof value === "string" || typeof value === "number") {
               // Try to parse as date if it's a date string
               const dateValue = new Date(value);
               if (!isNaN(dateValue.getTime())) {
@@ -134,30 +173,61 @@ export function DataTableExportToExcelBtn<TData>({
               } else {
                 formattedValue = String(value);
               }
+            } else {
+              formattedValue = String(value);
             }
           } else if (Array.isArray(value)) {
             // Handle arrays (like linked parents, etc.)
-            formattedValue = value.map((item: any) => {
-              if (typeof item === 'object' && item !== null) {
+            formattedValue = value
+              .map((item) => {
+              if (isRecord(item)) {
                 // If it's an object, try to get a display name
-                if (item.firstname && item.lastname) {
-                  return `${item.firstname} ${item.lastname}`;
+                const firstname = getStringProp(item, "firstname");
+                const lastname = getStringProp(item, "lastname");
+                if (firstname && lastname) {
+                  return `${firstname} ${lastname}`;
                 }
-                return item.name || item.label || item._id || JSON.stringify(item);
+                return (
+                  getStringProp(item, "name") ||
+                  getStringProp(item, "label") ||
+                  getStringProp(item, "_id") ||
+                  JSON.stringify(item)
+                );
               }
-              return item?.toString() || '';
-            }).filter(Boolean).join(', ');
-          } else if (typeof value === 'object' && value !== null) {
+                if (
+                  typeof item === "string" ||
+                  typeof item === "number" ||
+                  typeof item === "boolean"
+                ) {
+                  return item.toString();
+                }
+                return "";
+              })
+              .filter(Boolean)
+              .join(", ");
+          } else if (isRecord(value)) {
             // Handle objects
-            if (value.firstname && value.lastname) {
-              formattedValue = `${value.firstname} ${value.lastname}`;
+            const firstname = getStringProp(value, "firstname");
+            const lastname = getStringProp(value, "lastname");
+            if (firstname && lastname) {
+              formattedValue = `${firstname} ${lastname}`;
             } else {
-              formattedValue = value.name || value.label || value._id || JSON.stringify(value);
+              formattedValue =
+                getStringProp(value, "name") ||
+                getStringProp(value, "label") ||
+                getStringProp(value, "_id") ||
+                JSON.stringify(value);
             }
           } else if (typeof value === 'boolean') {
             formattedValue = value ? 'Yes' : 'No';
+          } else if (
+            typeof value === "string" ||
+            typeof value === "number" ||
+            typeof value === "bigint"
+          ) {
+            formattedValue = value.toString();
           } else {
-            formattedValue = value?.toString() || '';
+            formattedValue = "";
           }
           
           rowData[header] = formattedValue;

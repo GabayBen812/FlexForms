@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, PenLine, Palette, Trash2 } from 'lucide-react';
+import { GripVertical, PenLine, Palette, Trash2, Plus } from 'lucide-react';
 import { Task, TaskColumn } from '@/types/tasks/task';
 import { TaskCard } from './TaskCard';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +24,7 @@ interface KanbanColumnProps {
   onDelete: () => void;
   canDelete: boolean;
   isDeletingTask?: boolean;
+  onAddTask: () => void;
 }
 
 export function KanbanColumn({
@@ -38,6 +39,7 @@ export function KanbanColumn({
   onDelete,
   canDelete,
   isDeletingTask,
+  onAddTask,
 }: KanbanColumnProps) {
   const { t } = useTranslation();
   const { setNodeRef: setDropRef, isOver } = useDroppable({
@@ -102,7 +104,7 @@ export function KanbanColumn({
       ref={setNodeRef}
       style={combinedStyle}
       className={cn(
-        'flex h-full min-w-[310px] flex-col rounded-2xl border bg-muted/40 p-4 shadow-sm backdrop-blur',
+        'group flex h-full w-[400px] min-w-[400px] flex-none flex-col rounded-2xl border bg-muted/40 p-4 shadow-sm backdrop-blur',
         isDragging && 'cursor-grabbing opacity-60',
       )}
     >
@@ -216,11 +218,33 @@ export function KanbanColumn({
             />
           ))}
           {tasks.length === 0 && (
-            <div className="flex h-full min-h-[220px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-muted-foreground/30 bg-background/40 px-4 text-center text-xs text-muted-foreground">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onAddTask();
+              }}
+              className="flex h-full min-h-[220px] w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-muted-foreground/30 bg-background/40 px-4 text-center text-xs text-muted-foreground transition hover:border-primary/50 hover:bg-primary/5"
+            >
+              <Plus className="h-5 w-5 text-primary" />
               <span className="font-medium text-muted-foreground/90">{t('tasks:empty_column')}</span>
               <span>{t('tasks:empty_column_hint')}</span>
-            </div>
+              <span className="text-sm font-semibold text-primary">{t('tasks:add_task_inline')}</span>
+            </button>
           )}
+          <div className="pointer-events-none absolute inset-x-2 bottom-3 flex justify-center opacity-0 transition group-hover:opacity-100">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onAddTask();
+              }}
+              className="pointer-events-auto inline-flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-3 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              <Plus className="h-4 w-4" />
+              {t('tasks:add_task_inline')}
+            </button>
+          </div>
         </div>
       </SortableContext>
     </div>

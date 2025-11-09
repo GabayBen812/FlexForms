@@ -24,9 +24,14 @@ export const adminUpdateUser = async (data: Partial<User> & { id: number }): Pro
 export const fetchUsers = usersApi.fetchAll();
 export const fetchUser = usersApi.fetch();
 export const fetchUsersParams = async (
-  params: ApiQueryParams
+  params: ApiQueryParams,
+  organizationId?: string
 ): Promise<ApiResponse<User>> =>
-  usersApi.fetchAll(params) as Promise<ApiResponse<User>>;
+  usersApi.fetchAll(
+    params,
+    false,
+    organizationId ?? (params.organizationId as string | undefined)
+  ) as Promise<ApiResponse<User>>;
 
 export const fetchUsersWithRoles = async (): Promise<ApiResponse<User>> =>
   usersApi.customRequest("get", "/users/roles", {

@@ -324,7 +324,7 @@ export default function KidsPage() {
     setIsAdvancedUpdateOpen(true);
   };
 
-  const handleAdvancedUpdateConfirm = async (field: string, value: string) => {
+  const handleAdvancedUpdateConfirm = async (field: string, value: string | string[]) => {
     const rowsToUpdate = advancedUpdateRows.length
       ? advancedUpdateRows
       : getFallbackSelectedRows();
@@ -414,17 +414,17 @@ export default function KidsPage() {
         visibleRows={useCallback((rows) => setTableRows(rows), [])}
         customLeftButtons={
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsAddDialogOpen(true)}
-              className="bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600 hover:border-green-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+              className="flex items-center gap-2 rounded-full border-transparent bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-200/40 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:from-emerald-500 hover:via-green-500 hover:to-teal-400 hover:text-white hover:shadow-xl hover:shadow-emerald-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2"
             >
               <Plus className="w-4 h-4 mr-2" /> {t("add")}
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsFieldConfigDialogOpen(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white hover:text-white border-purple-600 hover:border-purple-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+              className="flex items-center gap-2 rounded-full border-transparent bg-gradient-to-r from-purple-500 via-violet-500 to-fuchsia-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-purple-200/40 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:from-purple-500 hover:via-violet-500 hover:to-fuchsia-400 hover:text-white hover:shadow-xl hover:shadow-purple-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-200 focus-visible:ring-offset-2"
             >
               <Settings className="w-4 h-4 mr-2" /> {t("configure_fields", "ערוך שדות דינאמיים")}
             </Button>

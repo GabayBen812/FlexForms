@@ -6,7 +6,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { createApiService } from "@/api/utils/apiFactory";
 import { Form } from "@/types/forms/Form";
 import { TableAction } from "@/types/ui/data-table-types";
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Copy, Plus, CheckCircle2, XCircle } from "lucide-react";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
@@ -259,22 +259,22 @@ export default function Forms() {
     }
   };
 
-  const CustomAddButton = useMemo(
-    () => (
-      <Button 
-        variant="outline" 
-        onClick={() => navigate("/create-form")}
-        className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 hover:border-blue-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
-      >
-        <Plus className="w-4 h-4 mr-2" /> {t("create_new_form")}
-      </Button>
-    ),
-    [navigate]
-  );
+  const handleCreateActivity = () => {
+    navigate("/create-form");
+  };
 
   return (
     <div className="mx-auto">
       <h1 className="text-2xl font-semibold text-primary mb-6">{t("forms")}</h1>
+      <div className="mb-6 flex justify-center">
+        <Button
+          onClick={handleCreateActivity}
+          className="min-w-[240px] justify-center gap-3 rounded-full bg-blue-500 px-10 py-5 text-xl font-semibold text-white shadow-lg transition-all duration-200 hover:bg-blue-600 hover:shadow-xl"
+        >
+          <Plus className="h-6 w-6" />
+          {t("create_new_activity")}
+        </Button>
+      </div>
       <DataTable<Form>
         data={[]}
         key={refreshKey}
@@ -288,8 +288,7 @@ export default function Forms() {
         showAdvancedSearch
         onAdvancedSearchChange={setAdvancedFilters}
         initialAdvancedFilters={advancedFilters}
-        showAddButton={[{ name: "numberOfRegistrations", defaultValue: "0" }]}
-        customAddButton={CustomAddButton}
+        showAddButton={false}
         defaultPageSize={250}
         idField="_id"
         extraFilters={advancedFilters}
@@ -297,7 +296,7 @@ export default function Forms() {
         onRowSelectionChange={setRowSelection}
         onRowClick={(form) => {
           if (form && form.code && form._id) {
-            navigate(`/forms/${form.code}/dashboard`);
+            navigate(`/activity/${form.code}/dashboard`);
           } else {
             console.warn("Form row is missing code or _id", form);
           }

@@ -125,7 +125,7 @@ export default function FormRegistration() {
                 setShowPayment(true);
               } else {
                 await registrationApi.create(formData);
-                navigate(`/forms/${code}/registration/success`);
+                navigate(`/activity/${code}/registration/success`);
               }
             } catch (err) {
               console.error("❌ Error submitting form:", err);

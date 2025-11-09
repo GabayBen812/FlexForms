@@ -563,7 +563,6 @@ export function DataTable<TData>({
           )}
           <DataTableAdvancedSearchBtn
             showAdvancedSearch={showAdvancedSearch}
-            columns={columns}
             onAdvancedSearchChange={onAdvancedSearchChange}
             initialAdvancedFilters={initialAdvancedFilters}
             onOpenChange={setIsAdvancedOpen}

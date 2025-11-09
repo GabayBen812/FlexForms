@@ -34,6 +34,7 @@ export default function TasksPage() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [draftStatus, setDraftStatus] = useState<string | undefined>();
 
   const tasksQueryKey = useMemo(() => ['tasks', organization?._id], [organization?._id]);
   const columnsQueryKey = useMemo(() => ['task-columns', organization?._id], [organization?._id]);
@@ -55,7 +56,7 @@ export default function TasksPage() {
     queryKey: usersQueryKey,
     queryFn: async () => {
       if (!organization?._id) return { data: [] };
-      return fetchUsersParams({ organizationId: organization._id });
+      return fetchUsersParams({ organizationId: organization._id }, organization._id);
     },
     enabled: !!organization?._id,
   });
@@ -281,6 +282,7 @@ export default function TasksPage() {
 
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
+    setDraftStatus(undefined);
     setIsDialogOpen(true);
   };
 
@@ -294,6 +296,7 @@ export default function TasksPage() {
       return;
     }
     setSelectedTask(null);
+    setDraftStatus(undefined);
     setIsDialogOpen(true);
   };
 
@@ -307,6 +310,11 @@ export default function TasksPage() {
 
   const handleTaskMove = (taskId: string, newStatus: string, newOrder: number) => {
     moveMutation.mutate({ taskId, newStatus, newOrder });
+  };
+  const handleQuickAddTask = (column: TaskColumn) => {
+    setSelectedTask(null);
+    setDraftStatus(column.key);
+    setIsDialogOpen(true);
   };
 
   const deleteMutation = useMutation({
@@ -399,6 +407,14 @@ export default function TasksPage() {
     return <div className="p-4 text-muted-foreground">{t('common:loading')}...</div>;
   }
 
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setSelectedTask(null);
+      setDraftStatus(undefined);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col bg-muted/20">
       <div className="flex flex-col gap-5 border-b border-border/60 bg-background px-6 py-5 shadow-sm">
@@ -429,16 +445,18 @@ export default function TasksPage() {
           onColumnDelete={handleColumnDelete}
           onColumnReorder={handleColumnReorder}
           onAddColumn={handleCreateColumn}
+          onAddTaskToColumn={handleQuickAddTask}
           isDeletingTask={deleteMutation.isPending}
         />
       </div>
       <TaskDialog
         open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        onOpenChange={handleDialogOpenChange}
         task={selectedTask || undefined}
         users={users}
         columns={columns}
         onSubmit={handleTaskSubmit}
+        defaultStatus={draftStatus}
         onDelete={
           selectedTask ? () => { void handleTaskDelete(selectedTask); } : undefined
         }

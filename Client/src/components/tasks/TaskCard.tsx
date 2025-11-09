@@ -36,14 +36,6 @@ export function TaskCard({ task, onClick, isDragging, onDelete, isDeleting }: Ta
     opacity: isSortableDragging || isDragging ? 0.5 : 1,
   };
 
-  const priorityStyles: Record<number, { label: string; className: string }> = {
-    0: { label: t('tasks:priority.low'), className: 'bg-emerald-100 text-emerald-700' },
-    1: { label: t('tasks:priority.medium'), className: 'bg-amber-100 text-amber-700' },
-    2: { label: t('tasks:priority.high'), className: 'bg-rose-100 text-rose-700' },
-  };
-
-  const priority = priorityStyles[task.priority ?? 0];
-
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -100,17 +92,6 @@ export function TaskCard({ task, onClick, isDragging, onDelete, isDeleting }: Ta
             >
               <Trash2 className="h-4 w-4" />
             </button>
-          )}
-          {priority && (
-            <Badge
-              variant="secondary"
-              className={cn(
-                'shrink-0 border-0 text-[11px] font-medium uppercase tracking-wide',
-                priority.className
-              )}
-            >
-              {priority.label}
-            </Badge>
           )}
         </div>
       </div>

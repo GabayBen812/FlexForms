@@ -36,7 +36,7 @@ export default function FormDetails() {
   const [copied, setCopied] = useState(false);
   const { code } = useParams<{ code: string }>();
   const [form, setForm] = useState<Form | null>(null);
-  const registrationUrl = `${window.location.origin}/forms/${form?.code}/registration`;
+  const registrationUrl = `${window.location.origin}/activity/${form?.code}/registration`;
 
   // Get the current tab from the URL path
   const currentTab = location.pathname.split('/').pop() || 'dashboard';
@@ -54,7 +54,7 @@ export default function FormDetails() {
   if (!form) return <div className="p-6">{t("loading_form")}...</div>;
 
   const handleTabChange = (value: string) => {
-    navigate(`/forms/${code}/${value}`);
+    navigate(`/activity/${code}/${value}`);
   };
 
 const handleCopy = () => {

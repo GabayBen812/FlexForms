@@ -24,11 +24,12 @@ export function DataTableAdvancedUpdateBtn({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-2 bg-orange-600 text-white",
-        "hover:bg-orange-700 hover:text-white border-orange-600 hover:border-orange-700",
-        "shadow-md hover:shadow-lg transition-all duration-200 font-medium",
-        "disabled:bg-gray-300 disabled:border-gray-300 disabled:text-gray-500",
-        "disabled:shadow-none disabled:cursor-not-allowed",
+        "flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold text-white",
+        "border-transparent bg-gradient-to-r from-orange-500 via-amber-500 to-pink-500 shadow-lg shadow-orange-200/40",
+        "hover:-translate-y-0.5 hover:from-orange-500 hover:via-amber-500 hover:to-pink-600 hover:text-white hover:shadow-xl hover:shadow-orange-200/60",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200 focus-visible:ring-offset-2",
+        "transition-transform duration-200 ease-out",
+        "disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-200 disabled:bg-none disabled:text-gray-500 disabled:shadow-none",
         className
       )}
     >

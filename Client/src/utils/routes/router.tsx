@@ -86,7 +86,7 @@ export const router = createBrowserRouter([
         },
       },
       {
-        path: "forms",
+        path: "activity",
         element: <Forms />,
         handle: {
           title: "forms",
@@ -105,7 +105,7 @@ export const router = createBrowserRouter([
         },
       },
       {
-        path: "forms/:code",
+        path: "activity/:code",
         element: <FormDetails />,
         handle: { showInSidebar: false },
         children: [
@@ -262,12 +262,12 @@ export const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
   { path: "/create-organization", element: <CreateOrganization /> },
   {
-    path: "/forms/:code/registration",
+    path: "/activity/:code/registration",
     element: <FormRegistration />,
     handle: { showInSidebar: false },
   },
   {
-    path: "/forms/:code/registration/success",
+    path: "/activity/:code/registration/success",
     element: <RegistrationSuccess />,
     handle: { showInSidebar: false },
   },

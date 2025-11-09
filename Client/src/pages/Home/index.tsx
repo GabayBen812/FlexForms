@@ -143,7 +143,7 @@ export default function Home() {
       title: t("forms"),
       value: formsLoading ? "..." : forms.length,
       description: t("forms_count_in_org"),
-      onClick: () => navigate("/forms"),
+      onClick: () => navigate("/activity"),
       icon: "FileText",
     },
     (usersFF || userRole === "admin" || userRole === "system_admin") && {

@@ -253,7 +253,7 @@ export default function EmployeesPage() {
     setIsAdvancedUpdateOpen(true);
   };
 
-  const handleAdvancedUpdateConfirm = async (field: string, value: string) => {
+  const handleAdvancedUpdateConfirm = async (field: string, value: string | string[]) => {
     const rowsToUpdate = advancedUpdateRows.length
       ? advancedUpdateRows
       : getFallbackSelectedRows();

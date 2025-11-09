@@ -32,6 +32,7 @@ import { User } from '@/types/users/user';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Trash2, X } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const UNASSIGNED_VALUE = '__unassigned__';
 
@@ -53,6 +54,7 @@ interface TaskDialogProps {
   onDelete?: () => void;
   isSubmitting?: boolean;
   isDeleting?: boolean;
+  defaultStatus?: string;
 }
 
 export function TaskDialog({
@@ -65,19 +67,67 @@ export function TaskDialog({
   onDelete,
   isSubmitting,
   isDeleting,
+  defaultStatus,
 }: TaskDialogProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
+
+  type IdentifiableUser = Partial<User> & { _id?: string; id?: string | number } & {
+    _id?: string;
+  };
+
+  const getUserId = React.useCallback((userItem: IdentifiableUser | null | undefined) => {
+    if (!userItem) return null;
+    if (userItem._id) return userItem._id;
+    if (userItem.id !== undefined && userItem.id !== null) {
+      return String(userItem.id);
+    }
+    return null;
+  }, []);
+
+  const selectableUsers = React.useMemo(() => {
+    return users
+      .map((userItem) => {
+        const resolvedId = getUserId(userItem);
+        if (!resolvedId) {
+          return null;
+        }
+        return { user: { ...userItem, _id: resolvedId }, id: resolvedId };
+      })
+      .filter(
+        (entry): entry is { user: User; id: string } => Boolean(entry && entry.id && entry.user),
+      );
+  }, [users, getUserId]);
 
   const firstColumnKey = columns[0]?.key ?? '';
-  const defaultStatus = task?.status || firstColumnKey;
+  const initialStatus = task?.status || defaultStatus || firstColumnKey;
+  const currentUserId = getUserId(user) ?? null;
+  const isCurrentUserAssignable = React.useMemo(() => {
+    if (!currentUserId) {
+      return false;
+    }
+
+    return selectableUsers.some((entry) => entry.id === currentUserId);
+  }, [selectableUsers, currentUserId]);
+  const defaultAssignedToValue = React.useMemo(() => {
+    if (task) {
+      return getUserId(task.assignedTo) ?? UNASSIGNED_VALUE;
+    }
+
+    if (isCurrentUserAssignable && currentUserId) {
+      return currentUserId;
+    }
+
+    return UNASSIGNED_VALUE;
+  }, [task, isCurrentUserAssignable, currentUserId, getUserId]);
 
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
       title: task?.title || '',
       description: task?.description || '',
-      status: defaultStatus,
-      assignedTo: task?.assignedTo?._id || UNASSIGNED_VALUE,
+      status: initialStatus,
+      assignedTo: defaultAssignedToValue,
       tags: task?.tags ?? [],
     },
   });
@@ -97,7 +147,12 @@ export function TaskDialog({
   };
 
   React.useEffect(() => {
-    const nextDefaultStatus = task?.status || columns[0]?.key || '';
+    const nextDefaultStatus = task?.status || defaultStatus || columns[0]?.key || '';
+    const nextAssignedTo = task
+      ? getUserId(task.assignedTo) ?? UNASSIGNED_VALUE
+      : isCurrentUserAssignable && currentUserId
+        ? currentUserId
+        : UNASSIGNED_VALUE;
 
     if (!open) {
       form.reset();
@@ -109,7 +164,7 @@ export function TaskDialog({
         title: task.title || '',
         description: task.description || '',
         status: nextDefaultStatus,
-        assignedTo: task.assignedTo?._id || UNASSIGNED_VALUE,
+        assignedTo: getUserId(task.assignedTo) || UNASSIGNED_VALUE,
         tags: task.tags ?? [],
       });
     } else {
@@ -117,11 +172,20 @@ export function TaskDialog({
         title: '',
         description: '',
         status: nextDefaultStatus,
-        assignedTo: UNASSIGNED_VALUE,
+        assignedTo: nextAssignedTo,
         tags: [],
       });
     }
-  }, [open, task, form, firstColumnKey]);
+  }, [
+    open,
+    task,
+    form,
+    columns,
+    defaultStatus,
+    isCurrentUserAssignable,
+    currentUserId,
+    getUserId,
+  ]);
 
   const renderColumnName = (column: TaskColumn) => {
     if (column.name.includes(':')) {
@@ -176,9 +240,9 @@ export function TaskDialog({
                         </FormControl>
                         <SelectContent>
                           <SelectItem value={UNASSIGNED_VALUE}>{t('tasks:unassigned')}</SelectItem>
-                          {users.map((user) => (
-                            <SelectItem key={user._id} value={user._id}>
-                              {user.name}
+                          {selectableUsers.map(({ user: userItem, id }) => (
+                            <SelectItem key={id} value={id}>
+                              {userItem.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

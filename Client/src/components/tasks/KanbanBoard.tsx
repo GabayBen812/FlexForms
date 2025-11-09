@@ -13,7 +13,6 @@ import {
   rectIntersection,
   closestCorners,
   CollisionDetection,
-  CollisionDetectionArgs,
 } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { Plus } from 'lucide-react';
@@ -34,6 +33,7 @@ interface KanbanBoardProps {
   onColumnDelete: (column: TaskColumn) => void;
   onColumnReorder: (columnIds: string[]) => void;
   onAddColumn: () => void;
+  onAddTaskToColumn: (column: TaskColumn) => void;
   isDeletingTask?: boolean;
 }
 
@@ -49,12 +49,13 @@ export function KanbanBoard({
   onColumnDelete,
   onColumnReorder,
   onAddColumn,
+  onAddTaskToColumn,
   isDeletingTask,
 }: KanbanBoardProps) {
   const { t } = useTranslation();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
-  const collisionDetection = useCallback<CollisionDetection>((args: CollisionDetectionArgs) => {
+  const collisionDetection = useCallback<CollisionDetection>((args) => {
     const pointerCollisions = pointerWithin(args);
     if (pointerCollisions.length > 0) {
       return pointerCollisions;
@@ -243,6 +244,7 @@ export function KanbanBoard({
               onColorChange={(color) => onColumnColorChange(column, color)}
               onDelete={() => onColumnDelete(column)}
               canDelete={columns.length > 1}
+              onAddTask={() => onAddTaskToColumn(column)}
               isDeletingTask={isDeletingTask}
             />
           ))}
@@ -264,7 +266,7 @@ function AddColumnCard({ onAdd }: { onAdd: () => void }) {
     <button
       type="button"
       onClick={onAdd}
-      className="flex h-full min-w-[280px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/60 bg-muted/30 text-sm text-muted-foreground transition hover:border-primary/60 hover:bg-primary/5"
+      className="flex h-full w-[400px] min-w-[400px] flex-none flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/60 bg-muted/30 text-sm text-muted-foreground transition hover:border-primary/60 hover:bg-primary/5"
     >
       <div className="flex flex-col items-center gap-2">
         <span className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-dashed border-border/60 bg-background text-primary">

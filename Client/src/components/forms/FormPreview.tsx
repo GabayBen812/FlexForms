@@ -23,7 +23,7 @@ export default function FormPreview({ form }: Props) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
-  const registrationUrl = `${window.location.origin}/forms/${form.code}/registration`;
+  const registrationUrl = `${window.location.origin}/activity/${form.code}/registration`;
 
   const fieldTypeLabels = {
     text: t('field_type_text', 'Text'),

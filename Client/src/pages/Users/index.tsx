@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { useNavigate } from "react-router-dom";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Plus } from "lucide-react";
 import DataTable from "@/components/ui/completed/data-table";
 import { TableEditButton } from "@/components/ui/completed/data-table/TableEditButton";
@@ -18,7 +18,13 @@ import { showConfirm } from "@/utils/swal";
 
 const usersApi = createApiService<User>("/users");
 
-type UserColumnMeta = { hidden?: boolean };
+type UserColumnMeta = {
+  hidden?: boolean;
+  fieldType?: "SELECT" | "TEXT" | "PASSWORD";
+  options?: { value: User["role"]; label: string }[];
+  editable?: boolean;
+  excludeFromSearch?: boolean;
+};
 
 export default function Users() {
   const { t } = useTranslation();
@@ -85,11 +91,51 @@ export default function Users() {
     size: 150,
   };
 
+  const roleOptions = useMemo(
+    () => [
+      {
+        value: "system_admin" as const,
+        label: t("roles.system_admin", { defaultValue: "System Admin" }),
+      },
+      {
+        value: "admin" as const,
+        label: t("roles.admin", { defaultValue: "Admin" }),
+      },
+      {
+        value: "editor" as const,
+        label: t("roles.editor", { defaultValue: "Editor" }),
+      },
+      {
+        value: "viewer" as const,
+        label: t("roles.viewer", { defaultValue: "Viewer" }),
+      },
+    ],
+    [t]
+  );
+
   const columns: ColumnDef<User, any>[] = [
     selectionColumn,
     { accessorKey: "name", header: t("user_name") },
     { accessorKey: "email", header: t("user_email") },
-    { accessorKey: "role", header: t("user_role") },
+    {
+      accessorKey: "password",
+      header: t("user_password"),
+      cell: () => "*****",
+      enableSorting: false,
+      meta: {
+        fieldType: "PASSWORD",
+        editable: false,
+        excludeFromSearch: true,
+      } satisfies UserColumnMeta,
+    },
+    {
+      accessorKey: "role",
+      header: t("user_role"),
+      meta: {
+        fieldType: "SELECT",
+        options: roleOptions,
+      } satisfies UserColumnMeta,
+    },
     { accessorKey: "organizationId", header: "", meta: { hidden: true } },
   ];
   //@ts-ignore
@@ -116,8 +162,11 @@ export default function Users() {
       }
       
       // Check if response is successful
-      if (res.status === 200 && res.data) {
-        const createdUser = res.data;
+      if (res.status && res.status >= 200 && res.status < 300 && res.data) {
+        const createdUser = {
+          ...res.data,
+          password: "*****",
+        };
         toast.success(t("form_created_success"));
         setIsAddDialogOpen(false);
         // Add item directly to table without refresh
@@ -149,7 +198,10 @@ export default function Users() {
       };
       const res = await usersApi.update(updatedUser);
       if (res.status === 200 || res.data) {
-        const updatedUserData = res.data;
+        const updatedUserData = {
+          ...res.data,
+          password: "*****",
+        };
         toast.success(t("updated_successfully") || "Record updated successfully");
         setIsEditDialogOpen(false);
         setEditingUser(null);
@@ -209,8 +261,13 @@ export default function Users() {
             false,
             organization._id
           );
-          if ("data" in result && Array.isArray(result.data))
-            setUsers(result.data);
+          if ("data" in result && Array.isArray(result.data)) {
+            const sanitizedUsers = result.data.map((user) => ({
+              ...user,
+              password: "*****",
+            }));
+            setUsers(sanitizedUsers);
+          }
           return result;
         }, [organization?._id])}
         addData={usersApi.create}
@@ -279,7 +336,7 @@ export default function Users() {
           email: editingUser.email,
           role: editingUser.role,
         } : undefined}
-        excludeFields={["organizationId"]}
+        excludeFields={["organizationId", "password"]}
         defaultValues={{
           organizationId: organization?._id || "",
         }}

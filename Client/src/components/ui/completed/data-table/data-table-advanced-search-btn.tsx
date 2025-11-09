@@ -1,12 +1,10 @@
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { ColumnDef } from "@tanstack/react-table";
 import { Search } from "lucide-react";
 
 interface DataTableAdvancedSearchProps {
   showAdvancedSearch: boolean;
-  columns: ColumnDef<any>[];
   onAdvancedSearchChange?: (filters: Record<string, any>) => void;
   initialAdvancedFilters?: Record<string, any>;
   onOpenChange?: (open: boolean) => void;
@@ -40,7 +38,7 @@ export function DataTableAdvancedSearchBtn({
       <Button
         variant="outline"
         onClick={() => onOpenChange?.(true)}
-        className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white hover:text-white border-sky-600 hover:border-sky-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+        className="flex items-center gap-2 rounded-full border-transparent bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-200/40 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:from-sky-500 hover:via-blue-500 hover:to-indigo-400 hover:text-white hover:shadow-xl hover:shadow-sky-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 focus-visible:ring-offset-2"
       >
         <Search className="h-4 w-4" />
         {t("advanced_search", "חיפוש מתקדם")}

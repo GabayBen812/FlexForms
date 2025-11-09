@@ -449,8 +449,8 @@ export function AddRecordDialog({
             const isDynamic = (col.meta as any)?.isDynamic || isDynamicField(accessorKey);
             const fieldDefinition = (col.meta as any)?.fieldDefinition;
             
-            // Determine if field is required - check for required fields like firstname, lastname
-            const isRequiredField = !isDynamic && (accessorKey === "firstname" || accessorKey === "lastname");
+            // Determine if field is required - check for required fields like firstname, lastname, password
+            const isRequiredField = !isDynamic && (accessorKey === "firstname" || accessorKey === "lastname" || accessorKey === "password");
             
             // Get field value - handle dynamic fields differently
             const fieldValue = form[accessorKey] !== undefined ? form[accessorKey] : (defaultValues[accessorKey] || "");
@@ -498,6 +498,16 @@ export function AddRecordDialog({
                       setForm({ ...form, [accessorKey]: values });
                     }}
                     placeholder={t("select_options") || "בחר אפשרויות..."}
+                  />
+                ) : fieldType === "PASSWORD" ? (
+                  <Input
+                    type="password"
+                    name={accessorKey}
+                    value={fieldValue}
+                    onChange={handleChange}
+                    className="w-full"
+                    required={isRequiredField || fieldDefinition?.required}
+                    autoComplete="new-password"
                   />
                 ) : (isDynamic && fieldDefinition?.type === "CHECKBOX") ? (
                   <label className="flex items-center gap-2 cursor-pointer group">

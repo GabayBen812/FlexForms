@@ -340,13 +340,32 @@ function EditableCell<T>({
     return String(val);
   };
   
+  // Pre-calculate display label for select fields
+  const selectDisplayValue =
+    fieldType === "SELECT" && Array.isArray(options)
+      ? options.find((opt: any) => opt.value === cellValue)?.label
+      : undefined;
+
   // For IMAGE type, we'll handle it separately in the render
-  const displayValue = isDate ? formatDateForDisplay(cellValue) : 
-                      isTime ? (cellValue || "") :
-                      isMoney ? (cellValue ? `₪${parseFloat(cellValue).toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : "") :
-                      fieldType === "CHECKBOX" ? (cellValue === true || cellValue === "true" || cellValue === "1" ? "✓" : "") :
-                      fieldType === "MULTI_SELECT" && Array.isArray(cellValue) ? cellValue.join(", ") :
-                      safeStringify(cellValue);
+  const displayValue = selectDisplayValue ??
+    (isDate
+      ? formatDateForDisplay(cellValue)
+      : isTime
+      ? cellValue || ""
+      : isMoney
+      ? cellValue
+        ? `₪${parseFloat(cellValue).toLocaleString("he-IL", {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          })}`
+        : ""
+      : fieldType === "CHECKBOX"
+      ? cellValue === true || cellValue === "true" || cellValue === "1"
+        ? "✓"
+        : ""
+      : fieldType === "MULTI_SELECT" && Array.isArray(cellValue)
+      ? cellValue.join(", ")
+      : safeStringify(cellValue));
 
   useEffect(() => {
     if (isEditing) {

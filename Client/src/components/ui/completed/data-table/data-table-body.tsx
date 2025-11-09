@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Ghost, MoreVertical, Pencil, Trash, Copy, X } from "lucide-react";
+import { Ghost, MoreVertical, Pencil, Trash, Copy, X, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TableEditButton } from "./TableEditButton";
 import { Input } from "@/components/ui/Input";
@@ -31,7 +31,8 @@ import { AddressInput } from "@/components/ui/address-input";
 import { cn } from "@/lib/utils";
 import { isValidIsraeliID } from "@/lib/israeliIdValidator";
 import { showError, showConfirm } from "@/utils/swal";
-import { handleImageUpload } from "@/lib/imageUtils";
+import { handleImageUpload, uploadFile } from "@/lib/imageUtils";
+import { ImagePreviewModal } from "./ImagePreviewModal";
 import "./data-table-row.css";
 
 interface BaseData {
@@ -313,8 +314,16 @@ function EditableCell<T>({
   const isTime = meta.isTime;
   const isMoney = meta.isMoney;
   const isImage = meta.isImage;
+  const isFile = meta.isFile;
   const isDynamic = accessorKey?.startsWith("dynamicFields.");
   const fieldDefinition = meta.fieldDefinition;
+  
+
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRefForFile = useRef<HTMLInputElement>(null);
   
   // Get the current value
   const cellValue = cell.getValue();
@@ -488,31 +497,252 @@ function EditableCell<T>({
     }
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    if ((isDynamic && fieldDefinition?.type === "IMAGE") || (isDynamic && fieldDefinition?.type === "FILE")) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+
+    if (fieldDefinition?.type === "IMAGE" && !file.type.startsWith("image/")) {
+      showError(t("invalid_file_type", "סוג קובץ לא תקין. אנא העלה תמונה."));
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fieldName = accessorKey.replace("dynamicFields.", "");
+      const timestamp = Date.now();
+      const uuid = crypto.randomUUID();
+      const path = `uploads/dynamic-fields/${fieldName}/${timestamp}_${uuid}`;
+      
+      const fileUrl = await uploadFile(file, path);
+      
+      if (isDynamic) {
+        const existingDynamicFields = (row.original as any).dynamicFields || {};
+        onSave({
+          dynamicFields: {
+            ...existingDynamicFields,
+            [fieldName]: fileUrl,
+          },
+        });
+      } else {
+        onSave({ [accessorKey]: fileUrl });
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      showError(t("error_uploading_file", "שגיאה בהעלאת הקובץ") || "Error uploading file");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   if (!isEditing) {
-    // For IMAGE fields, show image preview
     if (isDynamic && fieldDefinition?.type === "IMAGE") {
       return (
-        <div
-          className={cn(
-            "cursor-pointer group relative px-2 py-1 rounded min-h-[1.5rem] transition-all duration-200",
-            "hover:bg-blue-50 hover:border hover:border-blue-200 hover:shadow-sm",
-            "flex items-center justify-center"
-          )}
-        >
-          {cellValue ? (
-            <img 
-              src={String(cellValue)} 
-              alt="Preview" 
-              className="max-w-16 max-h-16 object-contain rounded cursor-pointer hover:opacity-80" 
-              onClick={(e) => {
-                e.stopPropagation();
-                window.open(String(cellValue), '_blank');
-              }}
+        <>
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                if (!file.type.startsWith("image/")) {
+                  showError(t("invalid_file_type", "סוג קובץ לא תקין. אנא העלה תמונה."));
+                  return;
+                }
+
+                setIsUploading(true);
+                try {
+                  const fieldName = accessorKey.replace("dynamicFields.", "");
+                  const timestamp = Date.now();
+                  const uuid = crypto.randomUUID();
+                  const path = `uploads/dynamic-fields/${fieldName}/${timestamp}_${uuid}`;
+                  
+                  const fileUrl = await uploadFile(file, path);
+                  
+                  if (isDynamic) {
+                    const existingDynamicFields = (row.original as any).dynamicFields || {};
+                    onSave({
+                      dynamicFields: {
+                        ...existingDynamicFields,
+                        [fieldName]: fileUrl,
+                      },
+                    });
+                  } else {
+                    onSave({ [accessorKey]: fileUrl });
+                  }
+                } catch (error) {
+                  console.error("Error uploading image:", error);
+                  showError(t("error_uploading_image", "שגיאה בהעלאת תמונה") || "Error uploading image");
+                } finally {
+                  setIsUploading(false);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                  }
+                }
+              }
+            }}
+            className="hidden"
+          />
+          <div
+            className={cn(
+              "cursor-pointer group relative px-2 py-1 rounded min-h-[1.5rem] transition-all duration-200",
+              "hover:bg-blue-50 hover:border hover:border-blue-200 hover:shadow-sm",
+              "flex items-center justify-center",
+              isDragging && "bg-blue-100 border-2 border-blue-400 border-dashed",
+              isUploading && "opacity-50"
+            )}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!cellValue) {
+                // If no image, open file picker
+                fileInputRef.current?.click();
+              } else {
+                // If image exists, open modal
+                setIsImageModalOpen(true);
+              }
+            }}
+          >
+            {isUploading ? (
+              <span className="text-muted-foreground text-sm">{t("uploading", "מעלה...")}</span>
+            ) : cellValue ? (
+              <img
+                src={String(cellValue)}
+                alt="Preview"
+                className="max-w-16 max-h-16 object-contain rounded cursor-pointer hover:opacity-80"
+              />
+            ) : (
+              <span className="text-muted-foreground text-sm">{t("no_image", "אין תמונה")}</span>
+            )}
+          </div>
+          {cellValue && (
+            <ImagePreviewModal
+              open={isImageModalOpen}
+              onOpenChange={setIsImageModalOpen}
+              imageUrl={String(cellValue)}
             />
-          ) : (
-            <span className="text-muted-foreground text-sm">{t("no_image", "אין תמונה")}</span>
           )}
-        </div>
+        </>
+      );
+    }
+
+    if (isDynamic && fieldDefinition?.type === "FILE") {
+      const handleFileDownload = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!cellValue) return;
+        
+        try {
+          const response = await fetch(String(cellValue));
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          
+          const urlPath = String(cellValue).split('/').pop() || 'file';
+          const fileName = urlPath.split('?')[0];
+          link.download = fileName;
+          
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        } catch (error) {
+          console.error("Error downloading file:", error);
+          window.open(String(cellValue), "_blank", "noopener,noreferrer");
+        }
+      };
+
+      return (
+        <>
+          <input
+            type="file"
+            accept="*/*"
+            ref={fileInputRefForFile}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                setIsUploading(true);
+                try {
+                  const fieldName = accessorKey.replace("dynamicFields.", "");
+                  const timestamp = Date.now();
+                  const uuid = crypto.randomUUID();
+                  const path = `uploads/dynamic-fields/${fieldName}/${timestamp}_${uuid}`;
+                  
+                  const fileUrl = await uploadFile(file, path);
+                  
+                  if (isDynamic) {
+                    const existingDynamicFields = (row.original as any).dynamicFields || {};
+                    onSave({
+                      dynamicFields: {
+                        ...existingDynamicFields,
+                        [fieldName]: fileUrl,
+                      },
+                    });
+                  } else {
+                    onSave({ [accessorKey]: fileUrl });
+                  }
+                } catch (error) {
+                  console.error("Error uploading file:", error);
+                  showError(t("error_uploading_file", "שגיאה בהעלאת הקובץ") || "Error uploading file");
+                } finally {
+                  setIsUploading(false);
+                  if (fileInputRefForFile.current) {
+                    fileInputRefForFile.current.value = "";
+                  }
+                }
+              }
+            }}
+            className="hidden"
+          />
+          <div
+            className={cn(
+              "cursor-pointer group relative px-2 py-1 rounded min-h-[1.5rem] transition-all duration-200",
+              "hover:bg-blue-50 hover:border hover:border-blue-200 hover:shadow-sm",
+              "flex items-center justify-center",
+              isDragging && "bg-blue-100 border-2 border-blue-400 border-dashed",
+              isUploading && "opacity-50"
+            )}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!cellValue) {
+                fileInputRefForFile.current?.click();
+              } else {
+                handleFileDownload(e);
+              }
+            }}
+          >
+            {isUploading ? (
+              <span className="text-muted-foreground text-sm">{t("uploading", "מעלה...")}</span>
+            ) : cellValue ? (
+              <Download className="w-5 h-5 text-blue-600 cursor-pointer hover:text-blue-800" />
+            ) : (
+              <span className="text-muted-foreground text-sm">{t("no_file", "אין קובץ")}</span>
+            )}
+          </div>
+        </>
       );
     }
     
@@ -753,47 +983,127 @@ function EditableCell<T>({
   if (isDynamic && fieldDefinition?.type === "IMAGE") {
     return (
       <div onClick={(e) => e.stopPropagation()} className="w-full">
-        {!isEditing ? (
-          <div className="flex items-center gap-2">
-            {value ? (
-              <img 
-                src={value} 
-                alt="Preview" 
-                className="max-w-16 max-h-16 object-contain rounded cursor-pointer hover:opacity-80" 
-                onClick={() => window.open(value, '_blank')} 
-              />
-            ) : (
-              <span className="text-muted-foreground text-sm">{t("no_image", "אין תמונה")}</span>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  try {
-                    const fieldName = accessorKey.replace("dynamicFields.", "");
-                    const timestamp = Date.now();
-                    const uuid = crypto.randomUUID();
-                    const path = `dynamic-fields/${fieldName}/${timestamp}_${uuid}`;
-                    const imageUrl = await handleImageUpload(file, path);
-                    setValue(imageUrl);
-                  } catch (error) {
-                    console.error("Error uploading image:", error);
-                    showError(t("error_uploading_image", "שגיאה בהעלאת תמונה") || "Error uploading image");
-                  }
+        <div className="space-y-2">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                try {
+                  setIsUploading(true);
+                  const fieldName = accessorKey.replace("dynamicFields.", "");
+                  const timestamp = Date.now();
+                  const uuid = crypto.randomUUID();
+                  const path = `uploads/dynamic-fields/${fieldName}/${timestamp}_${uuid}`;
+                  const imageUrl = await uploadFile(file, path);
+                  setValue(imageUrl);
+                } catch (error) {
+                  console.error("Error uploading image:", error);
+                  showError(t("error_uploading_image", "שגיאה בהעלאת תמונה") || "Error uploading image");
+                } finally {
+                  setIsUploading(false);
                 }
-              }}
-              className="w-full text-sm"
-            />
-            {value && (
-              <img src={value} alt="Preview" className="max-w-32 max-h-32 object-contain rounded border" />
-            )}
-          </div>
-        )}
+              }
+            }}
+            className="w-full text-sm"
+            disabled={isUploading}
+          />
+          {isUploading && (
+            <span className="text-muted-foreground text-sm">{t("uploading", "מעלה...")}</span>
+          )}
+          {value && !isUploading && (
+            <img src={value} alt="Preview" className="max-w-32 max-h-32 object-contain rounded border" />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (isDynamic && fieldDefinition?.type === "FILE") {
+    const handleFileDownloadInEdit = async () => {
+      if (!value) return;
+      
+      try {
+        // Fetch the file and download it
+        const response = await fetch(String(value));
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        
+        // Try to extract filename from URL or use a default
+        const urlPath = String(value).split('/').pop() || 'file';
+        const fileName = urlPath.split('?')[0]; // Remove query params
+        link.download = fileName;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error("Error downloading file:", error);
+        // Fallback: open in new tab
+        window.open(String(value), "_blank", "noopener,noreferrer");
+      }
+    };
+
+    return (
+      <div onClick={(e) => e.stopPropagation()} className="w-full">
+        <div className="space-y-2">
+          <input
+            type="file"
+            accept="*/*"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                try {
+                  setIsUploading(true);
+                  const fieldName = accessorKey.replace("dynamicFields.", "");
+                  const timestamp = Date.now();
+                  const uuid = crypto.randomUUID();
+                  const path = `uploads/dynamic-fields/${fieldName}/${timestamp}_${uuid}`;
+                  const fileUrl = await uploadFile(file, path);
+                  setValue(fileUrl);
+                } catch (error) {
+                  console.error("Error uploading file:", error);
+                  showError(t("error_uploading_file", "שגיאה בהעלאת הקובץ") || "Error uploading file");
+                } finally {
+                  setIsUploading(false);
+                }
+              }
+            }}
+            className="w-full text-sm"
+            disabled={isUploading}
+          />
+          {isUploading && (
+            <span className="text-muted-foreground text-sm">{t("uploading", "מעלה...")}</span>
+          )}
+          {value && !isUploading && (
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleFileDownloadInEdit}
+                className="flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                {t("download_file", "הורד קובץ")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setValue("")}
+                className="flex items-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                {t("remove", "הסר")}
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     );
   }

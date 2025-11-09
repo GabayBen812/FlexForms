@@ -10,8 +10,8 @@ import { AddressInput } from "@/components/ui/address-input";
 import { isValidIsraeliID } from "@/lib/israeliIdValidator";
 import { toast } from "@/hooks/use-toast";
 import { showError } from "@/utils/swal";
-import { Save, X, Upload, Image as ImageIcon, XCircle } from "lucide-react";
-import { handleImageUpload } from "@/lib/imageUtils";
+import { Save, X, Upload, Image as ImageIcon, XCircle, Download, File } from "lucide-react";
+import { handleImageUpload, uploadFile } from "@/lib/imageUtils";
 import { cn } from "@/lib/utils";
 
 interface AddRecordDialogProps {
@@ -61,7 +61,11 @@ function FileUpload({ value, onChange, accept = "image/*", required, label }: Fi
     setIsDragging(false);
     
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith("image/")) {
+    if (file) {
+
+      if (accept === "image/*" && !file.type.startsWith("image/")) {
+        return;
+      }
       setIsUploading(true);
       try {
         await onChange(file);
@@ -119,22 +123,52 @@ function FileUpload({ value, onChange, accept = "image/*", required, label }: Fi
         
         {value ? (
           <div className="relative p-4">
-            <div className="relative w-full aspect-video rounded-md overflow-hidden bg-muted">
-              <img
-                src={value}
-                alt={label || t("image")}
-                className="w-full h-full object-contain"
-              />
-              <button
-                type="button"
-                onClick={handleRemove}
-                className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm hover:bg-destructive hover:text-destructive-foreground transition-colors"
-              >
-                <XCircle className="w-4 h-4" />
-              </button>
-            </div>
+            {accept === "image/*" ? (
+              <div className="relative w-full aspect-video rounded-md overflow-hidden bg-muted">
+                <img
+                  src={value}
+                  alt={label || t("image")}
+                  className="w-full h-full object-contain"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                >
+                  <XCircle className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="relative w-full rounded-md overflow-hidden bg-muted p-4 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2">
+                  <File className="w-12 h-12 text-primary" />
+                  <p className="text-sm font-medium text-foreground">
+                    {t("file_uploaded", "קובץ הועלה")}
+                  </p>
+                  <a
+                    href={value}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-primary hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Download className="w-4 h-4" />
+                    {t("download_file", "הורד קובץ")}
+                  </a>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                >
+                  <XCircle className="w-4 h-4" />
+                </button>
+              </div>
+            )}
             <p className="mt-2 text-sm text-center text-muted-foreground">
-              {t("image_uploaded_successfully")}
+              {accept === "image/*" 
+                ? t("image_uploaded_successfully", "תמונה הועלתה בהצלחה")
+                : t("file_uploaded_successfully", "קובץ הועלה בהצלחה")}
             </p>
           </div>
         ) : (
@@ -142,19 +176,29 @@ function FileUpload({ value, onChange, accept = "image/*", required, label }: Fi
             <div className="p-3 rounded-full bg-primary/10 mb-3 group-hover:bg-primary/20 transition-colors">
               {isUploading ? (
                 <Upload className="w-6 h-6 text-primary animate-pulse" />
-              ) : (
+              ) : accept === "image/*" ? (
                 <ImageIcon className="w-6 h-6 text-primary" />
+              ) : (
+                <File className="w-6 h-6 text-primary" />
               )}
             </div>
             <p className="text-sm font-medium text-foreground mb-1">
-              {isUploading ? t("uploading", "מעלה...") : t("click_to_upload", "לחץ להעלאת תמונה")}
+              {isUploading 
+                ? t("uploading", "מעלה...") 
+                : accept === "image/*" 
+                  ? t("click_to_upload", "לחץ להעלאת תמונה")
+                  : t("click_to_upload_file", "לחץ להעלאת קובץ")}
             </p>
             <p className="text-xs text-muted-foreground">
-              {t("drag_and_drop_or_click", "גרור ושחרר תמונה או לחץ לבחירה")}
+              {accept === "image/*"
+                ? t("drag_and_drop_or_click", "גרור ושחרר תמונה או לחץ לבחירה")
+                : t("drag_and_drop_or_click_file", "גרור ושחרר קובץ או לחץ לבחירה")}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {t("supported_formats", "PNG, JPG, GIF עד 10MB")}
-            </p>
+            {accept === "image/*" && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {t("supported_formats", "PNG, JPG, GIF עד 10MB")}
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -312,16 +356,17 @@ export function AddRecordDialog({
         const value = form[key];
         
         if (isDynamicField(key)) {
-          // Always include dynamic fields, even if empty
           const fieldName = getDynamicFieldName(key);
           const column = dataColumns.find((col) => (col as any).accessorKey === key);
           const isDate = column && (column.meta as any)?.isDate;
           
-          if (isDate && value && typeof value === "string" && value !== "") {
-            const isoDate = parseDateForSubmit(value);
-            dynamicFields[fieldName] = isoDate || value;
-          } else if (value !== "" && value !== null && value !== undefined) {
-            dynamicFields[fieldName] = value;
+          if (value !== null && value !== undefined) {
+            if (isDate && value && typeof value === "string" && value !== "") {
+              const isoDate = parseDateForSubmit(value);
+              dynamicFields[fieldName] = isoDate || value;
+            } else {
+              dynamicFields[fieldName] = value;
+            }
           }
         } else {
           // Skip empty values for regular fields (but include arrays even if empty)
@@ -421,13 +466,34 @@ export function AddRecordDialog({
       const fieldName = getDynamicFieldName(accessorKey);
       const timestamp = Date.now();
       const uuid = crypto.randomUUID();
-      const path = `dynamic-fields/${fieldName}/${timestamp}_${uuid}`;
-      const imageUrl = await handleImageUpload(file, path);
+      const path = `uploads/dynamic-fields/${fieldName}/${timestamp}_${uuid}`;
+      const imageUrl = await uploadFile(file, path);
       setForm({ ...form, [accessorKey]: imageUrl });
       toast.success(t("image_uploaded_successfully", "תמונה הועלתה בהצלחה") || "Image uploaded successfully");
     } catch (error) {
       console.error("Error uploading image:", error);
       toast.error(t("error_uploading_image", "שגיאה בהעלאת תמונה") || "Error uploading image");
+    }
+  };
+
+  const handleFileFieldChange = async (accessorKey: string, file: File | null) => {
+
+    if (!file) {
+      setForm({ ...form, [accessorKey]: "" });
+      return;
+    }
+
+    try {
+      const fieldName = getDynamicFieldName(accessorKey);
+      const timestamp = Date.now();
+      const uuid = crypto.randomUUID();
+      const path = `uploads/dynamic-fields/${fieldName}/${timestamp}_${uuid}`;
+      const fileUrl = await uploadFile(file, path);
+      setForm({ ...form, [accessorKey]: fileUrl });
+      toast.success(t("file_uploaded_successfully", "קובץ הועלה בהצלחה") || "File uploaded successfully");
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast.error(t("error_uploading_file", "שגיאה בהעלאת הקובץ") || "Error uploading file");
     }
   };
 
@@ -600,6 +666,14 @@ export function AddRecordDialog({
                     value={fieldValue}
                     onChange={(file) => handleImageFieldChange(accessorKey, file)}
                     accept="image/*"
+                    required={isRequiredField || fieldDefinition?.required}
+                    label={header}
+                  />
+                ) : (isDynamic && fieldDefinition?.type === "FILE") ? (
+                  <FileUpload
+                    value={fieldValue}
+                    onChange={(file) => handleFileFieldChange(accessorKey, file)}
+                    accept="*/*"
                     required={isRequiredField || fieldDefinition?.required}
                     label={header}
                   />

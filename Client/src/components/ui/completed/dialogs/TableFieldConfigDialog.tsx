@@ -26,6 +26,7 @@ import {
   MapPin, 
   DollarSign,
   Image,
+  File,
   Check,
   ChevronDown,
   LucideIcon
@@ -61,7 +62,7 @@ interface TableFieldConfigDialogProps {
 interface FieldInput {
   name: string;
   label: string;
-  type: "TEXT" | "SELECT" | "DATE" | "NUMBER" | "EMAIL" | "PHONE" | "MULTI_SELECT" | "TIME" | "CHECKBOX" | "ADDRESS" | "MONEY" | "IMAGE";
+  type: "TEXT" | "SELECT" | "DATE" | "NUMBER" | "EMAIL" | "PHONE" | "MULTI_SELECT" | "TIME" | "CHECKBOX" | "ADDRESS" | "MONEY" | "IMAGE" | "FILE";
   required: boolean;
   choices?: string[];
   rawChoices?: string;
@@ -188,6 +189,7 @@ function FieldTypeSelector({ value, onChange, t }: FieldTypeSelectorProps) {
     { value: "ADDRESS", label: t("address", "Address"), icon: MapPin },
     { value: "MONEY", label: t("money", "Money"), icon: DollarSign },
     { value: "IMAGE", label: t("image", "Image"), icon: Image },
+    { value: "FILE", label: t("file", "File"), icon: File },
   ];
 
   const selectedField = fieldTypes.find((ft) => ft.value === value);

@@ -356,6 +356,7 @@
   "dark_mode": "Dark Mode",
   "toggle_dark_mode": "Toggle the system to dark mode",
   "image": "Image",
+  "file": "File",
   "no_image": "No image",
   "image_uploaded_successfully": "Image uploaded successfully",
   "error_uploading_image": "Error uploading image",

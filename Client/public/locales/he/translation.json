@@ -342,6 +342,7 @@
   "dark_mode": "מצב כהה",
   "toggle_dark_mode": "החלף את המערכת למצב כהה",
   "image": "תמונה",
+  "file": "קובץ",
   "no_image": "אין תמונה",
   "image_uploaded_successfully": "תמונה הועלתה בהצלחה",
   "error_uploading_image": "שגיאה בהעלאת תמונה",

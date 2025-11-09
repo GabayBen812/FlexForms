@@ -1,6 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Loader2, Plus, Settings2, Trash2 } from "lucide-react";
+import { InfiniteData } from "@tanstack/react-query";
 
 import { AuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ import { ChatComposer } from "@/features/chat/components/ChatComposer";
 import { ChatGroupList } from "@/features/chat/components/ChatGroupList";
 import { ChatMessageList } from "@/features/chat/components/ChatMessageList";
 import { NewGroupDialog } from "@/features/chat/components/NewGroupDialog";
-import { ChatGroup } from "@/api/chat";
+import { ChatGroup, ChatMessagesResponse } from "@/api/chat";
 
 export default function MessagesPage() {
   const { t } = useTranslation();
@@ -47,7 +48,7 @@ export default function MessagesPage() {
     },
   });
   const messages =
-    messagesData?.pages.flatMap((page) => page.messages) ?? [];
+    (messagesData as unknown as InfiniteData<ChatMessagesResponse> | undefined)?.pages.flatMap((page) => page.messages) ?? [];
 
   const { isConnected } = useChatSocket({ enabled: true });
   const {

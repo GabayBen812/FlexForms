@@ -66,12 +66,15 @@ export function useChatMessages(
     options,
   }: {
     limit?: number;
-    options?: UseInfiniteQueryOptions<
-      ChatMessagesResponse,
-      unknown,
-      ChatMessagesResponse,
-      ChatMessagesResponse,
-      ReturnType<typeof chatQueryKeys.messages>
+    options?: Omit<
+      UseInfiniteQueryOptions<
+        ChatMessagesResponse,
+        unknown,
+        ChatMessagesResponse,
+        ChatMessagesResponse,
+        ReturnType<typeof chatQueryKeys.messages>
+      >,
+      "queryKey" | "initialPageParam" | "getNextPageParam" | "queryFn"
     >;
   } = {}
 ) {
@@ -89,7 +92,13 @@ export function useChatMessages(
         ? lastPage.messages[0]?.id
         : undefined,
     ...options,
-  });
+  } as UseInfiniteQueryOptions<
+    ChatMessagesResponse,
+    unknown,
+    ChatMessagesResponse,
+    ChatMessagesResponse,
+    ReturnType<typeof chatQueryKeys.messages>
+  >);
 }
 
 export function useCreateChatGroup(

@@ -6,9 +6,9 @@ export type Theme = "light" | "dark" | "system";
 
 export function useTheme() {
   const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "system";
+    if (typeof window === "undefined") return "light";
     const stored = localStorage.getItem(THEME_STORAGE_KEY) as Theme;
-    return stored || "system";
+    return stored || "light";
   });
 
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() => {

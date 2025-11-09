@@ -103,13 +103,32 @@ export function useCreateChatGroup(
 
   return useMutation({
     mutationFn: createChatGroup,
+    ...options,
     onSuccess: (group, variables, context) => {
+      queryClient.setQueryData<ChatGroup[] | undefined>(
+        chatQueryKeys.groups(),
+        (existing) => {
+          if (!existing) {
+            return [group];
+          }
+
+          const hasGroup = existing.some((item) => item.id === group.id);
+
+          if (hasGroup) {
+            return existing.map((item) =>
+              item.id === group.id ? group : item
+            );
+          }
+
+          return [group, ...existing];
+        }
+      );
+
       queryClient.invalidateQueries({
         queryKey: chatQueryKeys.groups(),
       });
       options?.onSuccess?.(group, variables, context);
     },
-    ...options,
   });
 }
 
@@ -125,6 +144,7 @@ export function useUpdateChatGroup(
 
   return useMutation({
     mutationFn: (input) => updateChatGroup(groupId, input),
+    ...options,
     onSuccess: (group, variables, context) => {
       queryClient.invalidateQueries({
         queryKey: chatQueryKeys.groups(),
@@ -132,7 +152,6 @@ export function useUpdateChatGroup(
       queryClient.setQueryData(chatQueryKeys.group(group.id), group);
       options?.onSuccess?.(group, variables, context);
     },
-    ...options,
   });
 }
 
@@ -143,6 +162,7 @@ export function useArchiveChatGroup(
 
   return useMutation({
     mutationFn: (groupId) => archiveChatGroup(groupId),
+    ...options,
     onSuccess: (group, variables, context) => {
       queryClient.invalidateQueries({
         queryKey: chatQueryKeys.groups(),
@@ -153,7 +173,6 @@ export function useArchiveChatGroup(
       queryClient.setQueryData(chatQueryKeys.group(group.id), group);
       options?.onSuccess?.(group, variables, context);
     },
-    ...options,
   });
 }
 
@@ -164,6 +183,7 @@ export function useSendChatMessage(
 
   return useMutation({
     mutationFn: sendChatMessage,
+    ...options,
     onSuccess: (message, variables, context) => {
       queryClient.setQueryData<
         InfiniteData<ChatMessagesResponse>
@@ -199,7 +219,6 @@ export function useSendChatMessage(
 
       options?.onSuccess?.(message, variables, context);
     },
-    ...options,
   });
 }
 

@@ -210,9 +210,6 @@ export default function MessagesPage() {
             <h1 className="text-2xl font-semibold text-foreground">
               {t("chat:title")}
             </h1>
-            <p className="text-sm text-muted-foreground">
-              {t("chat:subtitle")}
-            </p>
           </div>
           <Badge
             variant={isConnected ? "default" : "secondary"}

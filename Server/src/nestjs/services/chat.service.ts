@@ -223,6 +223,10 @@ export class ChatService {
     organizationId: string,
     senderId: string,
   ): Promise<ChatMessageView> {
+    if (!dto.groupId) {
+      throw new BadRequestException('groupId is required');
+    }
+
     const group = await this.ensureGroupAccess(
       dto.groupId,
       organizationId,

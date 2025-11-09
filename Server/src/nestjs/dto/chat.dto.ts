@@ -39,8 +39,8 @@ export class UpdateChatGroupDto {
 
 export class SendChatMessageDto {
   @IsMongoId()
-  @IsNotEmpty()
-  groupId!: string;
+  @IsOptional()
+  groupId?: string;
 
   @IsString()
   @IsNotEmpty()

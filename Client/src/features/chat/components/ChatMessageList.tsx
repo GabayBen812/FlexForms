@@ -90,8 +90,8 @@ export function ChatMessageList({
                   className={cn(
                     "max-w-[75%] rounded-2xl px-4 py-3 shadow-sm transition-colors",
                     isOwn
-                      ? "rounded-br-md bg-primary text-primary-foreground"
-                      : "rounded-bl-md bg-muted text-foreground"
+                      ? "rounded-br-md bg-primary/10 text-primary-foreground border border-primary/30 shadow-primary/40"
+                      : "rounded-bl-md bg-muted text-foreground border border-border"
                   )}
                 >
                   <div className="mb-1 text-xs font-medium opacity-80">

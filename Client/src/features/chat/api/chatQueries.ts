@@ -66,12 +66,15 @@ export function useChatMessages(
     options,
   }: {
     limit?: number;
-    options?: UseInfiniteQueryOptions<
-      ChatMessagesResponse,
-      unknown,
-      ChatMessagesResponse,
-      ChatMessagesResponse,
-      ReturnType<typeof chatQueryKeys.messages>
+    options?: Omit<
+      UseInfiniteQueryOptions<
+        ChatMessagesResponse,
+        unknown,
+        InfiniteData<ChatMessagesResponse>,
+        ChatMessagesResponse,
+        ReturnType<typeof chatQueryKeys.messages>
+      >,
+      "queryKey" | "initialPageParam" | "getNextPageParam" | "queryFn"
     >;
   } = {}
 ) {
@@ -82,7 +85,7 @@ export function useChatMessages(
     queryFn: ({ pageParam }) =>
       fetchChatMessages(groupId, {
         limit,
-        beforeId: pageParam,
+        beforeId: pageParam as string | undefined,
       }),
     getNextPageParam: (lastPage) =>
       lastPage.hasMore

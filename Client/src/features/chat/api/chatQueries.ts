@@ -82,7 +82,7 @@ export function useChatMessages(
     queryFn: ({ pageParam }) =>
       fetchChatMessages(groupId, {
         limit,
-        beforeId: pageParam,
+        beforeId: pageParam as string | undefined,
       }),
     getNextPageParam: (lastPage) =>
       lastPage.hasMore

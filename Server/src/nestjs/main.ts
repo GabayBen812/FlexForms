@@ -20,21 +20,35 @@ async function bootstrap() {
     })
   );
 
+  const explicitOrigins = new Set([
+    "http://localhost:5173",
+    "http://localhost:8081",
+    "https://www.Paradize-erp.com",
+    "https://Paradize-erp.com",
+  ]);
+
+  if (process.env.CLIENT_URL) {
+    process.env.CLIENT_URL.split(",")
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .forEach((value) => explicitOrigins.add(value));
+  }
+
+  if (process.env.ALLOWED_ORIGINS) {
+    process.env.ALLOWED_ORIGINS.split(",")
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .forEach((value) => explicitOrigins.add(value));
+  }
+
   app.enableCors({
     origin: (origin, callback) => {
       console.log("Incoming request from origin:", origin);
       // Allow requests with no origin (like mobile apps, curl, etc.)
       if (!origin) return callback(null, true);
+      if (explicitOrigins.has(origin)) return callback(null, true);
       // Allow all Vercel preview and production URLs
       if (origin.endsWith(".vercel.app")) return callback(null, true);
-      // Allow localhost for local dev
-      if (origin === "http://localhost:5173") return callback(null, true);
-      // Allow Paradize-erp.com
-      if (
-        origin === "https://www.Paradize-erp.com" ||
-        origin === "https://Paradize-erp.com"
-      )
-        return callback(null, true);
       // Allow Firebase Storage
       if (origin.startsWith("https://firebasestorage"))
         return callback(null, true);

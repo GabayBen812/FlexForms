@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { OrganizationsContext } from '@/contexts/OrganizationsContext';
 import { Button } from '@/components/ui/button';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { KanbanBoard } from '@/components/tasks/KanbanBoard';
 import { TaskDialog } from '@/components/tasks/TaskDialog';
 import {
@@ -24,17 +25,34 @@ import { Task, TaskColumn, CreateTaskDto } from '@/types/tasks/task';
 import { User } from '@/types/users/user';
 import { useToast } from '@/hooks/use-toast';
 import { showConfirm } from '@/utils/swal';
+import { useAuth } from '@/hooks/useAuth';
 
 const COLOR_OPTIONS = ['#CBD5F5', '#FDE68A', '#FBCFE8', '#BBF7D0', '#BAE6FD', '#E9D5FF'];
 
 export default function TasksPage() {
   const { t } = useTranslation();
   const { organization } = useContext(OrganizationsContext);
+  const { user: authUser } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [draftStatus, setDraftStatus] = useState<string | undefined>();
+  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
+  const hasInitializedAssigneeFilter = useRef(false);
+
+  const resolveUserId = useCallback((userItem: Partial<User> | null | undefined) => {
+    if (!userItem) return null;
+    if ('_id' in userItem && userItem._id) {
+      return userItem._id;
+    }
+    if ('id' in userItem && userItem.id !== undefined && userItem.id !== null) {
+      return String(userItem.id);
+    }
+    return null;
+  }, []);
+
+  const resolvedAuthUserId = useMemo(() => resolveUserId(authUser), [authUser, resolveUserId]);
 
   const tasksQueryKey = useMemo(() => ['tasks', organization?._id], [organization?._id]);
   const columnsQueryKey = useMemo(() => ['task-columns', organization?._id], [organization?._id]);
@@ -70,6 +88,44 @@ export default function TasksPage() {
   useEffect(() => {
     columnsRef.current = columns;
   }, [columns]);
+
+  useEffect(() => {
+    if (!hasInitializedAssigneeFilter.current && resolvedAuthUserId) {
+      setSelectedAssigneeIds([resolvedAuthUserId]);
+      hasInitializedAssigneeFilter.current = true;
+    }
+  }, [resolvedAuthUserId]);
+
+  const assigneeOptions = useMemo(
+    () =>
+      users
+        .map((userItem) => {
+          const id = resolveUserId(userItem);
+          if (!id) return null;
+          return {
+            value: id,
+            label: userItem.name || userItem.email,
+          };
+        })
+        .filter(
+          (option): option is { value: string; label: string } => option !== null,
+        )
+        .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })),
+    [users, resolveUserId],
+  );
+
+  const filteredTasks = useMemo(() => {
+    if (!selectedAssigneeIds.length) {
+      return tasks;
+    }
+    const allowedAssignees = new Set(selectedAssigneeIds);
+    return tasks.filter((task) => {
+      const assigned = task.assignedTo as (Task['assignedTo'] & { id?: string | number }) | undefined;
+      const assigneeId =
+        assigned?._id ?? (assigned?.id !== undefined && assigned?.id !== null ? String(assigned.id) : undefined);
+      return assigneeId ? allowedAssignees.has(assigneeId) : false;
+    });
+  }, [tasks, selectedAssigneeIds]);
 
   const reorderTasksOptimistic = useCallback(
     (currentTasks: Task[], payload: MoveTaskPayload, boardColumns: TaskColumn[]): Task[] => {
@@ -418,10 +474,10 @@ export default function TasksPage() {
   return (
     <div className="flex h-full flex-col bg-muted/20">
       <div className="flex flex-col gap-5 border-b border-border/60 bg-background px-6 py-5 shadow-sm">
-        <div className="flex flex-col">
-          <h1 className="text-2xl font-semibold">{t('tasks:heading')}</h1>
-        </div>
-        <div className="flex justify-center">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex max-w-2xl flex-col gap-1">
+            <h1 className="text-2xl font-semibold">{t('tasks:heading')}</h1>
+          </div>
           <Button
             onClick={handleOpenCreateTask}
             className="h-12 gap-3 rounded-xl px-8 text-base font-semibold shadow-sm transition hover:shadow-md"
@@ -431,10 +487,22 @@ export default function TasksPage() {
             {t('tasks:create_task')}
           </Button>
         </div>
+        <div className="w-full sm:max-w-sm">
+          <span className="mb-1 block text-sm font-medium text-muted-foreground">
+            {t('tasks:filter_assignees_label')}
+          </span>
+          <MultiSelect
+            options={assigneeOptions}
+            selected={selectedAssigneeIds}
+            onSelect={setSelectedAssigneeIds}
+            placeholder={t('tasks:filter_assignees_placeholder')}
+          />
+        </div>
       </div>
       <div className="flex-1 overflow-hidden">
         <KanbanBoard
           tasks={tasks}
+          visibleTasks={filteredTasks}
           columns={columns}
           colorOptions={COLOR_OPTIONS}
           onTaskMove={handleTaskMove}

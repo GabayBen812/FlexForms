@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 
 interface KanbanBoardProps {
   tasks: Task[];
+  visibleTasks?: Task[];
   columns: TaskColumn[];
   colorOptions: string[];
   onTaskMove: (taskId: string, newStatus: string, newOrder: number) => void;
@@ -40,6 +41,7 @@ interface KanbanBoardProps {
 export function KanbanBoard({
   tasks,
   columns,
+  visibleTasks,
   colorOptions,
   onTaskMove,
   onTaskClick,
@@ -83,6 +85,11 @@ export function KanbanBoard({
   const statusOrder = useMemo(() => columns.map((column) => column.key), [columns]);
   const columnIdOrder = useMemo(() => columns.map((column) => column._id), [columns]);
 
+  const visibleTaskSet = useMemo(() => {
+    if (!visibleTasks) return null;
+    return new Set(visibleTasks.map((task) => task._id));
+  }, [visibleTasks]);
+
   const tasksByStatus = useMemo(() => {
     const grouped: Record<string, Task[]> = {};
     statusOrder.forEach((key) => {
@@ -102,6 +109,18 @@ export function KanbanBoard({
 
     return grouped;
   }, [tasks, statusOrder]);
+
+  const displayTasksByStatus = useMemo(() => {
+    if (!visibleTaskSet) {
+      return tasksByStatus;
+    }
+    return Object.keys(tasksByStatus).reduce<Record<string, Task[]>>((acc, statusKey) => {
+      acc[statusKey] = (tasksByStatus[statusKey] ?? []).filter((task) =>
+        visibleTaskSet.has(task._id),
+      );
+      return acc;
+    }, {});
+  }, [tasksByStatus, visibleTaskSet]);
 
   const labelMap = useMemo(() => {
     return columns.reduce<Record<string, string>>((acc, column) => {
@@ -236,7 +255,7 @@ export function KanbanBoard({
               key={column._id}
               column={column}
               title={labelMap[column.key] ?? column.name}
-              tasks={tasksByStatus[column.key] ?? []}
+              tasks={displayTasksByStatus[column.key] ?? []}
               colorOptions={colorOptions}
               onTaskClick={onTaskClick}
                onTaskDelete={onTaskDelete}

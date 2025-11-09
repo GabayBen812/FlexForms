@@ -62,7 +62,7 @@ export function MultiSelect({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-full justify-between min-h-10 h-auto py-2",
+            "w-full justify-between min-h-10 h-auto py-2 border-border bg-background text-foreground shadow-sm transition-all hover:bg-primary/5 hover:text-foreground focus-visible:ring-primary/30",
             className
           )}
         >
@@ -105,7 +105,7 @@ export function MultiSelect({
                   <CommandItem
                     key={option.value}
                     onSelect={() => handleSelect(option.value)}
-                    className="cursor-pointer"
+                    className="cursor-pointer rounded-md text-foreground transition-colors data-[highlighted=true]:bg-primary/10 data-[highlighted=true]:text-primary data-[selected=true]:bg-primary/10 data-[selected=true]:text-primary"
                   >
                     <Check
                       className={cn(

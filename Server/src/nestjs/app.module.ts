@@ -17,6 +17,7 @@ import { KidModule } from './modules/kid.module';
 import { ParentModule } from './modules/parent.module';
 import { EmployeeModule } from './modules/employee.module';
 import { TaskModule } from './modules/task.module';
+import { ChatModule } from './modules/chat.module';
 import { HealthController } from './controllers/health.controller';
 dotenv.config();
 @Module({
@@ -35,7 +36,8 @@ dotenv.config();
     KidModule,
     ParentModule,
     EmployeeModule,
-    TaskModule
+    TaskModule,
+    ChatModule
   ],
   controllers: [AuthController, HealthController],
   providers: [AuthService],

@@ -151,23 +151,27 @@ function CollapsibleChildren({ childRoute }: { childRoute: RouteObject }) {
       </CollapsibleTrigger>
       <CollapsibleContent>
         <SidebarMenuSub>
-          {childRoute.children?.map((subItem) => (
-            <SidebarMenuSubItem key={subItem.handle.title}>
-              <SidebarMenuSubButton asChild>
-                <Link to={subItem.path || "/"}>
-                  <span
-                    className={
-                      isRouteActive(subItem, currentPath, true)
-                        ? "text-sidebar-accent"
-                        : "ease duration-150"
-                    }
-                  >
-                    {subItem.handle.title}
-                  </span>
-                </Link>
-              </SidebarMenuSubButton>
-            </SidebarMenuSubItem>
-          ))}
+          {childRoute.children
+            ?.filter((subItem) => subItem.handle?.title)
+            .map((subItem) => (
+              <SidebarMenuSubItem
+                key={subItem.handle?.title ?? subItem.path ?? "subitem"}
+              >
+                <SidebarMenuSubButton asChild>
+                  <Link to={subItem.path || "/"}>
+                    <span
+                      className={
+                        isRouteActive(subItem, currentPath, true)
+                          ? "text-sidebar-accent"
+                          : "ease duration-150"
+                      }
+                    >
+                      {subItem.handle?.title}
+                    </span>
+                  </Link>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            ))}
         </SidebarMenuSub>
       </CollapsibleContent>
     </>

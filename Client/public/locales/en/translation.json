@@ -64,6 +64,18 @@
   "locations": "Locations",
   "role": "Role",
   "roles": "Roles",
+  "role_labels": {
+    "system_admin": "System Admin",
+    "assistant_employee": "Assistant/Employee",
+    "room_manager": "Room Manager",
+    "branch_manager": "Branch Manager",
+    "district_manager": "District Manager",
+    "finance_manager": "Finance Manager",
+    "activity_manager": "Activity Manager",
+    "parent": "Parent",
+    "student": "Student",
+    "shift_manager": "Shift Manager"
+  },
   "add_call_type": "Add Call Type",
   "theme": "Theme",
   "select_theme": "Select organization's theme",

@@ -8,6 +8,21 @@ import {
   MinLength,
 } from "class-validator";
 
+const USER_ROLES = [
+  "system_admin",
+  "assistant_employee",
+  "room_manager",
+  "branch_manager",
+  "district_manager",
+  "finance_manager",
+  "activity_manager",
+  "parent",
+  "student",
+  "shift_manager",
+] as const;
+
+type UserRole = (typeof USER_ROLES)[number];
+
 export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
@@ -21,10 +36,11 @@ export class CreateUserDto {
   password!: string;
 
   @IsOptional()
-  @IsEnum(["system_admin", "admin", "editor", "viewer"], {
-    message: "role must be one of: system_admin, admin, editor, viewer",
+  @IsEnum(USER_ROLES, {
+    message:
+      "role must be one of: system_admin, assistant_employee, room_manager, branch_manager, district_manager, finance_manager, activity_manager, parent, student, shift_manager",
   })
-  role?: "system_admin" | "admin" | "editor" | "viewer";
+  role?: UserRole;
 
   @IsMongoId()
   organizationId!: string;
@@ -40,13 +56,13 @@ export class UpdateUserDto {
   email?: string;
 
   @IsOptional()
-  @IsEnum(["system_admin", "admin", "editor", "viewer"], {
-    message: "role must be one of: system_admin, admin, editor, viewer",
+  @IsEnum(USER_ROLES, {
+    message:
+      "role must be one of: system_admin, assistant_employee, room_manager, branch_manager, district_manager, finance_manager, activity_manager, parent, student, shift_manager",
   })
-  role?: "system_admin" | "admin" | "editor" | "viewer";
+  role?: UserRole;
 
   @IsOptional()
   @IsMongoId()
   organizationId?: string;
 }
-

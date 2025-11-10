@@ -14,8 +14,32 @@ export class User {
   @Prop({ type: Types.ObjectId, ref: 'Organization', required: true })
   organizationId!: Types.ObjectId;  
 
-  @Prop({ default: 'viewer', enum: ['system_admin', 'admin', 'editor', 'viewer'] })
-  role!: 'system_admin' | 'admin' | 'editor' | 'viewer';
+  @Prop({
+    default: 'parent',
+    enum: [
+      'system_admin',
+      'assistant_employee',
+      'room_manager',
+      'branch_manager',
+      'district_manager',
+      'finance_manager',
+      'activity_manager',
+      'parent',
+      'student',
+      'shift_manager',
+    ],
+  })
+  role!:
+    | 'system_admin'
+    | 'assistant_employee'
+    | 'room_manager'
+    | 'branch_manager'
+    | 'district_manager'
+    | 'finance_manager'
+    | 'activity_manager'
+    | 'parent'
+    | 'student'
+    | 'shift_manager';
 
   @Prop({ required: true })
   name!: string;

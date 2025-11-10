@@ -141,14 +141,14 @@ async function seedDatabase() {
         password: await bcrypt.hash('password123', 10),
         name: 'Regular User 1',
         organizationId: defaultOrg._id,
-        role: 'editor',
+        role: 'assistant_employee',
       },
       {
         email: 'user2@example.com',
         password: await bcrypt.hash('password123', 10),
         name: 'Regular User 2',
         organizationId: defaultOrg._id,
-        role: 'viewer',
+        role: 'parent',
       },
     ];
 

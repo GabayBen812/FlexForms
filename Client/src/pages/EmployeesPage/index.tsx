@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
-import { z } from "zod";
 import { useState, useCallback, useMemo } from "react";
 import { Plus, Settings } from "lucide-react";
 
@@ -56,7 +55,6 @@ export default function EmployeesPage() {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [tableRows, setTableRows] = useState<Employee[]>([]);
 
-  // Custom selection column with edit icon
   const selectionColumn: ColumnDef<Employee> = {
     id: "select",
     enableSorting: false,
@@ -114,7 +112,6 @@ export default function EmployeesPage() {
     (col) => !col.meta?.hidden
   );
 
-  // Merge static columns with dynamic fields
   const mergedColumns = useMemo(() => {
     return mergeColumnsWithDynamicFields(
       visibleColumns,
@@ -135,25 +132,21 @@ export default function EmployeesPage() {
       const newEmployee = {
         ...data,
         organizationId: organization?._id || "",
-        // Preserve dynamicFields if it exists
         ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
       };
       console.log("newEmployee to send:", newEmployee);
       const res = await employeesApi.create(newEmployee);
-      
-      // Check for errors in response
+
       if (res.error) {
         const errorMessage = res.error || t("error") || "Failed to create employee";
         toast.error(errorMessage);
         throw new Error(errorMessage);
       }
-      
-      // Check if response is successful (200 or 201)
+
       if ((res.status === 200 || res.status === 201) && res.data) {
         const createdEmployee = res.data;
         toast.success(t("form_created_success"));
         setIsAddDialogOpen(false);
-        // Add item directly to table without refresh
         tableMethods?.addItem(createdEmployee);
       } else {
         const errorMessage = res.error || t("error") || "Failed to create employee";
@@ -162,11 +155,13 @@ export default function EmployeesPage() {
       }
     } catch (error) {
       console.error("Error creating employee:", error);
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : (error as any)?.response?.data?.message 
-        || (error as any)?.error 
-        || t("error") || "An error occurred";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : (error as any)?.response?.data?.message ||
+            (error as any)?.error ||
+            t("error") ||
+            "An error occurred";
       toast.error(errorMessage);
       throw error;
     }
@@ -179,16 +174,16 @@ export default function EmployeesPage() {
         ...data,
         id: editingEmployee._id,
         organizationId: organization?._id || "",
-        // Preserve dynamicFields if they exist
         ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
       };
       const res = await employeesApi.update(updatedEmployee);
       if (res.status === 200 || res.data) {
         const updatedEmployeeData = res.data;
-        toast.success(t("updated_successfully") || "Record updated successfully");
+        toast.success(
+          t("updated_successfully") || "Record updated successfully"
+        );
         setIsEditDialogOpen(false);
         setEditingEmployee(null);
-        // Update item directly in table without refresh
         tableMethods?.updateItem(updatedEmployeeData);
       }
     } catch (error) {
@@ -211,15 +206,15 @@ export default function EmployeesPage() {
     const selectedIds = selectedRows
       .map((row) => row._id)
       .filter((id): id is string => !!id);
-    
+
     if (selectedIds.length === 0) return;
-    
+
     const confirmed = await showConfirm(
       t("confirm_delete") || t("common:confirm_delete") || "Are you sure?"
     );
-    
+
     if (!confirmed) return;
-    
+
     try {
       await Promise.all(selectedIds.map((id) => employeesApi.delete(id)));
       toast.success(t("deleted_successfully") || "Successfully deleted item(s)");
@@ -253,7 +248,10 @@ export default function EmployeesPage() {
     setIsAdvancedUpdateOpen(true);
   };
 
-  const handleAdvancedUpdateConfirm = async (field: string, value: string | string[]) => {
+  const handleAdvancedUpdateConfirm = async (
+    field: string,
+    value: string | string[]
+  ) => {
     const rowsToUpdate = advancedUpdateRows.length
       ? advancedUpdateRows
       : getFallbackSelectedRows();
@@ -308,11 +306,14 @@ export default function EmployeesPage() {
       </h1>
       <DataTable<Employee>
         data={[]}
-        fetchData={useCallback((params) => {
-          if (!organization?._id)
-            return Promise.resolve({ status: 200, data: [] });
-          return employeesApi.fetchAll(params, false, organization._id);
-        }, [organization?._id])}
+        fetchData={useCallback(
+          (params) => {
+            if (!organization?._id)
+              return Promise.resolve({ status: 200, data: [] });
+            return employeesApi.fetchAll(params, false, organization._id);
+          },
+          [organization?._id]
+        )}
         addData={employeesApi.create}
         updateData={employeesApi.update}
         deleteData={employeesApi.delete}
@@ -333,7 +334,7 @@ export default function EmployeesPage() {
         rowSelection={rowSelection}
         onRowSelectionChange={useCallback((updater: any) => {
           setRowSelection((prev) => {
-            if (typeof updater === 'function') {
+            if (typeof updater === "function") {
               return updater(prev);
             } else {
               return updater;
@@ -343,19 +344,20 @@ export default function EmployeesPage() {
         visibleRows={useCallback((rows) => setTableRows(rows), [])}
         customLeftButtons={
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsAddDialogOpen(true)}
               className="bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600 hover:border-green-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
             >
               <Plus className="w-4 h-4 mr-2" /> {t("add")}
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsFieldConfigDialogOpen(true)}
               className="bg-purple-600 hover:bg-purple-700 text-white hover:text-white border-purple-600 hover:border-purple-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
             >
-              <Settings className="w-4 h-4 mr-2" /> {t("configure_fields", "ערוך שדות דינאמיים")}
+              <Settings className="w-4 h-4 mr-2" />{" "}
+              {t("configure_fields", "ערוך שדות דינאמיים")}
             </Button>
           </div>
         }
@@ -384,12 +386,18 @@ export default function EmployeesPage() {
         onAdd={handleAddEmployee}
         onEdit={handleEditEmployee}
         editMode={true}
-        editData={editingEmployee ? {
-          firstname: editingEmployee.firstname,
-          lastname: editingEmployee.lastname,
-          idNumber: editingEmployee.idNumber || "",
-          ...(editingEmployee.dynamicFields ? { dynamicFields: editingEmployee.dynamicFields } : {}),
-        } : undefined}
+        editData={
+          editingEmployee
+            ? {
+                firstname: editingEmployee.firstname,
+                lastname: editingEmployee.lastname,
+                idNumber: editingEmployee.idNumber || "",
+                ...(editingEmployee.dynamicFields
+                  ? { dynamicFields: editingEmployee.dynamicFields }
+                  : {}),
+              }
+            : undefined
+        }
         excludeFields={["organizationId"]}
         defaultValues={{
           organizationId: organization?._id || "",

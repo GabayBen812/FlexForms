@@ -95,19 +95,53 @@ export default function Users() {
     () => [
       {
         value: "system_admin" as const,
-        label: t("roles.system_admin", { defaultValue: "System Admin" }),
+        label: t("role_labels.system_admin", { defaultValue: "System Admin" }),
       },
       {
-        value: "admin" as const,
-        label: t("roles.admin", { defaultValue: "Admin" }),
+        value: "assistant_employee" as const,
+        label: t("role_labels.assistant_employee", {
+          defaultValue: "Assistant/Employee",
+        }),
       },
       {
-        value: "editor" as const,
-        label: t("roles.editor", { defaultValue: "Editor" }),
+        value: "room_manager" as const,
+        label: t("role_labels.room_manager", { defaultValue: "Room Manager" }),
       },
       {
-        value: "viewer" as const,
-        label: t("roles.viewer", { defaultValue: "Viewer" }),
+        value: "branch_manager" as const,
+        label: t("role_labels.branch_manager", { defaultValue: "Branch Manager" }),
+      },
+      {
+        value: "district_manager" as const,
+        label: t("role_labels.district_manager", {
+          defaultValue: "District Manager",
+        }),
+      },
+      {
+        value: "finance_manager" as const,
+        label: t("role_labels.finance_manager", {
+          defaultValue: "Finance Manager",
+        }),
+      },
+      {
+        value: "activity_manager" as const,
+        label: t("role_labels.activity_manager", {
+          defaultValue: "Activity Manager",
+        }),
+      },
+      {
+        value: "parent" as const,
+        label: t("role_labels.parent", { defaultValue: "Parent" }),
+      },
+      {
+        value: "student" as const,
+        label: t("role_labels.student", { defaultValue: "Student" }),
+      },
+      {
+        value: "shift_manager" as const,
+        label: t("role_labels.shift_manager", {
+          defaultValue: "Shift Manager",
+        }),
       },
     ],
     [t]
@@ -116,7 +150,13 @@ export default function Users() {
   const columns: ColumnDef<User, any>[] = [
     selectionColumn,
     { accessorKey: "name", header: t("user_name") },
-    { accessorKey: "email", header: t("user_email") },
+    {
+      accessorKey: "email",
+      header: t("user_email"),
+      meta: {
+        editable: false,
+      } satisfies UserColumnMeta,
+    },
     {
       accessorKey: "password",
       header: t("user_password"),

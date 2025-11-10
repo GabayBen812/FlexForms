@@ -84,6 +84,18 @@
   "user_email": "אימייל משתמש",
   "user_password": "סיסמא",
   "user_role": "הרשאת המשתמש",
+  "role_labels": {
+    "system_admin": "מנהל מערכת",
+    "assistant_employee": "עוזר/עובד",
+    "room_manager": "מנהל חדר",
+    "branch_manager": "מנהל סניף",
+    "district_manager": "מנהל מחוז",
+    "finance_manager": "מנהל כספים",
+    "activity_manager": "מנהל פעילות",
+    "parent": "הורה",
+    "student": "תלמיד",
+    "shift_manager": "מנהל משמרת"
+  },
   "organization_settings": "הגדרות הארגון",
   "messages": "מסרונים",
   "leads": "לידים",

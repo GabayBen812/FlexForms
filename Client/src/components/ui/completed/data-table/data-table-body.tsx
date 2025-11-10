@@ -603,7 +603,7 @@ function EditableCell<T>({
           />
           <div
             className={cn(
-              "cursor-pointer group relative px-2 py-1 rounded min-h-[1.5rem] transition-all duration-200",
+              "cursor-pointer group relative px-1 py-1 rounded min-h-[1.5rem] transition-all duration-200",
               "hover:bg-blue-50 hover:border hover:border-blue-200 hover:shadow-sm",
               "flex items-center justify-center",
               isDragging && "bg-blue-100 border-2 border-blue-400 border-dashed",
@@ -629,7 +629,7 @@ function EditableCell<T>({
               <img
                 src={String(cellValue)}
                 alt="Preview"
-                className="max-w-16 max-h-16 object-contain rounded cursor-pointer hover:opacity-80"
+                className="w-10 h-10 object-cover rounded-md cursor-pointer hover:opacity-80"
               />
             ) : (
               <span className="text-muted-foreground text-sm">{t("no_image", "אין תמונה")}</span>

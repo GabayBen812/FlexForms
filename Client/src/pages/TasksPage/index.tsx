@@ -474,31 +474,30 @@ export default function TasksPage() {
   return (
     <div className="flex h-full flex-col bg-muted/20">
       <div className="flex flex-col gap-5 border-b border-border/60 bg-background px-6 py-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex max-w-2xl flex-col gap-1">
-            <h1 className="text-2xl font-semibold">{t('tasks:heading')}</h1>
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="w-full min-w-[240px] flex-1 sm:max-w-sm">
+            <span className="mb-1 block text-sm font-medium text-muted-foreground">
+              {t('tasks:filter_assignees_label')}
+            </span>
+            <MultiSelect
+              options={assigneeOptions}
+              selected={selectedAssigneeIds}
+              onSelect={setSelectedAssigneeIds}
+              placeholder={t('tasks:filter_assignees_placeholder')}
+            />
           </div>
           <Button
             onClick={handleOpenCreateTask}
-            className="h-12 gap-3 rounded-xl px-8 text-base font-semibold shadow-sm transition hover:shadow-md"
+            className="h-12 gap-3 rounded-xl px-8 text-base font-semibold shadow-sm transition hover:shadow-md sm:ml-auto"
             disabled={createMutation.isPending || updateMutation.isPending}
           >
             <Plus className="h-5 w-5" />
             {t('tasks:create_task')}
           </Button>
         </div>
-        <div className="w-full sm:max-w-sm">
-          <span className="mb-1 block text-sm font-medium text-muted-foreground">
-            {t('tasks:filter_assignees_label')}
-          </span>
-          <MultiSelect
-            options={assigneeOptions}
-            selected={selectedAssigneeIds}
-            onSelect={setSelectedAssigneeIds}
-            placeholder={t('tasks:filter_assignees_placeholder')}
-          />
-        </div>
       </div>
+
+
       <div className="flex-1 overflow-hidden">
         <KanbanBoard
           tasks={tasks}

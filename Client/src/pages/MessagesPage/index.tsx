@@ -224,7 +224,7 @@ export default function MessagesPage() {
       </header>
 
       <div className="flex min-h-[60vh] flex-1 flex-col overflow-hidden rounded-3xl border border-border bg-background shadow-sm lg:flex-row">
-        <div className="w-full border-b border-border lg:w-80 lg:border-b-0 lg:border-r">
+        <div className="flex w-full flex-col border-b border-border bg-background lg:max-w-sm lg:flex-shrink-0 lg:border-b-0 lg:border-r rtl:lg:border-l">
           <ChatGroupList
             groups={groups.filter((group) => !group.isArchived)}
             activeGroupId={selectedGroupId}

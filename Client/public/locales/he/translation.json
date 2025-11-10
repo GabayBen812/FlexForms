@@ -246,7 +246,7 @@
   "chat:empty_groups": "עדיין אין קבוצות צ'אט. צרו קבוצה חדשה כדי להתחיל.",
   "chat:member_count": "{{count}} משתתפים",
   "chat:group_members": "{{count}} משתתפים",
-  "chat:edit_group_button": "ניהול קבוצה",
+  "chat:edit_group_button": "ערוך הגדרות קבוצה",
   "chat:archive_group_button": "העבר לארכיון",
   "chat:empty_messages": "עדיין אין הודעות בקבוצה הזו.",
   "chat:load_previous_messages": "טען הודעות ישנות",

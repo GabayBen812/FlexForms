@@ -85,6 +85,8 @@ export interface DataTableProps<TData> {
   }) => void;
   refreshTrigger?: number;
   entityType?: string;
+  addButtonClassName?: string;
+  addButtonWrapperClassName?: string;
 }
 
 export interface TableAction<TData> {

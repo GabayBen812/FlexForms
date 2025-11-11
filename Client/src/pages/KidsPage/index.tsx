@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { z } from "zod";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { Plus, Settings } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -22,8 +22,22 @@ import { AdvancedUpdateDialog } from "@/components/AdvancedUpdateDialog";
 import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
 import { toast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
-import { formatDateForEdit } from "@/lib/dateUtils";
 import { showConfirm } from "@/utils/swal";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import {
+  fetchContacts,
+  createContact,
+  updateContact as updateContactApi,
+  deleteContact as deleteContactApi,
+  getRelationshipsForContacts,
+  upsertRelationship,
+  removeRelationship,
+} from "@/api/contacts";
+import { Contact, ContactRelationship } from "@/types/contacts/contact";
+import {
+  denamespaceDynamicFields,
+  namespaceDynamicFields,
+} from "@/utils/contacts/dynamicFieldNamespaces";
 
 const kidsApi = createApiService<Kid>("/kids", {
   includeOrgId: true,
@@ -36,6 +50,8 @@ const parentsApi = createApiService<Parent>("/parents", {
 export default function KidsPage() {
   const { t } = useTranslation();
   const { organization } = useOrganization();
+  const { isEnabled: isUnifiedContacts, isLoading: isContactsFlagLoading } = useFeatureFlag("FF_CONTACTS_UNIFIED");
+  const kidRelationshipsRef = useRef<Record<string, ContactRelationship[]>>({});
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
     {}
   );
@@ -56,18 +72,118 @@ export default function KidsPage() {
   const [tableRows, setTableRows] = useState<Kid[]>([]);
 
   // Fetch parents for multi-select
-  const { data: parentsOptions = [], isLoading: parentsLoading } = useQuery({
+  const { data: parentsData = [] } = useQuery({
     queryKey: ["parents-options", organization?._id],
     queryFn: async () => {
       if (!organization?._id) return [];
       const res = await parentsApi.fetchAll({}, false, organization._id);
-      return (res.data || []).map((parent: Parent) => ({
-        value: parent._id || "",
-        label: `${parent.firstname} ${parent.lastname}`,
-      }));
+      return (res.data || []) as Parent[];
     },
     enabled: !!organization?._id,
   });
+
+  const parentsOptions = useMemo(
+    () =>
+      parentsData.map((parent) => ({
+        value: parent._id || "",
+        label: `${parent.firstname} ${parent.lastname}`,
+        contactId: parent.contactId,
+      })),
+    [parentsData],
+  );
+
+  const parentById = useMemo(() => {
+    return parentsData.reduce<Record<string, Parent>>((acc, parent) => {
+      if (parent._id) {
+        acc[parent._id] = parent;
+      }
+      return acc;
+    }, {});
+  }, [parentsData]);
+
+  const parentByContactId = useMemo(() => {
+    return parentsData.reduce<Record<string, Parent>>((acc, parent) => {
+      if (parent.contactId) {
+        acc[parent.contactId] = parent;
+      }
+      return acc;
+    }, {});
+  }, [parentsData]);
+
+  const mapContactToKid = useCallback(
+    (contact: Contact, relationships: ContactRelationship[] = []): Kid => {
+      const dynamicFields = denamespaceDynamicFields(
+        contact.dynamicFields as Record<string, unknown> | undefined,
+        "kid",
+      );
+
+      const linkedParentIds = relationships
+        .filter((rel) => rel.relation === "child")
+        .map((rel) => parentByContactId[rel.targetContactId]?._id)
+        .filter((id): id is string => !!id);
+
+      return {
+        _id: contact._id,
+        contactId: contact._id,
+        firstname: contact.firstname,
+        lastname: contact.lastname,
+        idNumber: contact.idNumber,
+        address: contact.address,
+        status: contact.status,
+        linked_parents: linkedParentIds,
+        organizationId: contact.organizationId,
+        dynamicFields: dynamicFields as Record<string, any> | undefined,
+      };
+    },
+    [parentByContactId],
+  );
+
+  const syncKidRelationships = useCallback(
+    async (kidContactId: string, linkedParentIds: string[]) => {
+      const existingRelationships = kidRelationshipsRef.current[kidContactId] || [];
+      const existingParentContactIds = existingRelationships.map((rel) => rel.targetContactId);
+
+      const desiredParentContactIds = linkedParentIds
+        .map((parentId) => parentById[parentId]?.contactId)
+        .filter((id): id is string => !!id);
+
+      const toAdd = desiredParentContactIds.filter((contactId) => !existingParentContactIds.includes(contactId));
+      const toRemove = existingParentContactIds.filter((contactId) => !desiredParentContactIds.includes(contactId));
+
+      const updatedRelationships = existingRelationships.filter(
+        (rel) => !toRemove.includes(rel.targetContactId),
+      );
+
+      if (toAdd.length > 0) {
+        for (const parentContactId of toAdd) {
+          const response = await upsertRelationship(kidContactId, {
+            targetContactId: parentContactId,
+            relation: "child",
+          });
+          if (!response.error && response.data) {
+            updatedRelationships.push(response.data);
+          }
+
+          await upsertRelationship(parentContactId, {
+            targetContactId: kidContactId,
+            relation: "parent",
+          });
+        }
+      }
+
+      if (toRemove.length > 0) {
+        await Promise.all(
+          toRemove.map(async (parentContactId) => {
+            await removeRelationship(kidContactId, parentContactId);
+            await removeRelationship(parentContactId, kidContactId);
+          }),
+        );
+      }
+
+      kidRelationshipsRef.current[kidContactId] = updatedRelationships;
+    },
+    [parentById],
+  );
 
   // Custom selection column with edit icon
   const selectionColumn: ColumnDef<Kid> = {
@@ -165,57 +281,139 @@ export default function KidsPage() {
     { label: t("delete"), type: "delete" },
   ];
 
+  const fetchKidsData = useCallback(
+    async (params?: ApiQueryParams) => {
+      if (!organization?._id) {
+        return {
+          status: 200,
+          data: {
+            data: [],
+            totalCount: 0,
+            totalPages: 0,
+          },
+        };
+      }
+
+      if (!isUnifiedContacts) {
+        return kidsApi.fetchAll(params, false, organization._id);
+      }
+
+      const contactResponse = await fetchContacts({
+        ...(params || {}),
+        type: "kid",
+      });
+
+      if (contactResponse.error || !contactResponse.data) {
+        return contactResponse;
+      }
+
+      const contacts = contactResponse.data.data || [];
+      const contactIds = contacts.map((contact) => contact._id);
+
+      let relationships: ContactRelationship[] = [];
+      if (contactIds.length > 0) {
+        const relationshipsResponse = await getRelationshipsForContacts(contactIds);
+        if (relationshipsResponse.error || !relationshipsResponse.data) {
+          return relationshipsResponse;
+        }
+        relationships = relationshipsResponse.data;
+      }
+
+      const relationshipsMap = relationships
+        .filter((rel) => rel.relation === "child")
+        .reduce<Record<string, ContactRelationship[]>>((acc, rel) => {
+          if (!acc[rel.sourceContactId]) {
+            acc[rel.sourceContactId] = [];
+          }
+          acc[rel.sourceContactId].push(rel);
+          return acc;
+        }, {});
+
+      kidRelationshipsRef.current = relationshipsMap;
+
+      const kids = contacts.map((contact) => mapContactToKid(contact, relationshipsMap[contact._id] || []));
+
+      return {
+        status: contactResponse.status,
+        data: {
+          data: kids,
+          totalCount: contactResponse.data.totalCount,
+          totalPages: contactResponse.data.totalPages,
+        },
+      };
+    },
+    [organization?._id, isUnifiedContacts, mapContactToKid],
+  );
+
   const handleAddKid = async (data: any) => {
     try {
-      console.log("handleAddKid received data:", data);
-      const newKid = {
-        ...data,
-        organizationId: organization?._id || "",
-        linked_parents: Array.isArray(data.linked_parents) ? data.linked_parents : [],
-        // Preserve dynamicFields if it exists
-        ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
-      };
-      console.log("newKid to send:", newKid);
-      const res = await kidsApi.create(newKid);
-      
-      console.log("API Response:", res);
-      console.log("API Response status:", res.status);
-      console.log("API Response data:", res.data);
-      console.log("API Response error:", res.error);
-      
-      // Check for errors first - if there's an error field, it means the API call failed
-      if (res.error) {
-        const errorMessage = res.error || t("error") || "Failed to create kid";
-        console.error("API Error:", errorMessage);
-        toast.error(errorMessage);
-        throw new Error(errorMessage);
-      }
-      
-      // Check if response is successful (200 or 201)
-      if ((res.status === 200 || res.status === 201)) {
-        if (res.data) {
-          // We have data - use it directly
-          const createdKid = res.data;
-          console.log("Created kid:", createdKid);
-          toast.success(t("form_created_success"));
-          setIsAddDialogOpen(false);
-          // Add item directly to table without refresh
-          tableMethods?.addItem(createdKid);
-        } else {
-          // Status is OK but no data - refresh table to get the new record
-          console.log("API returned success (status " + res.status + ") but no data - refreshing table");
-          toast.success(t("form_created_success"));
-          setIsAddDialogOpen(false);
-          // Refresh table to get the new record
-          tableMethods?.refresh();
+      if (!isUnifiedContacts) {
+        const newKid = {
+          ...data,
+          organizationId: organization?._id || "",
+          linked_parents: Array.isArray(data.linked_parents) ? data.linked_parents : [],
+          ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
+        };
+        const res = await kidsApi.create(newKid);
+
+        if (res.error) {
+          const errorMessage = res.error || t("error") || "Failed to create kid";
+          toast.error(errorMessage);
+          throw new Error(errorMessage);
         }
-      } else {
-        // Response has unexpected status
-        const errorMessage = res.error || `API returned unexpected status ${res.status}` || t("error") || "Failed to create kid";
-        console.error("API Error - unexpected status:", res);
+
+        if (res.status === 200 || res.status === 201) {
+          if (res.data) {
+            const createdKid = res.data;
+            toast.success(t("form_created_success"));
+            setIsAddDialogOpen(false);
+            tableMethods?.addItem(createdKid);
+          } else {
+            toast.success(t("form_created_success"));
+            setIsAddDialogOpen(false);
+            tableMethods?.refresh();
+          }
+        }
+        return;
+      }
+
+      if (!organization?._id) {
+        throw new Error(t("organization_required") || "Organization context missing");
+      }
+
+      const linkedParentIds: string[] = Array.isArray(data.linked_parents) ? data.linked_parents : [];
+
+      const contactPayload = {
+        firstname: data.firstname,
+        lastname: data.lastname,
+        type: "kid" as const,
+        organizationId: organization._id,
+        idNumber: data.idNumber,
+        address: data.address,
+        dynamicFields: namespaceDynamicFields(
+          data.dynamicFields as Record<string, unknown> | undefined,
+          "kid",
+        ),
+      };
+
+      const contactResponse = await createContact(contactPayload);
+      if (contactResponse.error || !contactResponse.data) {
+        const errorMessage = contactResponse.error || t("error") || "Failed to create kid contact";
         toast.error(errorMessage);
         throw new Error(errorMessage);
       }
+
+      const createdContact = contactResponse.data;
+      kidRelationshipsRef.current[createdContact._id] = [];
+
+      await syncKidRelationships(createdContact._id, linkedParentIds);
+
+      const relationships = kidRelationshipsRef.current[createdContact._id] || [];
+      const mappedKid = mapContactToKid(createdContact, relationships);
+
+      toast.success(t("form_created_success"));
+      setIsAddDialogOpen(false);
+      tableMethods?.addItem(mappedKid);
     } catch (error) {
       console.error("Error creating kid:", error);
       console.error("Error details:", {
@@ -241,27 +439,68 @@ export default function KidsPage() {
   const handleEditKid = async (data: any) => {
     if (!editingKid?._id) return;
     try {
-      const updatedKid = {
-        ...data,
-        id: editingKid._id,
-        organizationId: organization?._id || "",
-        linked_parents: Array.isArray(data.linked_parents) 
-          ? data.linked_parents 
-          : (Array.isArray(editingKid.linked_parents) 
-              ? editingKid.linked_parents.map((p: any) => typeof p === 'string' ? p : (p?._id || p?.toString() || p))
-              : []),
-        // Preserve dynamicFields if they exist
-        ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
-      };
-      const res = await kidsApi.update(updatedKid);
-      if (res.status === 200 || res.data) {
-        const updatedKidData = res.data;
-        toast.success(t("updated_successfully") || "Record updated successfully");
-        setIsEditDialogOpen(false);
-        setEditingKid(null);
-        // Update item directly in table without refresh
-        tableMethods?.updateItem(updatedKidData);
+      if (!isUnifiedContacts) {
+        const updatedKid = {
+          ...data,
+          id: editingKid._id,
+          organizationId: organization?._id || "",
+          linked_parents: Array.isArray(data.linked_parents)
+            ? data.linked_parents
+            : Array.isArray(editingKid.linked_parents)
+            ? editingKid.linked_parents.map((p: any) =>
+                typeof p === "string" ? p : p?._id || p?.toString() || p,
+              )
+            : [],
+          ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
+        };
+        const res = await kidsApi.update(updatedKid);
+        if (res.status === 200 || res.data) {
+          const updatedKidData = res.data;
+          toast.success(t("updated_successfully") || "Record updated successfully");
+          setIsEditDialogOpen(false);
+          setEditingKid(null);
+          tableMethods?.updateItem(updatedKidData);
+        }
+        return;
       }
+
+      const kidContactId = editingKid.contactId || editingKid._id;
+      if (!kidContactId) {
+        throw new Error(t("error") || "Missing contact identifier");
+      }
+
+      const linkedParentIds: string[] = Array.isArray(data.linked_parents)
+        ? data.linked_parents
+        : Array.isArray(editingKid.linked_parents)
+        ? editingKid.linked_parents
+        : [];
+
+      const updatePayload = {
+        firstname: data.firstname,
+        lastname: data.lastname,
+        idNumber: data.idNumber,
+        address: data.address,
+        dynamicFields: namespaceDynamicFields(
+          data.dynamicFields as Record<string, unknown> | undefined,
+          "kid",
+        ),
+      };
+
+      const updateResponse = await updateContactApi(kidContactId, updatePayload);
+      if (updateResponse.error || !updateResponse.data) {
+        const errorMessage = updateResponse.error || t("error") || "Failed to update kid contact";
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      await syncKidRelationships(kidContactId, linkedParentIds);
+      const relationships = kidRelationshipsRef.current[kidContactId] || [];
+      const mappedKid = mapContactToKid(updateResponse.data, relationships);
+
+      toast.success(t("updated_successfully") || "Record updated successfully");
+      setIsEditDialogOpen(false);
+      setEditingKid(null);
+      tableMethods?.updateItem(mappedKid);
     } catch (error) {
       console.error("Error updating kid:", error);
       toast.error(t("error"));
@@ -292,7 +531,19 @@ export default function KidsPage() {
     if (!confirmed) return;
 
     try {
-      await Promise.all(selectedIds.map((id) => kidsApi.delete(id)));
+      if (!isUnifiedContacts) {
+        await Promise.all(selectedIds.map((id) => kidsApi.delete(id)));
+      } else {
+        const contactIds = selectedRows
+          .map((row) => row.contactId || row._id)
+          .filter((id): id is string => !!id);
+
+        await Promise.all(contactIds.map((contactId) => deleteContactApi(contactId)));
+        contactIds.forEach((contactId) => {
+          delete kidRelationshipsRef.current[contactId];
+        });
+      }
+
       toast.success(t("deleted_successfully") || "Successfully deleted item(s)");
       setRowSelection({});
       tableMethods?.refresh();
@@ -349,15 +600,48 @@ export default function KidsPage() {
     try {
       setIsAdvancedUpdating(true);
 
-      await Promise.all(
-        ids.map((id) =>
-          kidsApi.update({
-            id,
-            organizationId: organization?._id || "",
-            ...payload,
-          })
-        )
-      );
+      if (!isUnifiedContacts) {
+        await Promise.all(
+          ids.map((id) =>
+            kidsApi.update({
+              id,
+              organizationId: organization?._id || "",
+              ...payload,
+            }),
+          ),
+        );
+      } else {
+        if (field === "linked_parents") {
+          const updatedValue = Array.isArray(value)
+            ? value
+            : value
+            ? [value]
+            : [];
+
+          await Promise.all(ids.map((contactId) => syncKidRelationships(contactId, updatedValue)));
+        } else {
+          await Promise.all(
+            ids.map(async (contactId) => {
+              const contactPayload: Record<string, unknown> = {};
+              Object.entries(payload).forEach(([key, val]) => {
+                if (key === "dynamicFields") {
+                  contactPayload.dynamicFields = namespaceDynamicFields(
+                    val as Record<string, unknown>,
+                    "kid",
+                  );
+                } else {
+                  contactPayload[key] = val;
+                }
+              });
+
+              const response = await updateContactApi(contactId, contactPayload);
+              if (response.error) {
+                throw new Error(response.error);
+              }
+            }),
+          );
+        }
+      }
 
       toast.success(t("updated_successfully"));
       tableMethods?.refresh();
@@ -379,11 +663,7 @@ export default function KidsPage() {
       </h1>
       <DataTable<Kid>
         data={[]}
-        fetchData={useCallback((params) => {
-          if (!organization?._id)
-            return Promise.resolve({ status: 200, data: [] });
-          return kidsApi.fetchAll(params, false, organization._id);
-        }, [organization?._id])}
+        fetchData={fetchKidsData}
         addData={kidsApi.create}
         updateData={kidsApi.update}
         deleteData={kidsApi.delete}

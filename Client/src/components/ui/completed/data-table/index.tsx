@@ -32,6 +32,7 @@ import { DataTablePaginationControls } from "./data-table-pagination-controls";
 import { DataTableLoading } from "./data-table-loading";
 import { DataTableSelectionBar } from "./data-table-selection-bar";
 import { DataTableBulkDeleteBtn } from "./data-table-bulk-delete-btn";
+import { cn } from "@/lib/utils";
 
 const globalFilterFn: FilterFn<any> = (row, columnId, filterValue) => {
   const search = String(filterValue).toLowerCase();
@@ -92,8 +93,13 @@ export function DataTable<TData>({
   onBulkDelete,
   onBulkAdvancedUpdate,
   onExportSelected,
+  addButtonClassName,
+  addButtonWrapperClassName,
 
-}: DataTableProps<TData> & { extraFilters?: Record<string, any>; customLeftButtons?: React.ReactNode }) {
+}: DataTableProps<TData> & {
+  extraFilters?: Record<string, any>;
+  customLeftButtons?: React.ReactNode;
+}) {
   const [tableData, setTableData] = useState<TData[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -159,7 +165,15 @@ export function DataTable<TData>({
     try {
       const response = await addData(dataToSend);
 
-      const createdItem = response.data;
+      if ((response as any)?.error) {
+        throw new Error((response as any).error);
+      }
+
+      const createdItem = (response as any)?.data;
+      if (!createdItem) {
+        throw new Error("No data returned from create");
+      }
+
       setTableData(
         (prev) =>
           prev.map((item) =>
@@ -176,7 +190,16 @@ export function DataTable<TData>({
         prev.filter((item) => (item as TData)[idField] !== tempId)
       );
 
-      toast.error("Failed to create event");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : (error as any)?.response?.data?.message ||
+            (error as any)?.error ||
+            "Failed to create event";
+
+      toast.error(
+        Array.isArray(errorMessage) ? errorMessage.join(", ") : errorMessage
+      );
     }
   };
 
@@ -581,13 +604,14 @@ export function DataTable<TData>({
           />
           {customLeftButtons}
         </div>
-        <div className="flex items-center gap-4">
+        <div className={cn("flex items-center gap-4", addButtonWrapperClassName)}>
           {customAddButton || (
             <DataTableAddButton
               showAddButton={showAdd}
               columns={columns}
               onAdd={handleAdd}
               excludeFields={excludeFields}
+              buttonClassName={addButtonClassName}
             />
           )}
         </div>

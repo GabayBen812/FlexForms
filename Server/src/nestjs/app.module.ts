@@ -21,6 +21,7 @@ import { TaskModule } from './modules/task.module';
 import { ChatModule } from './modules/chat.module';
 import { HealthController } from './controllers/health.controller';
 import { AnalyticsModule } from './modules/analytics.module';
+import { ContactModule } from './modules/contact.module';
 dotenv.config();
 @Module({
   imports: [
@@ -41,7 +42,8 @@ dotenv.config();
     EmployeeModule,
     TaskModule,
     ChatModule,
-    AnalyticsModule
+    AnalyticsModule,
+    ContactModule
   ],
   controllers: [AuthController, HealthController],
   providers: [AuthService],

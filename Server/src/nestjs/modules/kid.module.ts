@@ -4,11 +4,13 @@ import { KidController } from '../controllers/kid.controller';
 import { KidService } from '../services/kid.service';
 import { Kid, KidSchema } from '../schemas/kid.schema';
 import { ParentModule } from './parent.module';
+import { ContactModule } from './contact.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Kid.name, schema: KidSchema }]),
     forwardRef(() => ParentModule),
+    ContactModule,
   ],
   controllers: [KidController],
   providers: [KidService],

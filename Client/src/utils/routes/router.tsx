@@ -37,6 +37,7 @@ import FormDetails from "@/pages/Forms/dashboardPage";
 import FormRegistration from "@/pages/Forms/externalPage";
 import Clubs from "@/pages/Clubs";
 import Accounts from "@/pages/Accounts";
+import Contacts from "@/pages/Contacts";
 import { Navigate } from "react-router-dom";
 import AdminDashboard from "@/pages/Admin";
 import RegistrationSuccess from "@/pages/Forms/externalPage/RegistrationSuccess";
@@ -174,6 +175,16 @@ export const router = createBrowserRouter([
           icon: ClubsIcon,
           showInSidebar: true,
           featureFlag: "is_show_accounts",
+        },
+      },
+      {
+        path: "contacts",
+        element: <Contacts />,
+        handle: {
+          title: "contacts",
+          icon: ClubsIcon,
+          showInSidebar: true,
+          featureFlag: "FF_CONTACTS_UNIFIED",
         },
       },
       {

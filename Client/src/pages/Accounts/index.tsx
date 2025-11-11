@@ -332,11 +332,37 @@ export default function AccountsPage() {
     async (params: ApiQueryParams = {}) => {
       if (!organization?._id) {
         return {
-          data: { data: [], totalCount: 0, totalPages: 0 },
-        } as unknown as ApiResponse<Account>;
+          data: [],
+          totalCount: 0,
+          totalPages: 0,
+        };
       }
-      const result = await fetchAllAccounts(params, organization._id);
-      return result as unknown as ApiResponse<Account>;
+
+      const response = await fetchAllAccounts(params, organization._id);
+      const payload = response?.data;
+
+      if (payload && Array.isArray((payload as ApiResponse<Account>).data)) {
+        const castPayload = payload as ApiResponse<Account>;
+        return {
+          data: castPayload.data ?? [],
+          totalCount: castPayload.totalCount ?? castPayload.data.length,
+          totalPages: castPayload.totalPages ?? 1,
+        };
+      }
+
+      if (Array.isArray(payload)) {
+        return {
+          data: payload,
+          totalCount: payload.length,
+          totalPages: 1,
+        };
+      }
+
+      return {
+        data: [],
+        totalCount: 0,
+        totalPages: 0,
+      };
     },
     [organization?._id]
   );
@@ -363,7 +389,7 @@ export default function AccountsPage() {
   }, []);
 
   return (
-    <div className="mx-auto">
+    <div className="mx-auto max-w-6xl">
       <h1 className="text-2xl font-semibold text-primary mb-6">
         {t("accounts")}
       </h1>
@@ -379,7 +405,7 @@ export default function AccountsPage() {
         showAdvancedSearch
         onAdvancedSearchChange={setAdvancedFilters}
         initialAdvancedFilters={advancedFilters}
-        isPagination
+        isPagination={false}
         defaultPageSize={10}
         idField="_id"
         extraFilters={advancedFilters}
@@ -393,17 +419,16 @@ export default function AccountsPage() {
         customLeftButtons={
           <div className="flex gap-2">
             <Button
-              variant="outline"
               onClick={() => setIsAddDialogOpen(true)}
-              className="flex items-center gap-2 rounded-full border-transparent bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-200/40 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:from-emerald-500 hover:via-green-500 hover:to-teal-400 hover:text-white hover:shadow-xl hover:shadow-emerald-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium"
             >
               <Plus className="w-4 h-4" />
               {t("add")}
             </Button>
             <Button
-              variant="outline"
               onClick={() => setIsFieldConfigDialogOpen(true)}
-              className="flex items-center gap-2 rounded-full border-transparent bg-gradient-to-r from-purple-500 via-violet-500 to-fuchsia-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-purple-200/40 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:from-purple-500 hover:via-violet-500 hover:to-fuchsia-400 hover:text-white hover:shadow-xl hover:shadow-purple-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-200 focus-visible:ring-offset-2"
+              variant="outline"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium"
             >
               <Settings className="w-4 h-4" />
               {t("configure_fields", "ערוך שדות דינאמיים")}

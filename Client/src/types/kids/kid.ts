@@ -1,6 +1,7 @@
 export interface Kid {
   _id?: string;
   id?: string;
+  contactId?: string;
   firstname: string;
   lastname: string;
   linked_parents?: string[];
@@ -10,5 +11,6 @@ export interface Kid {
   dynamicFields?: Record<string, any>;
   createdAt?: string;
   updatedAt?: string;
+  status?: string;
 }
 

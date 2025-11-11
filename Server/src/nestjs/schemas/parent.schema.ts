@@ -20,6 +20,9 @@ export class Parent {
   @Prop({ type: Types.ObjectId, ref: 'Organization', required: true })
   organizationId!: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, ref: 'Contact' })
+  contactId?: Types.ObjectId;
+
   @Prop({ type: Object, default: {} })
   dynamicFields!: Record<string, any>;
 }

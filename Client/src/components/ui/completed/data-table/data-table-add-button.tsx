@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/Input";
+import { cn } from "@/lib/utils";
 
 interface DataTableAddButtonProps {
   showAddButton: any;
@@ -11,9 +12,17 @@ interface DataTableAddButtonProps {
   columns?: any[];
   onAdd: any;
   excludeFields?: any[];
+  buttonClassName?: string;
 }
 
-export function DataTableAddButton({ showAddButton, onToggleAddRow, columns = [], onAdd, excludeFields = [] }: DataTableAddButtonProps) {
+export function DataTableAddButton({
+  showAddButton,
+  onToggleAddRow,
+  columns = [],
+  onAdd,
+  excludeFields = [],
+  buttonClassName,
+}: DataTableAddButtonProps) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
@@ -47,7 +56,10 @@ export function DataTableAddButton({ showAddButton, onToggleAddRow, columns = []
       <Button
         variant="outline"
         onClick={() => setOpen(true)}
-        className="bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600 hover:border-green-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+        className={cn(
+          "bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600 hover:border-green-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium",
+          buttonClassName
+        )}
       >
         <Plus className="w-4 h-4 mr-2" /> הוסף
       </Button>
@@ -57,35 +69,38 @@ export function DataTableAddButton({ showAddButton, onToggleAddRow, columns = []
             <DialogTitle>הוסף רשומה חדשה</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {dataColumns.map((col) => (
-  <div key={col.accessorKey}>
-    <label className="block mb-1 font-medium">{col.header}</label>
-    {col.cellType === "select" && col.options ? (
-      <select
-        name={col.accessorKey}
-        value={form[col.accessorKey] || ""}
-        onChange={handleChange}
-        className="w-full border rounded px-2 py-1"
-        required
-      >
-        <option value="">בחר</option>
-        {col.options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
-    ) : (
-      <Input
-        name={col.accessorKey}
-        value={form[col.accessorKey] || ""}
-        onChange={handleChange}
-        className="w-full"
-        required
-      />
-    )}
-  </div>
-))}
+            {dataColumns.map((col) => {
+              const isRequired = col?.meta?.required !== false;
+              return (
+                <div key={col.accessorKey}>
+                  <label className="block mb-1 font-medium">{col.header}</label>
+                  {col.cellType === "select" && col.options ? (
+                    <select
+                      name={col.accessorKey}
+                      value={form[col.accessorKey] || ""}
+                      onChange={handleChange}
+                      className="w-full border rounded px-2 py-1"
+                      required={isRequired}
+                    >
+                      <option value="">בחר</option>
+                      {col.options.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <Input
+                      name={col.accessorKey}
+                      value={form[col.accessorKey] || ""}
+                      onChange={handleChange}
+                      className="w-full"
+                      required={isRequired}
+                    />
+                  )}
+                </div>
+              );
+            })}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)} className="bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium">
                 ביטול

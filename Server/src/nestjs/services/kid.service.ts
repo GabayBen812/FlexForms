@@ -1,32 +1,52 @@
 import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types, ClientSession } from 'mongoose';
-import { Kid } from '../schemas/kid.schema';
-import { CreateKidDto } from '../dto/kid.dto';
-import { UpdateKidDto } from '../dto/kid.dto';
+import { ClientSession, Model, Types } from 'mongoose';
+import { Kid, KidDocument } from '../schemas/kid.schema';
+import { CreateKidDto, UpdateKidDto } from '../dto/kid.dto';
 import { ParentService } from './parent.service';
+import { ContactService } from './contact.service';
+import { ContactRelationshipService } from './contact-relationship.service';
+import { ContactType } from '../schemas/contact.schema';
+import { namespaceDynamicFields } from '../utils/contact-dynamic-fields.util';
+import { isUnifiedContactsEnabled } from '../utils/feature-flags.util';
 
 @Injectable()
 export class KidService {
   constructor(
-    @InjectModel(Kid.name) private kidModel: Model<Kid>,
+    @InjectModel(Kid.name) private readonly kidModel: Model<KidDocument>,
     @Inject(forwardRef(() => ParentService))
-    private parentService: ParentService,
+    private readonly parentService: ParentService,
+    private readonly contactService: ContactService,
+    private readonly contactRelationshipService: ContactRelationshipService,
   ) {}
 
   async create(createKidDto: CreateKidDto): Promise<Kid> {
-    console.log('KidService.create - received DTO:', createKidDto);
     const session = await this.kidModel.db.startSession();
     session.startTransaction();
-    
+
     try {
-      const kidData: any = {
+      let contactId: Types.ObjectId | undefined;
+      if (this.isContactSyncEnabled()) {
+        contactId = await this.createContactForKid(
+          {
+            firstname: createKidDto.firstname,
+            lastname: createKidDto.lastname,
+            organizationId: createKidDto.organizationId,
+            idNumber: createKidDto.idNumber,
+            address: createKidDto.address,
+            dynamicFields: this.mapKidDynamicFields(createKidDto.dynamicFields),
+          },
+          session,
+        );
+      }
+
+      const kidData: Record<string, unknown> = {
         firstname: createKidDto.firstname,
         lastname: createKidDto.lastname,
         organizationId: new Types.ObjectId(createKidDto.organizationId),
         linked_parents: [],
       };
-      
+
       if (createKidDto.address) {
         kidData.address = createKidDto.address;
       }
@@ -34,33 +54,32 @@ export class KidService {
       if (createKidDto.idNumber) {
         kidData.idNumber = createKidDto.idNumber;
       }
-      
+
+      if (contactId) {
+        kidData.contactId = contactId;
+      }
+
       if (createKidDto.linked_parents && Array.isArray(createKidDto.linked_parents) && createKidDto.linked_parents.length > 0) {
         kidData.linked_parents = createKidDto.linked_parents
           .filter(parentId => parentId && Types.ObjectId.isValid(parentId))
           .map(parentId => new Types.ObjectId(parentId));
       }
 
-      // Handle dynamicFields - save them to the database
       if (createKidDto.dynamicFields && typeof createKidDto.dynamicFields === 'object') {
         kidData.dynamicFields = createKidDto.dynamicFields;
       }
-      
-      console.log('KidService.create - kidData to save:', kidData);
+
       const createdKid = new this.kidModel(kidData);
-      const saved = await createdKid.save({ session });
-      
-      // Sync: Add this kid to all linked parents
-      if (saved.linked_parents && saved.linked_parents.length > 0) {
-        const parentIds = saved.linked_parents.map(p => p.toString());
-        await this.parentService.addKidToParents(parentIds, saved._id.toString(), session);
+      const savedKid = (await createdKid.save({ session })) as KidDocument;
+
+      if (savedKid.linked_parents && savedKid.linked_parents.length > 0) {
+        const parentIds = savedKid.linked_parents.map(p => p.toString());
+        await this.parentService.addKidToParents(parentIds, savedKid._id.toString(), session);
       }
-      
+
       await session.commitTransaction();
-      console.log('KidService.create - saved kid:', saved);
-      return saved;
+      return savedKid;
     } catch (error) {
-      console.error('KidService.create - error:', error);
       await session.abortTransaction();
       throw error;
     } finally {
@@ -68,12 +87,11 @@ export class KidService {
     }
   }
 
-  async findAll(organizationId: string, query: any = {}): Promise<Kid[]> {
-    const filter: any = {
-      organizationId: new Types.ObjectId(organizationId)
+  async findAll(organizationId: string, query: Record<string, any> = {}): Promise<Kid[]> {
+    const filter: Record<string, unknown> = {
+      organizationId: new Types.ObjectId(organizationId),
     };
 
-    // Apply advanced search filters
     if (query.firstname) {
       filter.firstname = { $regex: query.firstname, $options: 'i' };
     }
@@ -86,23 +104,19 @@ export class KidService {
     if (query.address) {
       filter.address = { $regex: query.address, $options: 'i' };
     }
-    
-    // Handle dynamicFields filters (dot notation)
+
     Object.keys(query).forEach(key => {
       if (key.startsWith('dynamicFields.') && query[key] !== undefined && query[key] !== '') {
-        // Handle boolean values (from checkbox fields)
         if (query[key] === 'true' || query[key] === 'false') {
           filter[key] = query[key] === 'true';
         } else {
-          // Handle text/number values with regex
           filter[key] = { $regex: query[key], $options: 'i' };
         }
       }
     });
 
-    // Remove empty filters
     Object.keys(filter).forEach(key => {
-      if (filter[key] === undefined || filter[key] === "") {
+      if (filter[key] === undefined || filter[key] === '') {
         delete filter[key];
       }
     });
@@ -114,69 +128,119 @@ export class KidService {
     return this.kidModel.findById(id).exec();
   }
 
+  async findByIds(ids: string[]): Promise<KidDocument[]> {
+    if (!ids.length) {
+      return [];
+    }
+
+    return this.kidModel
+      .find({ _id: { $in: ids.map(id => new Types.ObjectId(id)) } })
+      .exec() as Promise<KidDocument[]>;
+  }
+
   async update(id: string, updateKidDto: UpdateKidDto): Promise<Kid | null> {
     const session = await this.kidModel.db.startSession();
     session.startTransaction();
-    
+
     try {
-      // Get the existing kid to compare linked_parents
       const existingKid = await this.kidModel.findById(id).session(session).exec();
       if (!existingKid) {
         await session.abortTransaction();
         return null;
       }
 
-      const oldParentIds = (existingKid.linked_parents || []).map(p => p.toString());
-      
-      const updateData: any = { ...updateKidDto };
-      
-      // Handle dynamicFields separately using dot notation to merge instead of replace
+      const updateData: Record<string, unknown> = {};
+
+      if (updateKidDto.firstname !== undefined) {
+        updateData.firstname = updateKidDto.firstname;
+      }
+      if (updateKidDto.lastname !== undefined) {
+        updateData.lastname = updateKidDto.lastname;
+      }
+      if (updateKidDto.address !== undefined) {
+        updateData.address = updateKidDto.address;
+      }
+      if (updateKidDto.idNumber !== undefined) {
+        updateData.idNumber = updateKidDto.idNumber;
+      }
+
       if (updateKidDto.dynamicFields && typeof updateKidDto.dynamicFields === 'object') {
-        const dynamicFieldsUpdate: any = {};
+        const dynamicFieldsUpdate: Record<string, unknown> = {};
         Object.keys(updateKidDto.dynamicFields).forEach(key => {
-          dynamicFieldsUpdate[`dynamicFields.${key}`] = updateKidDto.dynamicFields[key];
+          dynamicFieldsUpdate[`dynamicFields.${key}`] = updateKidDto.dynamicFields?.[key];
         });
-        
-        // Remove dynamicFields from updateData and use dot notation instead
-        delete updateData.dynamicFields;
         Object.assign(updateData, dynamicFieldsUpdate);
       }
-      
+
       if (updateKidDto.linked_parents) {
         updateData.linked_parents = updateKidDto.linked_parents.map(parentId => new Types.ObjectId(parentId));
       }
-      
-      const updatedKid = await this.kidModel
+
+      const shouldSyncContacts = this.isContactSyncEnabled();
+      let contactCreated = false;
+      if (shouldSyncContacts) {
+        const namespacedDynamicFields = this.mapKidDynamicFields(updateKidDto.dynamicFields);
+        const kidContactId = existingKid.contactId ? existingKid.contactId.toString() : undefined;
+
+        if (!kidContactId) {
+          const newContactId = await this.createContactForKid(
+            {
+              firstname: updateKidDto.firstname ?? existingKid.firstname,
+              lastname: updateKidDto.lastname ?? existingKid.lastname,
+              organizationId: existingKid.organizationId.toString(),
+              idNumber: updateKidDto.idNumber ?? existingKid.idNumber,
+              address: updateKidDto.address ?? existingKid.address,
+              dynamicFields: namespacedDynamicFields ?? this.mapKidDynamicFields(existingKid.dynamicFields as Record<string, unknown>),
+            },
+            session,
+          );
+          updateData.contactId = newContactId;
+          contactCreated = true;
+        } else {
+          await this.contactService.update(
+            kidContactId,
+            {
+              firstname: updateKidDto.firstname,
+              lastname: updateKidDto.lastname,
+              idNumber: updateKidDto.idNumber,
+              address: updateKidDto.address,
+              dynamicFields: namespacedDynamicFields,
+            },
+            session,
+          );
+        }
+      }
+
+      const updatedKid = (await this.kidModel
         .findByIdAndUpdate(id, updateData, { new: true, session })
-        .exec();
+        .exec()) as KidDocument | null;
 
       if (!updatedKid) {
         await session.abortTransaction();
         return null;
       }
 
-      // Sync bidirectional relationship
+      const existingParentIds = (existingKid.linked_parents || []).map(p => p.toString());
       const newParentIds = (updatedKid.linked_parents || []).map(p => p.toString());
-      
-      // Find parents to remove this kid from
-      const parentsToRemove = oldParentIds.filter(pid => !newParentIds.includes(pid));
-      // Find parents to add this kid to
-      const parentsToAdd = newParentIds.filter(pid => !oldParentIds.includes(pid));
-      
-      // Remove kid from old parents
+
+      const parentsToRemove = existingParentIds.filter(pid => !newParentIds.includes(pid));
+      const parentsToAdd = newParentIds.filter(pid => !existingParentIds.includes(pid));
+
       if (parentsToRemove.length > 0) {
         await this.parentService.removeKidFromParents(parentsToRemove, id, session);
       }
-      
-      // Add kid to new parents
+
       if (parentsToAdd.length > 0) {
         await this.parentService.addKidToParents(parentsToAdd, id, session);
+      }
+
+      if (contactCreated && newParentIds.length > 0) {
+        await this.parentService.addKidToParents(newParentIds, id, session);
       }
 
       await session.commitTransaction();
       return updatedKid;
     } catch (error) {
-      console.error('KidService.update - error:', error);
       await session.abortTransaction();
       throw error;
     } finally {
@@ -187,27 +251,30 @@ export class KidService {
   async remove(id: string): Promise<Kid | null> {
     const session = await this.kidModel.db.startSession();
     session.startTransaction();
-    
+
     try {
-      // Get the kid before deletion to sync relationships
       const kid = await this.kidModel.findById(id).session(session).exec();
       if (!kid) {
         await session.abortTransaction();
         return null;
       }
 
-      // Remove this kid from all linked parents before deleting
       if (kid.linked_parents && kid.linked_parents.length > 0) {
         const parentIds = kid.linked_parents.map(p => p.toString());
         await this.parentService.removeKidFromParents(parentIds, id, session);
       }
 
+      if (this.isContactSyncEnabled() && kid.contactId) {
+        const contactId = kid.contactId.toString();
+        await this.contactRelationshipService.removeAllForContact(contactId, session);
+        await this.contactService.remove(contactId, session);
+      }
+
       const deletedKid = await this.kidModel.findByIdAndDelete(id).session(session).exec();
-      
+
       await session.commitTransaction();
       return deletedKid;
     } catch (error) {
-      console.error('KidService.remove - error:', error);
       await session.abortTransaction();
       throw error;
     } finally {
@@ -215,69 +282,99 @@ export class KidService {
     }
   }
 
-  /**
-   * Public method to add parent to kid (called from ParentService)
-   */
   async addParentToKid(kidId: string, parentId: string, session?: ClientSession): Promise<void> {
-    const updateOptions: any = { new: true };
+    const updateOptions: Record<string, unknown> = { new: true };
     if (session) {
       updateOptions.session = session;
     }
-    
+
     await this.kidModel.findByIdAndUpdate(
       kidId,
       { $addToSet: { linked_parents: new Types.ObjectId(parentId) } },
-      updateOptions
+      updateOptions,
     ).exec();
   }
 
-  /**
-   * Public method to remove parent from kid (called from ParentService)
-   */
   async removeParentFromKid(kidId: string, parentId: string, session?: ClientSession): Promise<void> {
-    const updateOptions: any = { new: true };
+    const updateOptions: Record<string, unknown> = { new: true };
     if (session) {
       updateOptions.session = session;
     }
-    
+
     await this.kidModel.findByIdAndUpdate(
       kidId,
       { $pull: { linked_parents: new Types.ObjectId(parentId) } },
-      updateOptions
+      updateOptions,
     ).exec();
   }
 
-  /**
-   * Batch methods for efficiency
-   */
   async addParentToKids(kidIds: string[], parentId: string, session?: ClientSession): Promise<void> {
-    if (kidIds.length === 0) return;
-    
-    const updateOptions: any = {};
+    if (kidIds.length === 0) {
+      return;
+    }
+
+    const updateOptions: Record<string, unknown> = {};
     if (session) {
       updateOptions.session = session;
     }
-    
+
     await this.kidModel.updateMany(
       { _id: { $in: kidIds.map(id => new Types.ObjectId(id)) } },
       { $addToSet: { linked_parents: new Types.ObjectId(parentId) } },
-      updateOptions
+      updateOptions,
     ).exec();
   }
 
   async removeParentFromKids(kidIds: string[], parentId: string, session?: ClientSession): Promise<void> {
-    if (kidIds.length === 0) return;
-    
-    const updateOptions: any = {};
+    if (kidIds.length === 0) {
+      return;
+    }
+
+    const updateOptions: Record<string, unknown> = {};
     if (session) {
       updateOptions.session = session;
     }
-    
+
     await this.kidModel.updateMany(
       { _id: { $in: kidIds.map(id => new Types.ObjectId(id)) } },
       { $pull: { linked_parents: new Types.ObjectId(parentId) } },
-      updateOptions
+      updateOptions,
     ).exec();
+  }
+
+  private isContactSyncEnabled(): boolean {
+    return isUnifiedContactsEnabled();
+  }
+
+  private mapKidDynamicFields(fields?: Record<string, unknown>): Record<string, unknown> | undefined {
+    return namespaceDynamicFields(fields as Record<string, unknown> | undefined, 'kid');
+  }
+
+  private async createContactForKid(
+    payload: {
+      firstname: string;
+      lastname: string;
+      organizationId: string;
+      idNumber?: string;
+      address?: string;
+      dynamicFields?: Record<string, unknown>;
+    },
+    session?: ClientSession,
+  ): Promise<Types.ObjectId> {
+    const contact = await this.contactService.create(
+      {
+        firstname: payload.firstname,
+        lastname: payload.lastname,
+        type: ContactType.KID,
+        organizationId: payload.organizationId,
+        idNumber: payload.idNumber,
+        address: payload.address,
+        dynamicFields: payload.dynamicFields,
+      },
+      session,
+    );
+
+    return new Types.ObjectId(contact._id);
   }
 }
 

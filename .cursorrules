@@ -1,8 +1,10 @@
 # Paradize Cursor Rules
 
 ## Project Overview
-Paradize is a multi-tenant ERP/CRM platform with a React frontend and NestJS backend. This project uses TypeScript throughout, MongoDB for data storage, and modern tooling including Vite, Tailwind CSS, and React Query.
+Paradize is a multi-tenant ERP/CRM platform with a React frontend and NestJS backend. This project uses TypeScript throughout, MongoDB for data storage, and modern tooling including Vite, Tailwind CSS, and React Query. also Radix UI.
 This will be dedicated for education organizations
+
+When i write "FF" i usally refer to FeatureFlag
 
 ## Project Structure
 

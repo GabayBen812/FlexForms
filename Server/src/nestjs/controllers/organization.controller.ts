@@ -1,6 +1,6 @@
-import { Controller, Post, Body, Get, Req, UseGuards, Param, BadRequestException, Query, Put } from '@nestjs/common';
+import { Controller, Post, Body, Get, Req, UseGuards, Param, BadRequestException, Query, Put, Delete } from '@nestjs/common';
 import { OrganizationService } from '../services/organization.service';
-import { CreateOrganizationDto } from '../dto/organization.dto';
+import { CreateOrganizationDto, UpdateOrganizationDto } from '../dto/organization.dto';
 import { JwtAuthGuard } from '../middlewares/jwt-auth.guard';
 import { Request } from 'express';
 import { CustomRequest } from '../dto/CustomRequest';
@@ -65,18 +65,6 @@ export class OrganizationController {
     return this.organizationService.removeFeatureFlag(id, body.featureFlagId);
   }
 
-  // Update organization name
-  @Put(':id')
-  async updateOrganizationName(
-    @Param('id') id: string,
-    @Body('name') name: string
-  ) {
-    if (!name || typeof name !== 'string') {
-      throw new BadRequestException('Name is required');
-    }
-    return this.organizationService.updateName(id, name);
-  }
-
 @Get(':id/request-definitions')
 async getRequestDefinitions(@Param('id') id: string) {
   const org = await this.organizationService.findById(id);
@@ -106,4 +94,17 @@ async updateTableFieldDefinitions(
 ) {
   return this.organizationService.updateTableFieldDefinitions(id, body);
 }
+
+  @Put(':id')
+  async updateOrganization(
+    @Param('id') id: string,
+    @Body() body: UpdateOrganizationDto
+  ) {
+    return this.organizationService.update(id, body);
+  }
+
+  @Delete(':id')
+  async deleteOrganization(@Param('id') id: string) {
+    return this.organizationService.remove(id);
+  }
 }

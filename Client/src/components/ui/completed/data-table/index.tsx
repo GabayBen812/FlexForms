@@ -196,7 +196,7 @@ export function DataTable<TData>({
   // };
 
   const handleUpdate = async (row: Row<TData>, data: Partial<TData>) => {
-  if (!idField) return;
+  if (!idField || !updateData) return;
 
   const id = row.original[idField] as string | number;
   const updatedData = { ...data, id };
@@ -215,21 +215,33 @@ export function DataTable<TData>({
 
   try {
     // Call the API in the background
-    await updateData(updatedData);
+    const response = await updateData(updatedData);
+    const status = response?.status ?? 0;
+    const isSuccess = status >= 200 && status < 300 && !("error" in (response ?? {}));
+    if (!isSuccess) {
+      const errorMessage =
+        ("error" in (response ?? {}) && (response as any).error) ||
+        t("error") ||
+        "Failed to update";
+      throw new Error(typeof errorMessage === "string" ? errorMessage : "Failed to update");
+    }
+
     toast.success(t("updated_successfully"));
   } catch (error) {
     console.error("Failed to update data:", error);
-    
+
     // Revert to original data on error
     setTableData((prev) =>
       prev.map((item) =>
         (item as TData)[idField] === id
-          ? originalData as TData
+          ? (originalData as TData)
           : item
       )
     );
-    
-    toast.error(t("error"));
+
+    const errorMessage =
+      error instanceof Error ? error.message : t("error");
+    toast.error(errorMessage || t("error"));
   }
 };
   const handleDeleteData = async (id: string | number) => {

@@ -11,6 +11,7 @@ import { OrganizationModule } from './modules/organization.module';
 import { PaymentModule } from './modules/payment.module';
 import { RegistrationModule } from './modules/registration.module';
 import { clubModule } from './modules/club.moudle';
+import { AccountModule } from './modules/account.module';
 import { FeatureFlagModule } from './modules/feature-flag.module';
 import { RoomModule } from './modules/room.module';
 import { KidModule } from './modules/kid.module';
@@ -19,6 +20,7 @@ import { EmployeeModule } from './modules/employee.module';
 import { TaskModule } from './modules/task.module';
 import { ChatModule } from './modules/chat.module';
 import { HealthController } from './controllers/health.controller';
+import { AnalyticsModule } from './modules/analytics.module';
 dotenv.config();
 @Module({
   imports: [
@@ -31,13 +33,15 @@ dotenv.config();
     PaymentModule,
     RegistrationModule,
     clubModule,
+    AccountModule,
     FeatureFlagModule,
     RoomModule,
     KidModule,
     ParentModule,
     EmployeeModule,
     TaskModule,
-    ChatModule
+    ChatModule,
+    AnalyticsModule
   ],
   controllers: [AuthController, HealthController],
   providers: [AuthService],

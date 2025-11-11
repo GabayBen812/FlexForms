@@ -3,8 +3,8 @@ import { Type } from 'class-transformer';
 
 export class CreateFeatureFlagDto {
   @IsString()
-  @Matches(/^ff_[a-z0-9_]+$/, {
-    message: 'Key must start with ff_ and contain only lowercase letters, numbers, and underscores'
+  @Matches(/^(?:ff_)?[A-Za-z][A-Za-z0-9_]*$/, {
+    message: 'Key may optionally start with ff_ and must contain only letters, numbers, and underscores'
   })
   key!: string;
 
@@ -32,8 +32,8 @@ export class CreateFeatureFlagDto {
 export class UpdateFeatureFlagDto {
   @IsString()
   @IsOptional()
-  @Matches(/^ff_[a-z0-9_]+$/, {
-    message: 'Key must start with ff_ and contain only lowercase letters, numbers, and underscores'
+  @Matches(/^(?:ff_)?[A-Za-z][A-Za-z0-9_]*$/, {
+    message: 'Key may optionally start with ff_ and must contain only letters, numbers, and underscores'
   })
   key?: string;
 

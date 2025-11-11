@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Organization, OrganizationDocument } from '../schemas/organization.schema';
+import { UpdateOrganizationDto } from '../dto/organization.dto';
 
 @Injectable()
 export class OrganizationService {
@@ -69,12 +70,29 @@ export class OrganizationService {
     ).exec();
   }
 
-  async updateName(orgId: string, name: string) {
-    return this.model.findByIdAndUpdate(
-      orgId,
-      { name },
-      { new: true }
-    ).exec();
+  async update(orgId: string, update: UpdateOrganizationDto) {
+    const updatePayload: Record<string, any> = {};
+
+    if (update.name !== undefined) {
+      if (typeof update.name !== 'string' || update.name.trim() === '') {
+        throw new BadRequestException('Name must be a non-empty string');
+      }
+      updatePayload.name = update.name;
+    }
+
+    if (update.description !== undefined) {
+      updatePayload.description = update.description;
+    }
+
+    if (Object.keys(updatePayload).length === 0) {
+      throw new BadRequestException('No valid fields provided for update');
+    }
+
+    return this.model.findByIdAndUpdate(orgId, updatePayload, { new: true }).exec();
+  }
+
+  async remove(orgId: string) {
+    return this.model.findByIdAndDelete(orgId).exec();
   }
 
   async updateRequestDefinitions(

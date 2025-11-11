@@ -36,6 +36,7 @@ import CreateForm from "@/pages/Forms/createPage/createForm";
 import FormDetails from "@/pages/Forms/dashboardPage";
 import FormRegistration from "@/pages/Forms/externalPage";
 import Clubs from "@/pages/Clubs";
+import Accounts from "@/pages/Accounts";
 import { Navigate } from "react-router-dom";
 import AdminDashboard from "@/pages/Admin";
 import RegistrationSuccess from "@/pages/Forms/externalPage/RegistrationSuccess";
@@ -163,6 +164,16 @@ export const router = createBrowserRouter([
           icon: ClubsIcon,
           showInSidebar: true,
           featureFlag: "is_show_clubs",
+        },
+      },
+      {
+        path: "accounts",
+        element: <Accounts />,
+        handle: {
+          title: "accounts",
+          icon: ClubsIcon,
+          showInSidebar: true,
+          featureFlag: "is_show_accounts",
         },
       },
       {

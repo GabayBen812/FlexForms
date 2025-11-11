@@ -5,6 +5,8 @@ FlexForms is a dynamic form management project built with modern technologies. T
 ## Table of Contents
 - [Installation](#installation)
 - [Running the Project](#running-the-project)
+- [Environment Variables](#environment-variables)
+- [Analytics](#analytics)
 - [Project Structure](#project-structure)
 - [Technologies Used](#technologies-used)
 - [Contributing](#contributing)
@@ -50,14 +52,28 @@ FlexForms is a dynamic form management project built with modern technologies. T
 
 ## Running in Development Environment
 
-1. **Environment Variables:**
-    - If you're working in a development environment, ensure to set up any necessary environment variables (such as database connection details or API keys). You can add these to a `.env` file.
-
-2. **Run with Docker:**
+1. **Run with Docker:**
     - You can also run the project using Docker:
       ```bash
       docker-compose up --build
       ```
+
+## Environment Variables
+
+The project expects the following analytics-related variables. Define them in your local `.env` files or environment configuration for each workspace:
+
+| Scope  | Variable               | Description                                           |
+|--------|------------------------|-------------------------------------------------------|
+| Client | `VITE_MIXPANEL_TOKEN`  | Mixpanel project token used by the React application. |
+| Client | `VITE_MIXPANEL_DEBUG`  | Optional. Set to `true` to enable verbose logging.    |
+| Server | `MIXPANEL_TOKEN`       | Mixpanel project token used by the NestJS backend.    |
+| Server | `MIXPANEL_DEBUG`       | Optional. Enables verbose logging for server events.  |
+
+If the tokens are not provided, analytics are disabled automatically without affecting application behaviour.
+
+## Analytics
+
+An overview of the Mixpanel integration, available helpers, and manual verification steps is documented in [`docs/analytics.md`](docs/analytics.md).
 
 ## Project Structure
 

@@ -9,9 +9,17 @@ import {
 import { fetchUser } from "@/api/users/fetchUser";
 import { login } from "@/api/auth";
 import { toast } from "@/hooks/use-toast";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 export function useAuth() {
   const queryClient = useQueryClient();
+  const {
+    trackEvent,
+    identifyUser,
+    setUserProfile,
+    registerSuperProperties,
+    unregisterSuperProperty,
+  } = useAnalytics();
 
   const userQuery = useQuery<User | null, Error>({
     queryKey: ["user"],
@@ -26,20 +34,55 @@ export function useAuth() {
     LoginCredentials
   >({
     mutationFn: login,
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
+      if (data.data?.user?._id) {
+        identifyUser(String(data.data.user._id));
+        setUserProfile({
+          email: data.data.user.email,
+          name: data.data.user.name,
+          organizationId: data.data.user.organizationId,
+          role: data.data.user.role,
+        });
+        registerSuperProperties({
+          organizationId: data.data.user.organizationId,
+          role: data.data.user.role,
+        });
+      } else {
+        unregisterSuperProperty("organizationId");
+        unregisterSuperProperty("role");
+      }
+
       if (data.data) {
         queryClient.invalidateQueries({ queryKey: ["user"] });
+        trackEvent("auth:login_success", {
+          properties: {
+            email: variables.email,
+            status: data.status,
+          },
+        });
       } else {
         toast.error("פרטי הזדהות שגויים", {
           description: data.error || "השם משתמש או הסיסמה שגויים",
           richColors: true,
         });
+        trackEvent("auth:login_failure", {
+          properties: {
+            email: variables.email,
+            reason: data.error || "unknown_error",
+          },
+        });
       }
     },
-    onError: (error) => {
+    onError: (error, variables) => {
       toast.error("שגיאה בהתחברות", {
         description: error.message || "אירעה שגיאה בעת ההתחברות",
         richColors: true,
+      });
+      trackEvent("auth:login_error", {
+        properties: {
+          email: variables?.email,
+          message: error.message,
+        },
       });
     },
   });

@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { FeatureFlag } from "@/types/feature-flags";
 import { DataTable } from "@/components/ui/completed/data-table";
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { Pencil, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   fetchAllFeatureFlags,
@@ -13,7 +13,11 @@ import {
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import FeatureFlagEditForm from "@/components/forms/FeatureFlagEditForm";
 import FeatureFlagOrganizationsModal from "@/components/forms/FeatureFlagOrganizationsModal";
+import FeatureFlagCreateForm from "@/components/forms/FeatureFlagCreateForm";
 import { fetchAllOrganizations } from "@/api/organizations";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "@/hooks/use-toast";
+import { showConfirm } from "@/utils/swal";
 
 export default function FeatureFlagsTable() {
   const { t } = useTranslation();
@@ -25,6 +29,25 @@ export default function FeatureFlagsTable() {
     { _id: string; name: string; featureFlagIds: string[] }[]
   >([]);
   const [orgsLoading, setOrgsLoading] = useState(true);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [tableRows, setTableRows] = useState<FeatureFlag[]>([]);
+  const [tableMethods, setTableMethods] = useState<{
+    refresh: () => void;
+    addItem: (item: FeatureFlag) => void;
+    updateItem: (item: FeatureFlag) => void;
+  } | null>(null);
+
+  const handleUpdateFlag = async (
+    payload: Partial<FeatureFlag> & { id: string | number }
+  ) => {
+    const { id, ...update } = payload;
+    const response = await updateFeatureFlag(String(id), update);
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    return response;
+  };
 
   useEffect(() => {
     async function loadOrgs() {
@@ -42,71 +65,200 @@ export default function FeatureFlagsTable() {
     loadOrgs();
   }, [refreshKey]);
 
-  const columns: ColumnDef<FeatureFlag>[] = [
-    { accessorKey: "key", header: t("key", "Key") },
-    { accessorKey: "name", header: t("name", "Name") },
-    { accessorKey: "description", header: t("description", "Description") },
-    {
-      accessorKey: "isEnabled",
-      header: t("enabled", "Enabled"),
-      cell: ({ row }) => (
-        <Switch
-          checked={row.original.isEnabled}
-          onCheckedChange={async (checked) => {
-            await updateFeatureFlag(row.original._id, { isEnabled: checked });
-            setRefreshKey((k) => k + 1);
-          }}
-        />
-      ),
-    },
-    {
-      accessorKey: "tags",
-      header: t("tags", "Tags"),
-      cell: ({ row }) => (
-        <div className="flex flex-wrap gap-1">
-          {row.original.tags?.map((tag) => (
-            <span key={tag} className="bg-muted px-2 py-0.5 rounded text-xs">
-              {tag}
+  const selectionColumn: ColumnDef<FeatureFlag> = useMemo(
+    () => ({
+      id: "select",
+      enableSorting: false,
+      header: ({ table }) => {
+        const selectedCount = table.getSelectedRowModel().rows.length;
+        return (
+          <div className="flex items-center justify-center gap-2">
+            <Checkbox
+              checked={
+                table.getIsAllPageRowsSelected()
+                  ? true
+                  : table.getIsSomePageRowsSelected()
+                  ? "indeterminate"
+                  : false
+              }
+              onCheckedChange={(value) =>
+                table.toggleAllPageRowsSelected(!!value)
+              }
+              aria-label={t("select_all", "Select all")}
+              className="border-white"
+            />
+            <span className="text-xs text-white">
+              {selectedCount} {t("selected", "selected")}
             </span>
-          ))}
-        </div>
-      ),
-    },
-    {
-      id: "actions",
-      header: t("actions", "Actions"),
+          </div>
+        );
+      },
       cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditingFlag(row.original);
-            }}
-          >
-            {t("edit", "Edit")}
-          </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeletingFlag(row.original);
-            }}
-          >
-            {t("delete", "Delete")}
-          </Button>
+        <div className="flex items-center justify-center">
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={t("select_row", "Select row")}
+          />
         </div>
       ),
+      enableHiding: false,
+      size: 120,
+    }),
+    [t]
+  );
+
+  const columns: ColumnDef<FeatureFlag>[] = useMemo(
+    () => [
+      selectionColumn,
+      {
+        accessorKey: "key",
+        header: t("key", "Key"),
+        meta: {
+          editable: false,
+        },
+        cell: ({ getValue }) => (
+          <span
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            className="cursor-default select-text"
+          >
+            {getValue<string>()}
+          </span>
+        ),
+      },
+      { accessorKey: "name", header: t("name", "Name") },
+      { accessorKey: "description", header: t("description", "Description") },
+      {
+        accessorKey: "isEnabled",
+        header: t("enabled", "Enabled"),
+        meta: {
+          fieldType: "CHECKBOX",
+        },
+      },
+      {
+        accessorKey: "tags",
+        header: t("tags", "Tags"),
+        cell: ({ row }) => (
+          <div className="flex flex-wrap gap-1">
+            {row.original.tags?.map((tag) => (
+              <span key={tag} className="bg-muted px-2 py-0.5 rounded text-xs">
+                {tag}
+              </span>
+            ))}
+          </div>
+        ),
+      },
+      {
+        id: "actions",
+        header: t("actions", "Actions"),
+        cell: ({ row }) => (
+          <div className="flex gap-2">
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditingFlag(row.original);
+              }}
+              aria-label={t("edit", "Edit")}
+              tooltip={t("edit", "Edit")}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeletingFlag(row.original);
+              }}
+              aria-label={t("delete", "Delete")}
+              tooltip={t("delete", "Delete")}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [selectionColumn, t]
+  );
+
+  const handleRowSelectionChange = useCallback((updater: any) => {
+    setRowSelection((prev) =>
+      typeof updater === "function" ? updater(prev) : updater
+    );
+  }, []);
+
+  const handleVisibleRows = useCallback((rows: FeatureFlag[]) => {
+    setTableRows(rows);
+  }, []);
+
+  const handleRefreshReady = useCallback(
+    (methods: {
+      refresh: () => void;
+      addItem: (item: FeatureFlag) => void;
+      updateItem: (item: FeatureFlag) => void;
+    }) => {
+      setTableMethods(methods);
     },
-  ];
+    []
+  );
+
+  const handleBulkDelete = useCallback(
+    async (selectedRowsParam?: FeatureFlag[]) => {
+      const fallbackSelectedRows = Object.keys(rowSelection)
+        .map(Number)
+        .map((index) => tableRows[index])
+        .filter((row): row is FeatureFlag => !!row);
+
+      const selectedRows = selectedRowsParam?.length
+        ? selectedRowsParam
+        : fallbackSelectedRows;
+
+      const selectedIds = selectedRows
+        .map((row) => row._id)
+        .filter((id): id is string => !!id);
+
+      if (!selectedIds.length) return;
+
+      const confirmed = await showConfirm(
+        t("confirm_delete") || t("common:confirm_delete") || "Are you sure?"
+      );
+
+      if (!confirmed) return;
+
+      try {
+        await Promise.all(selectedIds.map((id) => deleteFeatureFlag(id)));
+        toast.success(t("deleted_successfully") || "Deleted successfully");
+        setRowSelection({});
+        if (tableMethods) {
+          tableMethods.refresh();
+        } else {
+          setRefreshKey((k) => k + 1);
+        }
+      } catch (error) {
+        console.error("Error deleting feature flags:", error);
+        toast.error(t("delete_failed") || "Failed to delete items");
+      }
+    },
+    [rowSelection, tableRows, t, tableMethods]
+  );
 
   return (
     <div className="mt-8">
-      <h2 className="text-xl font-bold mb-4">
-        {t("feature_flags", "Feature Flags")}
-      </h2>
+      <div className="flex flex-col items-center gap-4 text-center mb-8">
+        
+        <Button
+          onClick={() => setIsCreateDialogOpen(true)}
+          className="w-full max-w-md py-6 px-10 text-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-200 hover:scale-105"
+        >
+          {t("create_new_feature_flag", "Create new Feature Flag")}
+        </Button>
+      </div>
       <DataTable<FeatureFlag>
         data={[]}
         key={refreshKey}
@@ -115,13 +267,25 @@ export default function FeatureFlagsTable() {
         addData={async () => {
           return { data: {} as FeatureFlag, status: 200 };
         }}
-        updateData={async () => {
-          return { data: {} as FeatureFlag, status: 200 };
-        }}
+        updateData={handleUpdateFlag}
+        idField="_id"
         searchable
         isPagination={false}
         onRowClick={(row) => setOrgsModalFlag(row)}
+        rowSelection={rowSelection}
+        onRowSelectionChange={handleRowSelectionChange}
+        visibleRows={handleVisibleRows}
+        onRefreshReady={handleRefreshReady}
+        onBulkDelete={handleBulkDelete}
       />
+
+      {/* Create Dialog */}
+      {isCreateDialogOpen && (
+        <FeatureFlagCreateForm
+          onClose={() => setIsCreateDialogOpen(false)}
+          onCreated={() => setRefreshKey((k) => k + 1)}
+        />
+      )}
 
       {/* Edit Dialog */}
       {editingFlag && (

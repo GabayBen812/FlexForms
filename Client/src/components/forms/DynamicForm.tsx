@@ -123,8 +123,31 @@ export default function DynamicForm({
   const handleFormSubmit = async (data: any) => {
     console.log("[handleFormSubmit] Raw form data:", data);
     const processedData = await processSignatureFields(data);
-    console.log("[handleFormSubmit] Processed form data:", processedData);
-    onSubmit(processedData);
+    
+    // Ensure all fields are included, especially select fields
+    // Convert empty strings to null for optional fields to ensure they're saved
+    const cleanedData: Record<string, any> = {};
+    fields.forEach((field) => {
+      const value = processedData[field.name];
+      if (value !== undefined) {
+        // For select fields, preserve empty strings as null if not required
+        if (field.type === "select" && value === "" && !field.isRequired) {
+          cleanedData[field.name] = null;
+        } else {
+          cleanedData[field.name] = value;
+        }
+      }
+    });
+    
+    // Include any other fields that might not be in the fields array
+    Object.keys(processedData).forEach((key) => {
+      if (!cleanedData.hasOwnProperty(key)) {
+        cleanedData[key] = processedData[key];
+      }
+    });
+    
+    console.log("[handleFormSubmit] Processed form data:", cleanedData);
+    onSubmit(cleanedData);
   };
 
   const renderField = (field: FieldConfig) => {
@@ -143,10 +166,13 @@ export default function DynamicForm({
       case "select":
         return (
           <select
-            {...register(field.name)}
+            {...register(field.name, {
+              valueAsNumber: false,
+            })}
             className="border px-2 py-1 rounded"
             disabled={mode !== "registration"}
             data-cy={`field-select-${field.name}`}
+            defaultValue=""
           >
             <option
               value=""
@@ -157,7 +183,7 @@ export default function DynamicForm({
             {field.config?.options?.map((opt: any, i: number) => (
               <option
                 key={i}
-                value={opt.value}
+                value={opt.value || opt.label || ""}
                 data-cy={`field-select-option-${field.name}-${opt.value}`}
               >
                 {opt.label}
@@ -406,10 +432,13 @@ export default function DynamicForm({
                 />
               ) : field.type === "select" ? (
                 <select
-                  {...register(field.name)}
+                  {...register(field.name, {
+                    valueAsNumber: false,
+                  })}
                   className="border px-2 py-1 rounded"
                   disabled={mode !== "registration"}
                   data-cy={`field-select-${field.name}`}
+                  defaultValue=""
                 >
                   <option
                     value=""
@@ -420,7 +449,7 @@ export default function DynamicForm({
                   {field.config?.options?.map((opt: any, i: number) => (
                     <option
                       key={i}
-                      value={opt.value}
+                      value={opt.value || opt.label || ""}
                       data-cy={`field-select-option-${field.name}-${opt.value}`}
                     >
                       {opt.label}

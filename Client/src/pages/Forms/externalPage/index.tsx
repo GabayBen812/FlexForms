@@ -102,15 +102,48 @@ export default function FormRegistration() {
           validationSchema={validationSchema}
           onSubmit={async (data) => {
             try {
-              const { fullName, email, phone, ...rest } = data;
-              const formData = {
+              console.log("[FormRegistration] Received form data:", data);
+              
+              // Build additionalData with ALL dynamic fields
+              // This ensures select fields and all other dynamic fields are included
+              const additionalData: Record<string, any> = {};
+              
+              // Get all dynamic field names (excluding title, description, paymentSum)
+              const dynamicFieldNames = dynamicFields
+                .filter(f => f.name !== "title" && f.name !== "description" && f.name !== "paymentSum")
+                .map(f => f.name);
+              
+              // Add all dynamic fields to additionalData
+              dynamicFieldNames.forEach((fieldName) => {
+                const value = data[fieldName];
+                if (value !== undefined) {
+                  // Convert empty strings to null for optional fields, but keep actual values
+                  additionalData[fieldName] = value === "" ? null : value;
+                }
+              });
+              
+              // Build formData - extract fullName, email, phone only if they exist
+              // and are NOT in the dynamic fields list
+              const formData: any = {
                 formId: form._id,
                 organizationId: form.organizationId,
-                fullName,
-                email,
-                phone,
-                additionalData: rest,
+                additionalData,
               };
+              
+              // Only add fullName, email, phone as top-level fields if they're NOT dynamic fields
+              if (!dynamicFieldNames.includes("fullName") && data.fullName !== undefined) {
+                formData.fullName = data.fullName || undefined;
+              }
+              
+              if (!dynamicFieldNames.includes("email") && data.email !== undefined) {
+                formData.email = data.email || undefined;
+              }
+              
+              if (!dynamicFieldNames.includes("phone") && data.phone !== undefined) {
+                formData.phone = data.phone || undefined;
+              }
+              
+              console.log("[FormRegistration] Final form data to send:", JSON.stringify(formData, null, 2));
 
               
               if (form.paymentSum) {

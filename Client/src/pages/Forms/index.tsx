@@ -58,6 +58,7 @@ export default function Forms() {
         return <div className="w-full text-center">{row.original.title}</div>;
       },
       size: 250,
+      meta: { editable: false },
     },
     {
       accessorKey: "description",
@@ -66,11 +67,13 @@ export default function Forms() {
         <div className="w-full text-center">{row.original.description}</div>
       ),
       size: 300,
+      meta: { editable: false },
     },
     {
       accessorKey: "actions",
       header: t("actions"),
       size: 300,
+      meta: { editable: false },
     },
     {
       accessorKey: "numberOfRegistrations",
@@ -81,6 +84,7 @@ export default function Forms() {
         </div>
       ),
       size: 120,
+      meta: { editable: false },
     },
   ];
 

@@ -132,7 +132,10 @@ const handleCopy = () => {
       </div>
       </div>
         <TabsContent value="dashboard">
-          <FormRegistrationsTable form={form} />
+          <FormRegistrationsTable 
+            form={form} 
+            onFormUpdate={(updatedForm) => setForm(updatedForm)}
+          />
         </TabsContent>
         <TabsContent value="edit">
           <FormEditor

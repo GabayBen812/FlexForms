@@ -104,8 +104,14 @@ export class RegistrationService {
         delete filter[key];
       }
     });
+    
+    // Handle sorting
+    const sortBy = query.sortBy || 'createdAt';
+    const sortOrder = query.sortOrder === 'asc' ? 1 : -1;
+    const sort: any = { [sortBy]: sortOrder };
+    
     const [data, total] = await Promise.all([
-      this.model.find(filter).skip(skip).limit(limit).lean(),
+      this.model.find(filter).sort(sort).skip(skip).limit(limit).lean(),
       this.model.countDocuments(filter),
     ]);
     return [data, total];

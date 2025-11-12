@@ -6,19 +6,25 @@ import DataTable from "@/components/ui/completed/data-table";
 import { Form } from "@/types/forms/Form";
 import { formatDateForDisplay, formatDateTimeForDisplay } from "@/lib/dateUtils";
 import { TableAction } from "@/types/ui/data-table-types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
+import { Pencil, Check, X } from "lucide-react";
+import { Input } from "@/components/ui/Input";
+import { useToast } from "@/hooks/use-toast";
 
 const registrationsApi = createApiService<UserRegistration>("/registrations");
+const formsApi = createApiService<Form>("/forms");
 
 interface Props {
   form: Form;
+  onFormUpdate?: (updatedForm: Form) => void;
 }
 
-export default function FormRegistrationsTable({ form }: Props) {
+export default function FormRegistrationsTable({ form, onFormUpdate }: Props) {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
     {}
   );
@@ -26,16 +32,121 @@ export default function FormRegistrationsTable({ form }: Props) {
   const { state } = useSidebar();
   const sidebarIsCollapsed = state === "collapsed";
   const [registrations, setRegistrations] = useState<UserRegistration[]>([]);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(form.title);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const actions: TableAction<UserRegistration>[] = [
     { label: t("delete"), type: "delete" },
   ];
 
+  useEffect(() => {
+    setEditedTitle(form.title);
+  }, [form.title]);
+
+  useEffect(() => {
+    if (isEditingTitle && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
+  const handleSaveTitle = async () => {
+    if (!editedTitle.trim()) {
+      toast({
+        title: t("error"),
+        description: t("form_title_required") || "Form title is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (editedTitle.trim() === form.title) {
+      setIsEditingTitle(false);
+      return;
+    }
+
+    try {
+      const updatedForm = { ...form, title: editedTitle.trim() };
+      const res = await formsApi.customRequest(
+        "put",
+        `/forms/${form._id}`,
+        {
+          data: updatedForm,
+        }
+      );
+
+      if (res.status === 200) {
+        onFormUpdate?.(res.data);
+        setIsEditingTitle(false);
+        toast({
+          title: t("form_saved_success") || t("success"),
+          description: t("form_title_updated") || "Form title updated successfully",
+          variant: "default",
+        });
+      } else {
+        throw new Error();
+      }
+    } catch {
+      toast({
+        title: t("form_save_error") || t("error"),
+        description: t("form_save_error_description") || "Failed to update form title",
+        variant: "destructive",
+      });
+      setEditedTitle(form.title);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditedTitle(form.title);
+    setIsEditingTitle(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSaveTitle();
+    } else if (e.key === "Escape") {
+      handleCancelEdit();
+    }
+  };
+
   return (
     <div className="col-span-2">
-      <h2 className="text-xl font-semibold mb-4">
-        {form.title}
-      </h2>
+      {isEditingTitle ? (
+        <div className="flex items-center gap-2 mb-4">
+          <Input
+            ref={inputRef}
+            value={editedTitle}
+            onChange={(e) => setEditedTitle(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="text-xl font-semibold"
+          />
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={handleSaveTitle}
+            className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+          >
+            <Check className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={handleCancelEdit}
+            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <div
+          className="group flex items-center gap-2 mb-4 cursor-pointer hover:bg-gray-50 rounded-md px-2 py-1 -ml-2 transition-colors"
+          onClick={() => setIsEditingTitle(true)}
+        >
+          <h2 className="text-xl font-semibold">{form.title}</h2>
+          <Pencil className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+      )}
       <div
         className="overflow-x-auto w-full"
         style={{
@@ -44,13 +155,16 @@ export default function FormRegistrationsTable({ form }: Props) {
       >
         <DataTable<UserRegistration>
           data={registrations}
-          fetchData={async ({ page = 1, pageSize = 10, ...params }) => {
+          fetchData={async ({ page = 1, pageSize = 10, sortBy, sortOrder, ...params }) => {
             const allParams = {
               ...params,
               ...advancedFilters,
               formId: form._id,
               page: String(page ?? 1),
               pageSize: String(pageSize ?? 10),
+              // Always sort by createdAt in descending order (newest first) by default
+              sortBy: sortBy && sortBy.trim() ? sortBy : "createdAt",
+              sortOrder: sortOrder && (sortOrder === "asc" || sortOrder === "desc") ? sortOrder : "desc",
             };
             const res = (await registrationsApi.customRequest(
               "get",

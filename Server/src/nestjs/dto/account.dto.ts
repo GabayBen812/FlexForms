@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsObject } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsObject, IsArray, IsMongoId } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Types } from 'mongoose';
 
@@ -10,6 +10,11 @@ export class CreateAccountDto {
   @IsOptional()
   @Type(() => Types.ObjectId)
   organizationId?: Types.ObjectId | string;
+
+  @IsArray()
+  @IsOptional()
+  @IsMongoId({ each: true })
+  linked_contacts?: string[];
 
   @IsOptional()
   @IsObject()
@@ -24,6 +29,11 @@ export class UpdateAccountDto {
   @IsOptional()
   @Type(() => Types.ObjectId)
   organizationId?: Types.ObjectId | string;
+
+  @IsArray()
+  @IsOptional()
+  @IsMongoId({ each: true })
+  linked_contacts?: string[];
 
   @IsOptional()
   @IsObject()

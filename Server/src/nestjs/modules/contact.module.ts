@@ -6,11 +6,14 @@ import { ContactService } from '../services/contact.service';
 import { ContactRelationshipService } from '../services/contact-relationship.service';
 import { ContactController } from '../controllers/contact.controller';
 
+import { Account, AccountSchema } from '../schemas/account.schema';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Contact.name, schema: ContactSchema },
       { name: ContactRelationship.name, schema: ContactRelationshipSchema },
+      { name: Account.name, schema: AccountSchema },
     ]),
   ],
   controllers: [ContactController],

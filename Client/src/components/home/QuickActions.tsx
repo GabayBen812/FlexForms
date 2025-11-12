@@ -11,7 +11,7 @@ export default function QuickActions() {
   const { isEnabled: paymentsFF } = useFeatureFlag("is_show_payments");
   const { isEnabled: usersFF } = useFeatureFlag("ff_is_show_users");
   const { user } = useContext(AuthContext);
-  const canManageUsers = usersFF || user?.role === "admin" || user?.role === "system_admin";
+  const canManageUsers = usersFF || user?.role === "system_admin";
 
   return (
     <div className="flex flex-wrap gap-3 justify-center my-6">

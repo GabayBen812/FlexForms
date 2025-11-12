@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Account, AccountDocument } from '../schemas/account.schema';
 import { CreateAccountDto, UpdateAccountDto } from '../dto/account.dto';
+import { Contact, ContactDocument } from '../schemas/contact.schema';
 
 interface FindAllQuery {
   page?: number | string;
@@ -17,6 +18,7 @@ interface FindAllQuery {
 export class AccountsService {
   constructor(
     @InjectModel(Account.name) private readonly accountModel: Model<AccountDocument>,
+    @InjectModel(Contact.name) private readonly contactModel: Model<ContactDocument>,
   ) {}
 
   private toObjectId(id: string | Types.ObjectId | undefined): Types.ObjectId | undefined {
@@ -26,17 +28,43 @@ export class AccountsService {
   }
 
   async create(createAccountDto: CreateAccountDto): Promise<Account> {
+    if (!createAccountDto.organizationId) {
+      throw new Error('OrganizationId is required');
+    }
+
+    const organizationId = this.toObjectId(createAccountDto.organizationId);
+    if (!organizationId) {
+      throw new Error('Invalid organizationId');
+    }
+
     const accountData: Partial<Account> = {
       name: createAccountDto.name,
-      organizationId: this.toObjectId(createAccountDto.organizationId),
+      organizationId: organizationId,
+      linked_contacts: [],
     };
+
+    if (createAccountDto.linked_contacts && Array.isArray(createAccountDto.linked_contacts) && createAccountDto.linked_contacts.length > 0) {
+      accountData.linked_contacts = createAccountDto.linked_contacts
+        .filter(contactId => contactId && Types.ObjectId.isValid(contactId))
+        .map(contactId => new Types.ObjectId(contactId));
+    }
 
     if (createAccountDto.dynamicFields && typeof createAccountDto.dynamicFields === 'object') {
       accountData.dynamicFields = createAccountDto.dynamicFields;
     }
 
     const created = new this.accountModel(accountData);
-    return created.save();
+    const savedAccount = await created.save();
+
+    // Update contacts' accountId to maintain bidirectional relationship
+    if (accountData.linked_contacts && accountData.linked_contacts.length > 0) {
+      await this.contactModel.updateMany(
+        { _id: { $in: accountData.linked_contacts } },
+        { accountId: savedAccount._id },
+      ).exec();
+    }
+
+    return savedAccount;
   }
 
   async findAll(organizationId: string, query: FindAllQuery = {}) {
@@ -97,10 +125,54 @@ export class AccountsService {
   }
 
   async update(id: string, updateAccountDto: UpdateAccountDto) {
+    // Get the current account to check the old linked_contacts
+    const currentAccount = await this.accountModel.findById(id).lean<Account>().exec();
+    if (!currentAccount) {
+      return null;
+    }
+
     const updateData: Record<string, any> = { ...updateAccountDto };
 
     if (updateAccountDto.organizationId) {
       updateData.organizationId = this.toObjectId(updateAccountDto.organizationId);
+    }
+
+    // Handle linked_contacts update - maintain bidirectional relationship
+    if (updateAccountDto.linked_contacts !== undefined) {
+      const newContactIds = updateAccountDto.linked_contacts && Array.isArray(updateAccountDto.linked_contacts)
+        ? updateAccountDto.linked_contacts
+            .filter(contactId => contactId && Types.ObjectId.isValid(contactId))
+            .map(contactId => new Types.ObjectId(contactId))
+        : [];
+      const oldContactIds = currentAccount.linked_contacts && Array.isArray(currentAccount.linked_contacts)
+        ? currentAccount.linked_contacts.map(contactId => contactId instanceof Types.ObjectId ? contactId : new Types.ObjectId(contactId))
+        : [];
+
+      updateData.linked_contacts = newContactIds;
+
+      // Find contacts to remove and add
+      const contactsToRemove = oldContactIds.filter(oldId => 
+        !newContactIds.some(newId => newId.equals(oldId))
+      );
+      const contactsToAdd = newContactIds.filter(newId => 
+        !oldContactIds.some(oldId => oldId.equals(newId))
+      );
+
+      // Remove accountId from contacts that are no longer linked
+      if (contactsToRemove.length > 0) {
+        await this.contactModel.updateMany(
+          { _id: { $in: contactsToRemove } },
+          { $unset: { accountId: '' } },
+        ).exec();
+      }
+
+      // Set accountId on contacts that are newly linked
+      if (contactsToAdd.length > 0) {
+        await this.contactModel.updateMany(
+          { _id: { $in: contactsToAdd } },
+          { accountId: new Types.ObjectId(id) },
+        ).exec();
+      }
     }
 
     if (updateAccountDto.dynamicFields && typeof updateAccountDto.dynamicFields === 'object') {
@@ -117,17 +189,21 @@ export class AccountsService {
       .exec();
   }
 
-  remove(id: string) {
+  async remove(id: string) {
+    // Get the account to find its linked_contacts
+    const account = await this.accountModel.findById(id).lean<Account>().exec();
+    if (account && account.linked_contacts && account.linked_contacts.length > 0) {
+      const contactIds = account.linked_contacts.map(contactId => 
+        contactId instanceof Types.ObjectId ? contactId : new Types.ObjectId(contactId)
+      );
+      // Remove accountId from linked contacts
+      await this.contactModel.updateMany(
+        { _id: { $in: contactIds } },
+        { $unset: { accountId: '' } },
+      ).exec();
+    }
+
     return this.accountModel.findByIdAndDelete(id).exec();
-  }
-
-  async deleteMany(ids: (string | number)[]) {
-    const objectIds = ids
-      .map((id) => (typeof id === 'string' ? id : id.toString()))
-      .map((id) => new Types.ObjectId(id));
-
-    const result = await this.accountModel.deleteMany({ _id: { $in: objectIds } }).exec();
-    return { deletedCount: result.deletedCount };
   }
 }
 

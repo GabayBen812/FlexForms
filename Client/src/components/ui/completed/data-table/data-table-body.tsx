@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Ghost, MoreVertical, Pencil, Trash, Copy, X, Download } from "lucide-react";
+import { Ghost, MoreVertical, Pencil, Trash, Copy, X, Download, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TableEditButton } from "./TableEditButton";
 import { Input } from "@/components/ui/Input";
@@ -26,6 +26,7 @@ import { DataTableLoading } from "./data-table-loading";
 import { GetDirection } from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { formatDateForDisplay, formatDateForEdit, parseDateForSubmit, isDateValue } from "@/lib/dateUtils";
+import { formatPhoneNumber, unformatPhoneNumber } from "@/lib/phoneUtils";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { AddressInput } from "@/components/ui/address-input";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,13 @@ import { isValidIsraeliID } from "@/lib/israeliIdValidator";
 import { showError, showConfirm } from "@/utils/swal";
 import { handleImageUpload, uploadFile } from "@/lib/imageUtils";
 import { ImagePreviewModal } from "./ImagePreviewModal";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import "./data-table-row.css";
 
 interface BaseData {
@@ -291,6 +299,161 @@ function RelationshipEditableCell<T>({
   );
 }
 
+// Single Relationship Chips Display Component
+function SingleRelationshipChipsDisplay({
+  value,
+  options,
+  onClick,
+}: {
+  value: string | null | undefined;
+  options: { value: string; label: string }[];
+  onClick?: (e?: React.MouseEvent) => void;
+}) {
+  const label = value
+    ? options.find((opt) => opt.value === value)?.label
+    : null;
+
+  if (!label) {
+    return (
+      <div
+        onClick={onClick}
+        className="cursor-pointer px-2 py-1 rounded min-h-[1.5rem]"
+      />
+    );
+  }
+
+  return (
+    <div
+      onClick={onClick}
+      className="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded min-h-[1.5rem] transition-colors flex flex-wrap gap-1 justify-center items-center"
+    >
+      <div
+        className={cn(
+          "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border",
+          relationshipChipClass
+        )}
+      >
+        <span>{label}</span>
+      </div>
+    </div>
+  );
+}
+
+// Single Relationship Editable Cell Component
+function SingleRelationshipEditableCell<T>({
+  cell,
+  row,
+  onSave,
+  isEditing,
+  onEdit,
+  onCancel,
+}: EditableCellProps<T>) {
+  const columnDef = cell.column.columnDef;
+  const accessorKey = (columnDef as any).accessorKey as string;
+  const meta = (columnDef as any).meta || {};
+  const relationshipOptions = meta.relationshipOptions || [];
+
+  const cellValue = cell.getValue();
+  const currentValue =
+    cellValue != null
+      ? typeof cellValue === "string"
+        ? cellValue
+        : (cellValue as any)?._id || String(cellValue)
+      : null;
+  // Use a special value for "none" instead of empty string
+  const NONE_VALUE = "__NONE__";
+  const [selectedValue, setSelectedValue] = useState<string>(currentValue || NONE_VALUE);
+
+  useEffect(() => {
+    if (isEditing) {
+      setSelectedValue(currentValue || NONE_VALUE);
+    }
+  }, [isEditing, cellValue, currentValue]);
+
+  const handleSave = () => {
+    // Convert the special "none" value to null
+    const valueToSave = selectedValue === NONE_VALUE ? null : (selectedValue && selectedValue.trim() !== "" ? selectedValue : null);
+    onSave({ [accessorKey]: valueToSave });
+    onCancel();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      onCancel();
+    }
+  };
+
+  if (!isEditing) {
+    return (
+      <div
+        className={cn(
+          "cursor-pointer group relative px-2 py-1 rounded min-h-[1.5rem] transition-all duration-200",
+          "hover:bg-blue-50 hover:border hover:border-blue-200 hover:shadow-sm"
+        )}
+        onClick={(e) => {
+          e.stopPropagation();
+          onEdit();
+        }}
+      >
+        <SingleRelationshipChipsDisplay
+          value={currentValue}
+          options={relationshipOptions}
+        />
+        <Pencil className="w-3.5 h-3.5 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute top-1 right-1" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="w-full"
+      onKeyDown={handleKeyDown}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <Select value={selectedValue} onValueChange={setSelectedValue}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="בחר אפשרות..." />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NONE_VALUE}>-- אין --</SelectItem>
+          {relationshipOptions.map((option: { value: string; label: string }) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <div className="flex gap-2 mt-2 justify-end">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={(e) => {
+            e.stopPropagation();
+            onCancel();
+          }}
+          className="h-6 text-xs"
+        >
+          ביטול
+        </Button>
+        <Button
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSave();
+          }}
+          className="h-6 text-xs"
+        >
+          שמור
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function EditableCell<T>({
   cell,
   row,
@@ -318,6 +481,9 @@ function EditableCell<T>({
   const isDynamic = accessorKey?.startsWith("dynamicFields.");
   const fieldDefinition = meta.fieldDefinition;
   
+  // Detect email/phone fields (both static and dynamic)
+  const isEmailField = accessorKey === "email" || fieldType === "EMAIL" || (isDynamic && fieldDefinition?.type === "EMAIL");
+  const isPhoneField = accessorKey === "phone" || fieldType === "PHONE" || (isDynamic && fieldDefinition?.type === "PHONE");
 
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -374,6 +540,8 @@ function EditableCell<T>({
         : ""
       : fieldType === "MULTI_SELECT" && Array.isArray(cellValue)
       ? cellValue.join(", ")
+      : isPhoneField && cellValue
+      ? formatPhoneNumber(cellValue)
       : safeStringify(cellValue));
 
   useEffect(() => {
@@ -385,6 +553,9 @@ function EditableCell<T>({
         setValue(cellValue.join(","));
       } else if (fieldType === "CHECKBOX") {
         setValue(cellValue === true || cellValue === "true" || cellValue === "1" ? "true" : "false");
+      } else if (isPhoneField && cellValue) {
+        // For phone fields, show formatted value when editing
+        setValue(formatPhoneNumber(cellValue));
       } else {
         // Safely convert cellValue to string, handling objects
         const stringValue = typeof cellValue === "object" && cellValue !== null && !Array.isArray(cellValue)
@@ -400,7 +571,7 @@ function EditableCell<T>({
         }
       }, 0);
     }
-  }, [isEditing, cellValue, isDate, fieldType]);
+  }, [isEditing, cellValue, isDate, fieldType, isPhoneField]);
 
   // Sync optimistic checkbox value with server value when it updates
   useEffect(() => {
@@ -448,6 +619,11 @@ function EditableCell<T>({
       // Remove any non-digit characters except decimal point
       const numericValue = value.toString().replace(/[^\d.]/g, '');
       processedValue = numericValue;
+    }
+    
+    // Process phone values - unformat phone numbers (remove formatting, store as digits)
+    if (isPhoneField && value) {
+      processedValue = unformatPhoneNumber(value);
     }
     
     // Process checkbox values - convert to boolean
@@ -822,6 +998,70 @@ function EditableCell<T>({
       );
     }
     
+    // Email field display with icon and background color
+    if (isEmailField) {
+      const hasValue = cellValue && String(cellValue).trim() !== "";
+      return (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+          className={cn(
+            "cursor-pointer group relative px-2 py-1 rounded min-h-[1.5rem] transition-all duration-200",
+            "hover:bg-blue-100 hover:border hover:border-blue-300 hover:shadow-sm",
+            hasValue ? "bg-blue-50" : ""
+          )}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <Mail className={cn(
+              "w-4 h-4 transition-colors",
+              hasValue ? "text-blue-600" : "text-gray-400"
+            )} />
+            <span className={cn(
+              "group-hover:text-blue-700 transition-colors",
+              hasValue ? "" : "text-gray-400"
+            )}>
+              {hasValue ? displayValue : ""}
+            </span>
+            <Pencil className="w-3.5 h-3.5 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+          </div>
+        </div>
+      );
+    }
+    
+    // Phone field display with icon and background color
+    if (isPhoneField) {
+      const hasValue = cellValue && String(cellValue).trim() !== "";
+      return (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+          className={cn(
+            "cursor-pointer group relative px-2 py-1 rounded min-h-[1.5rem] transition-all duration-200",
+            "hover:bg-green-100 hover:border hover:border-green-300 hover:shadow-sm",
+            hasValue ? "bg-green-50" : ""
+          )}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <Phone className={cn(
+              "w-4 h-4 transition-colors",
+              hasValue ? "text-green-600" : "text-gray-400"
+            )} />
+            <span className={cn(
+              "group-hover:text-green-700 transition-colors",
+              hasValue ? "" : "text-gray-400"
+            )}>
+              {hasValue ? displayValue : ""}
+            </span>
+            <Pencil className="w-3.5 h-3.5 text-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div
         onClick={(e) => {
@@ -1110,9 +1350,9 @@ function EditableCell<T>({
 
   // Determine input type based on field type
   let inputType = "text";
-  if (accessorKey === "email" || meta.fieldType === "EMAIL") {
+  if (isEmailField) {
     inputType = "email";
-  } else if (accessorKey === "phone" || meta.fieldType === "PHONE") {
+  } else if (isPhoneField) {
     inputType = "tel";
   } else if (meta.fieldType === "NUMBER") {
     inputType = "number";
@@ -1167,6 +1407,7 @@ const RowComponent = React.memo(function RowComponent<T>({
 
     // Check if this is a relationship field
     const isRelationshipField = meta.relationshipOptions && Array.isArray(meta.relationshipOptions);
+    const isSingleSelect = meta.singleSelect === true;
 
     // Check if this cell should be editable
     // Don't allow editing for selection column, action columns, or hidden columns
@@ -1179,8 +1420,27 @@ const RowComponent = React.memo(function RowComponent<T>({
     const cellId = `${row.id}-${accessorKey}`;
     const isEditing = editingCell === cellId;
 
-    // If it's a relationship field, use RelationshipEditableCell
-    if (isRelationshipField && isEditable) {
+    // If it's a single-select relationship field, use SingleRelationshipEditableCell
+    if (isRelationshipField && isSingleSelect && isEditable) {
+      return (
+        <SingleRelationshipEditableCell
+          cell={cell}
+          row={row}
+          table={table}
+          onSave={(data) => {
+            if (handleEdit) {
+              handleEdit(row, data);
+            }
+          }}
+          isEditing={isEditing}
+          onEdit={() => setEditingCell(cellId)}
+          onCancel={() => setEditingCell(null)}
+        />
+      );
+    }
+
+    // If it's a multi-select relationship field, use RelationshipEditableCell
+    if (isRelationshipField && !isSingleSelect && isEditable) {
       return (
         <RelationshipEditableCell
           cell={cell}
@@ -1198,7 +1458,22 @@ const RowComponent = React.memo(function RowComponent<T>({
       );
     }
 
-    // If it's a relationship field but not editable, just display chips
+    // If it's a single-select relationship field but not editable, just display chip
+    if (isRelationshipField && isSingleSelect) {
+      const currentValue = value != null
+        ? typeof value === "string"
+          ? value
+          : (value as any)?._id || String(value)
+        : null;
+      return (
+        <SingleRelationshipChipsDisplay
+          value={currentValue}
+          options={meta.relationshipOptions}
+        />
+      );
+    }
+
+    // If it's a multi-select relationship field but not editable, just display chips
     if (isRelationshipField) {
       const currentValues = Array.isArray(value) 
         ? value.map((v: any) => typeof v === 'string' ? v : (v?._id || v?.toString() || v))

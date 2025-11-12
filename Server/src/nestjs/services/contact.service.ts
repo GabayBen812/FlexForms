@@ -4,6 +4,7 @@ import { ClientSession, FilterQuery, Model, Types } from 'mongoose';
 import { Contact, ContactDocument, ContactStatus, ContactType } from '../schemas/contact.schema';
 import { CreateContactDto, UpdateContactDto } from '../dto/contact.dto';
 import { buildDynamicFieldsUpdate, ensureValidDynamicFields } from '../utils/contact-dynamic-fields.util';
+import { Account, AccountDocument } from '../schemas/account.schema';
 
 export interface ContactQueryOptions {
   organizationId: string;
@@ -23,12 +24,15 @@ export interface ContactSearchResult {
 
 @Injectable()
 export class ContactService {
-  constructor(@InjectModel(Contact.name) private readonly contactModel: Model<ContactDocument>) {}
+  constructor(
+    @InjectModel(Contact.name) private readonly contactModel: Model<ContactDocument>,
+    @InjectModel(Account.name) private readonly accountModel: Model<AccountDocument>,
+  ) {}
 
   async create(createContactDto: CreateContactDto, session?: ClientSession): Promise<ContactDocument> {
     const dynamicFields = ensureValidDynamicFields(createContactDto.dynamicFields);
 
-    const contact = new this.contactModel({
+    const contactData: Record<string, unknown> = {
       firstname: createContactDto.firstname,
       lastname: createContactDto.lastname,
       type: createContactDto.type,
@@ -39,9 +43,25 @@ export class ContactService {
       address: createContactDto.address,
       status: createContactDto.status,
       dynamicFields: dynamicFields ?? {},
-    });
+    };
 
-    return contact.save({ session });
+    if (createContactDto.accountId && Types.ObjectId.isValid(createContactDto.accountId)) {
+      contactData.accountId = new Types.ObjectId(createContactDto.accountId);
+    }
+
+    const contact = new this.contactModel(contactData);
+    const savedContact = await contact.save({ session });
+
+    // Update account's linked_contacts after contact is saved
+    if (createContactDto.accountId && Types.ObjectId.isValid(createContactDto.accountId)) {
+      await this.accountModel.findByIdAndUpdate(
+        createContactDto.accountId,
+        { $addToSet: { linked_contacts: savedContact._id } },
+        { session },
+      ).exec();
+    }
+
+    return savedContact;
   }
 
   async findById(id: string): Promise<Contact | null> {
@@ -54,6 +74,12 @@ export class ContactService {
 
   async update(id: string, updateContactDto: UpdateContactDto, session?: ClientSession): Promise<Contact | null> {
     if (!Types.ObjectId.isValid(id)) {
+      return null;
+    }
+
+    // Get the current contact to check the old accountId
+    const currentContact = await this.contactModel.findById(id).lean<Contact>().exec();
+    if (!currentContact) {
       return null;
     }
 
@@ -91,6 +117,36 @@ export class ContactService {
       updatePayload.status = updateContactDto.status;
     }
 
+    // Handle accountId update - maintain bidirectional relationship
+    if (updateContactDto.accountId !== undefined) {
+      const newAccountId = updateContactDto.accountId 
+        ? (Types.ObjectId.isValid(updateContactDto.accountId) ? new Types.ObjectId(updateContactDto.accountId) : null)
+        : null;
+      const oldAccountId = currentContact.accountId 
+        ? (currentContact.accountId instanceof Types.ObjectId ? currentContact.accountId : new Types.ObjectId(currentContact.accountId))
+        : null;
+
+      updatePayload.accountId = newAccountId;
+
+      // Remove contact from old account's linked_contacts
+      if (oldAccountId && (!newAccountId || !oldAccountId.equals(newAccountId))) {
+        await this.accountModel.findByIdAndUpdate(
+          oldAccountId,
+          { $pull: { linked_contacts: new Types.ObjectId(id) } },
+          { session },
+        ).exec();
+      }
+
+      // Add contact to new account's linked_contacts
+      if (newAccountId && (!oldAccountId || !newAccountId.equals(oldAccountId))) {
+        await this.accountModel.findByIdAndUpdate(
+          newAccountId,
+          { $addToSet: { linked_contacts: new Types.ObjectId(id) } },
+          { session },
+        ).exec();
+      }
+    }
+
     if (updateContactDto.dynamicFields) {
       const dynamicFieldsUpdate = buildDynamicFieldsUpdate(updateContactDto.dynamicFields);
 
@@ -108,6 +164,20 @@ export class ContactService {
   async remove(id: string, session?: ClientSession): Promise<Contact | null> {
     if (!Types.ObjectId.isValid(id)) {
       return null;
+    }
+
+    // Get the contact to find its accountId
+    const contact = await this.contactModel.findById(id).lean<Contact>().exec();
+    if (contact && contact.accountId) {
+      const accountId = contact.accountId instanceof Types.ObjectId 
+        ? contact.accountId 
+        : new Types.ObjectId(contact.accountId);
+      // Remove contact from account's linked_contacts
+      await this.accountModel.findByIdAndUpdate(
+        accountId,
+        { $pull: { linked_contacts: new Types.ObjectId(id) } },
+        { session },
+      ).exec();
     }
 
     return this.contactModel.findByIdAndDelete(id, { session }).lean<Contact>().exec();

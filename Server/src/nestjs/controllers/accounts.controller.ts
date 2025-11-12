@@ -23,8 +23,11 @@ export class AccountsController {
   @Post()
   create(@Body() createAccountDto: CreateAccountDto, @Req() req: Request) {
     const user = req.user as { organizationId?: string } | undefined;
-    if (user?.organizationId) {
+    if (user && user.organizationId) {
       createAccountDto.organizationId = user.organizationId;
+    } else {
+      console.error('User organizationId not found');
+      throw new Error('User organizationId not found');
     }
     return this.accountsService.create(createAccountDto);
   }
@@ -51,14 +54,6 @@ export class AccountsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.accountsService.remove(id);
-  }
-
-  @Delete()
-  deleteMany(@Body('ids') ids: (string | number)[]) {
-    if (!Array.isArray(ids) || ids.length === 0) {
-      return { deletedCount: 0 };
-    }
-    return this.accountsService.deleteMany(ids);
   }
 }
 

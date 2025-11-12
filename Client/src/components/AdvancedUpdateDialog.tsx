@@ -47,6 +47,8 @@ export const AdvancedUpdateDialog = <TData,>({
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [updateValue, setUpdateValue] = useState<string | string[]>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Use a special value for "none" instead of empty string (Radix UI Select doesn't allow empty string values)
+  const NONE_VALUE = "__NONE__";
 
   useEffect(() => {
     if (!open) {
@@ -64,10 +66,17 @@ export const AdvancedUpdateDialog = <TData,>({
   const fieldMeta = (columnDef?.meta as any) || {};
   const fieldType: FieldType = fieldMeta.fieldType || "TEXT";
   const options = fieldMeta.options || [];
+  const relationshipOptions = fieldMeta.relationshipOptions || [];
+  const isRelationshipField = relationshipOptions && Array.isArray(relationshipOptions) && relationshipOptions.length > 0;
+  const isSingleSelectRelationship = isRelationshipField && fieldMeta.singleSelect === true;
+  const isMultiSelectRelationship = isRelationshipField && !isSingleSelectRelationship;
+  
+  // Use relationshipOptions if available, otherwise use options
+  const effectiveOptions = isRelationshipField ? relationshipOptions : options;
   const normalizedOptions = useMemo(
     () =>
-      Array.isArray(options)
-        ? options.map((option: any) => {
+      Array.isArray(effectiveOptions)
+        ? effectiveOptions.map((option: any) => {
             if (typeof option === "string") {
               return { value: option, label: option };
             }
@@ -76,9 +85,9 @@ export const AdvancedUpdateDialog = <TData,>({
             return { value: String(value ?? ""), label: String(label) };
           })
         : [],
-    [options]
+    [effectiveOptions]
   );
-  const isMultiSelectField = fieldType === "MULTI_SELECT";
+  const isMultiSelectField = isMultiSelectRelationship || fieldType === "MULTI_SELECT";
   const selectedFieldLabel = useMemo(() => {
     return selectedField ? toHeaderLabel(columnDef?.header) : "";
   }, [selectedField, columnDef]);
@@ -112,17 +121,25 @@ export const AdvancedUpdateDialog = <TData,>({
 
     if (isMultiSelectField) {
       setUpdateValue((prev) => (Array.isArray(prev) ? prev : []));
+    } else if (isSingleSelectRelationship) {
+      // For single-select relationships, initialize with NONE_VALUE instead of empty string
+      setUpdateValue((prev) => (typeof prev === "string" && prev !== "" ? prev : NONE_VALUE));
     } else {
       setUpdateValue((prev) => (typeof prev === "string" ? prev : ""));
     }
-  }, [selectedField, isMultiSelectField]);
+  }, [selectedField, isMultiSelectField, isSingleSelectRelationship]);
 
   const isValueProvided = useMemo(() => {
     if (Array.isArray(updateValue)) {
       return updateValue.length > 0;
     }
+    // NONE_VALUE is a valid selection (means "clear field"), so it's considered "provided"
+    // For single-select relationships, NONE_VALUE is a valid choice
+    if (isSingleSelectRelationship) {
+      return typeof updateValue === "string" && (updateValue === NONE_VALUE || updateValue.trim().length > 0);
+    }
     return typeof updateValue === "string" && updateValue.trim().length > 0;
-  }, [updateValue]);
+  }, [updateValue, isSingleSelectRelationship]);
 
   const handleUpdate = async () => {
     if (!selectedField || !isValueProvided || isSubmitting) return;
@@ -134,7 +151,11 @@ export const AdvancedUpdateDialog = <TData,>({
 
     try {
       setIsSubmitting(true);
-      await onUpdate(selectedField, updateValue);
+      // Convert NONE_VALUE to null for single-select relationships
+      const valueToUpdate = isSingleSelectRelationship && typeof updateValue === "string" && updateValue === NONE_VALUE
+        ? null
+        : updateValue;
+      await onUpdate(selectedField, valueToUpdate);
       onOpenChange(false);
     } catch (error) {
       console.error("AdvancedUpdateDialog failed to update field", error);
@@ -238,16 +259,28 @@ export const AdvancedUpdateDialog = <TData,>({
                   placeholder={t("select_options", "בחר אפשרויות")}
                   className="rounded-xl border border-primary/30 bg-white text-base font-medium hover:border-primary/50 dark:bg-zinc-900"
                 />
-              ) : fieldType === "SELECT" ? (
+              ) : isSingleSelectRelationship || fieldType === "SELECT" ? (
                 <Select
-                  value={typeof updateValue === "string" ? updateValue : ""}
-                  onValueChange={(value) => setUpdateValue(value)}
+                  value={typeof updateValue === "string" ? (updateValue || NONE_VALUE) : NONE_VALUE}
+                  onValueChange={(value) => {
+                    // Convert the special "none" value to null
+                    const valueToSet = value === NONE_VALUE ? null : (value && value.trim() !== "" ? value : null);
+                    setUpdateValue(valueToSet);
+                  }}
                   disabled={isSubmitting}
                 >
                   <SelectTrigger className="h-12 w-full rounded-xl border border-primary/30 bg-white text-base font-medium shadow-sm transition-all hover:border-primary/50 focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-zinc-900">
                     <SelectValue placeholder={t("select_value", "בחר ערך")} />
                   </SelectTrigger>
                   <SelectContent className="max-h-72 rounded-xl border border-primary/20 bg-white text-base shadow-lg dark:bg-zinc-900">
+                    {isSingleSelectRelationship && (
+                      <SelectItem
+                        className="cursor-pointer rounded-lg px-3 py-2 text-right text-base hover:bg-primary/10 focus:bg-primary/10"
+                        value={NONE_VALUE}
+                      >
+                        -- {t("none") || "אין"} --
+                      </SelectItem>
+                    )}
                     {normalizedOptions.map((option) => (
                       <SelectItem
                         className="cursor-pointer rounded-lg px-3 py-2 text-right text-base hover:bg-primary/10 focus:bg-primary/10"

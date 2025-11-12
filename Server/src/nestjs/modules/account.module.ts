@@ -3,9 +3,15 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AccountsController } from '../controllers/accounts.controller';
 import { AccountsService } from '../services/accounts.service';
 import { Account, AccountSchema } from '../schemas/account.schema';
+import { Contact, ContactSchema } from '../schemas/contact.schema';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Account.name, schema: AccountSchema }])],
+  imports: [
+    MongooseModule.forFeature([
+      { name: Account.name, schema: AccountSchema },
+      { name: Contact.name, schema: ContactSchema },
+    ]),
+  ],
   controllers: [AccountsController],
   providers: [AccountsService],
   exports: [AccountsService],

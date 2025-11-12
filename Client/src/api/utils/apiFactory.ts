@@ -124,9 +124,22 @@ export const createApiService = <T>(
    update: async (data: Partial<T> & { id: string | number; route?: string }): Promise<MutationResponse<T>> => {
 
       try {
-        const payload = includeOrgId
-          ? { ...data, organizationId: getUserOrganizationId() }
-          : data;
+        let payload = data;
+        if (includeOrgId) {
+          const existingOrgId = (data as any).organizationId;
+          const userOrgId = getUserOrganizationId();
+          // Preserve existing organizationId if it exists and is not empty
+          // Only use getUserOrganizationId() as fallback if existing is missing/empty
+          // Never set organizationId to an empty string
+          const finalOrgId = existingOrgId && existingOrgId.trim() !== ""
+            ? existingOrgId
+            : (userOrgId && userOrgId.trim() !== "" ? userOrgId : undefined);
+          
+          payload = {
+            ...data,
+            ...(finalOrgId ? { organizationId: finalOrgId } : {})
+          };
+        }
 
         const endpoint = data.route ? `${baseUrl}/${data.id}/${data.route}` : `${baseUrl}/${data.id}`;
         const { url, config } = resolveRoute(customRoutes.update, endpoint);

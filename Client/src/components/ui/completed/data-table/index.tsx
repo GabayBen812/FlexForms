@@ -494,9 +494,9 @@ export function DataTable<TData>({
 
   useEffect(() => {
     if (visibleRows) {
-      visibleRows(table.getRowModel().rows.map((row) => row.original));
+      visibleRows(tableData);
     }
-  }, [table.getRowModel().rows, visibleRows]);
+  }, [tableData, visibleRows]);
 
   // Expose refresh function and addItem/updateItem functions to parent component
   useEffect(() => {

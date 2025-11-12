@@ -45,6 +45,9 @@ export class Contact {
   @Prop({ type: String, enum: Object.values(ContactStatus), default: ContactStatus.ACTIVE })
   status!: ContactStatus;
 
+  @Prop({ type: Types.ObjectId, ref: 'Account', required: false })
+  accountId?: Types.ObjectId;
+
   @Prop({ type: Object, default: {} })
   dynamicFields!: Record<string, any>;
 }
@@ -53,5 +56,6 @@ export const ContactSchema = SchemaFactory.createForClass(Contact);
 ContactSchema.set('collection', 'Contacts');
 ContactSchema.index({ organizationId: 1, type: 1, lastname: 1, firstname: 1 });
 ContactSchema.index({ organizationId: 1, status: 1 });
+ContactSchema.index({ accountId: 1 });
 
 

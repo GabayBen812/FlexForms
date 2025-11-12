@@ -67,14 +67,21 @@ export function AdvancedSearchModal<T = any>({ open, onClose, columns, onApply, 
   const renderSearchField = (col: ColumnDef<T>, accessorKey: string) => {
     const meta = (col.meta as any) || {};
     const fieldType = meta.fieldType;
-    const options = meta.options;
+    const options = meta.options || [];
+    const relationshipOptions = meta.relationshipOptions || [];
+    const isRelationshipField = relationshipOptions && Array.isArray(relationshipOptions) && relationshipOptions.length > 0;
+    const isSingleSelectRelationship = isRelationshipField && meta.singleSelect === true;
+    const isMultiSelectRelationship = isRelationshipField && !isSingleSelectRelationship;
     const fieldDefinition = meta.fieldDefinition;
     const isDynamic = meta.isDynamic || isDynamicField(accessorKey);
     const isDate = meta.isDate;
     const isMoney = meta.isMoney;
     const isTime = meta.isTime;
-    const normalizedOptions = Array.isArray(options)
-      ? options.map((option: any) => {
+    
+    // Use relationshipOptions if available, otherwise use options
+    const effectiveOptions = isRelationshipField ? relationshipOptions : options;
+    const normalizedOptions = Array.isArray(effectiveOptions)
+      ? effectiveOptions.map((option: any) => {
           if (typeof option === "string") {
             return { value: option, label: option };
           }
@@ -90,6 +97,38 @@ export function AdvancedSearchModal<T = any>({ open, onClose, columns, onApply, 
     
     // Get field value
     const fieldValue = filters[accessorKey] !== undefined ? filters[accessorKey] : "";
+
+    // Handle single-select relationship field
+    if (isSingleSelectRelationship) {
+      return (
+        <select
+          value={fieldValue || ""}
+          onChange={(e) => handleChange(accessorKey, e.target.value === "" ? undefined : e.target.value)}
+          className={selectClasses}
+        >
+          <option value="">{t("all", "הכל")}</option>
+          {normalizedOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    // Handle multi-select relationship field
+    if (isMultiSelectRelationship) {
+      const selectedValues = Array.isArray(fieldValue) ? fieldValue : fieldValue ? [fieldValue] : [];
+      return (
+        <MultiSelect
+          options={normalizedOptions}
+          selected={selectedValues}
+          onSelect={(values) => handleChange(accessorKey, values)}
+          placeholder={t("select_options", "בחר אפשרויות...")}
+          className="h-auto rounded-xl border border-sky-200/60 bg-white/90 text-base font-medium text-slate-900 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700 focus:ring-2 focus:ring-sky-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:hover:border-sky-500/40 dark:hover:bg-slate-900 dark:hover:text-sky-200"
+        />
+      );
+    }
 
     // Handle SELECT field type
     if (fieldType === "SELECT" && Array.isArray(options)) {

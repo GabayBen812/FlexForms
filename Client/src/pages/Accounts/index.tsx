@@ -17,7 +17,6 @@ import { Account } from "@/types/accounts/account";
 import {
   createAccount,
   deleteAccount,
-  deleteManyAccounts,
   fetchAllAccounts,
   updateAccount,
 } from "@/api/accounts";
@@ -29,6 +28,11 @@ import { TableFieldConfigDialog } from "@/components/ui/completed/dialogs/TableF
 import { AdvancedUpdateDialog } from "@/components/AdvancedUpdateDialog";
 import { toast } from "@/hooks/use-toast";
 import { showConfirm } from "@/utils/swal";
+import { useQuery } from "@tanstack/react-query";
+import { createApiService } from "@/api/utils/apiFactory";
+import { Contact } from "@/types/contacts/contact";
+
+const contactsApi = createApiService<Contact>("/contacts");
 
 export default function AccountsPage() {
   const { t } = useTranslation();
@@ -52,6 +56,45 @@ export default function AccountsPage() {
   } | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [tableRows, setTableRows] = useState<Account[]>([]);
+
+  // Fetch contacts for relationship options
+  const { data: contactsData } = useQuery({
+    queryKey: ["contacts-options", organization?._id],
+    queryFn: async () => {
+      if (!organization?._id) return { data: [], totalCount: 0, totalPages: 0 };
+      const response = await contactsApi.fetchAll({}, false, organization._id);
+      // Handle different response structures
+      if (Array.isArray(response)) {
+        return { data: response, totalCount: response.length, totalPages: 1 };
+      }
+      if (response && typeof response === 'object' && 'data' in response) {
+        const responseData = response as { data: Contact[] | { data: Contact[]; totalCount: number; totalPages: number } };
+        if (Array.isArray(responseData.data)) {
+          return { data: responseData.data, totalCount: responseData.data.length, totalPages: 1 };
+        }
+        if (responseData.data && typeof responseData.data === 'object' && 'data' in responseData.data) {
+          return responseData.data as { data: Contact[]; totalCount: number; totalPages: number };
+        }
+      }
+      return { data: [], totalCount: 0, totalPages: 0 };
+    },
+    enabled: !!organization?._id,
+  });
+
+  const contactsOptions = useMemo(
+    () => {
+      const contacts = Array.isArray(contactsData?.data) 
+        ? contactsData.data 
+        : (contactsData?.data && typeof contactsData.data === 'object' && 'data' in contactsData.data && Array.isArray((contactsData.data as any).data))
+        ? (contactsData.data as any).data
+        : [];
+      return contacts.map((contact: Contact) => ({
+        value: contact._id || "",
+        label: `${contact.firstname} ${contact.lastname}`,
+      }));
+    },
+    [contactsData],
+  );
 
   const selectionColumn: ColumnDef<Account> = {
     id: "select",
@@ -102,9 +145,18 @@ export default function AccountsPage() {
     return [
       selectionColumn,
       { accessorKey: "name", header: t("account_name") },
+      {
+        accessorKey: "linked_contacts",
+        header: t("relevant_contacts", "אנשי קשר רלוונטיים"),
+        meta: {
+          relationshipOptions: contactsOptions,
+          editable: true,
+          required: false,
+        },
+      },
       { accessorKey: "organizationId", header: "", meta: { hidden: true } },
     ];
-  }, [selectionColumn, t]);
+  }, [selectionColumn, t, contactsOptions]);
 
   const visibleColumns = useMemo(() => {
     return baseColumns.filter(
@@ -114,13 +166,26 @@ export default function AccountsPage() {
   }, [baseColumns]);
 
   const mergedColumns = useMemo(() => {
-    return mergeColumnsWithDynamicFields(
+    const merged = mergeColumnsWithDynamicFields(
       visibleColumns,
       "accounts",
       organization,
       t
     );
-  }, [visibleColumns, organization, t]);
+    // Update linked_contacts column with current contactsOptions
+    return merged.map((col) => {
+      if ((col as any).accessorKey === "linked_contacts") {
+        return {
+          ...col,
+          meta: {
+            ...(col as any).meta,
+            relationshipOptions: contactsOptions,
+          },
+        };
+      }
+      return col;
+    });
+  }, [visibleColumns, organization, t, contactsOptions]);
 
   const actions: TableAction<Account>[] = useMemo(
     () => [
@@ -140,10 +205,18 @@ export default function AccountsPage() {
   const handleAddAccount = useCallback(
     async (data: any) => {
       try {
+        const { linked_contacts, ...rest } = data;
+        const normalizedLinkedContacts = Array.isArray(linked_contacts)
+          ? linked_contacts.filter((id) => id && id.toString().trim() !== "")
+          : linked_contacts && linked_contacts.toString().trim() !== ""
+          ? [linked_contacts.toString().trim()]
+          : [];
+
         const payload: Partial<Account> = {
-          ...data,
+          ...rest,
           name: data.name,
           organizationId: organization?._id || "",
+          linked_contacts: normalizedLinkedContacts.length > 0 ? normalizedLinkedContacts : undefined,
           ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
         };
 
@@ -179,10 +252,18 @@ export default function AccountsPage() {
     async (data: any) => {
       if (!editingAccount?._id) return;
       try {
+        const { linked_contacts, ...rest } = data;
+        const normalizedLinkedContacts = Array.isArray(linked_contacts)
+          ? linked_contacts.filter((id) => id && id.toString().trim() !== "")
+          : linked_contacts && linked_contacts.toString().trim() !== ""
+          ? [linked_contacts.toString().trim()]
+          : [];
+
         const payload: Partial<Account> & { id: string } = {
-          ...data,
+          ...rest,
           id: editingAccount._id,
           organizationId: organization?._id || "",
+          linked_contacts: normalizedLinkedContacts.length > 0 ? normalizedLinkedContacts : [],
           ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
         };
 
@@ -237,11 +318,7 @@ export default function AccountsPage() {
       if (!confirmed) return;
 
       try {
-        const res = await deleteManyAccounts(ids);
-        if (res.error) {
-          throw new Error(res.error);
-        }
-
+        await Promise.all(ids.map((id) => deleteAccount(id)));
         toast.success(t("deleted_successfully"));
         setRowSelection({});
         tableMethods?.refresh();
@@ -286,14 +363,23 @@ export default function AccountsPage() {
         return;
       }
 
-      const payload =
-        field.startsWith("dynamicFields.") && typeof field === "string"
-          ? {
-              dynamicFields: {
-                [field.replace("dynamicFields.", "")]: value,
-              },
-            }
-          : { [field]: value };
+      const payload: Record<string, unknown> = {};
+      if (field.startsWith("dynamicFields.") && typeof field === "string") {
+        payload.dynamicFields = {
+          [field.replace("dynamicFields.", "")]: value,
+        };
+      } else {
+        // Handle linked_contacts as array
+        if (field === "linked_contacts") {
+          payload[field] = Array.isArray(value)
+            ? value.filter((id) => id && id.toString().trim() !== "")
+            : value && value.toString().trim() !== ""
+            ? [value.toString().trim()]
+            : [];
+        } else {
+          payload[field] = value;
+        }
+      }
 
       try {
         setIsAdvancedUpdating(true);
@@ -445,6 +531,11 @@ export default function AccountsPage() {
         columns={mergedColumns}
         onAdd={handleAddAccount}
         excludeFields={["organizationId"]}
+        relationshipFields={{
+          linked_contacts: {
+            options: contactsOptions,
+          },
+        }}
         defaultValues={{
           organizationId: organization?._id || "",
         }}
@@ -466,12 +557,18 @@ export default function AccountsPage() {
           editingAccount
             ? {
                 name: editingAccount.name,
+                linked_contacts: editingAccount.linked_contacts || [],
                 ...(editingAccount.dynamicFields && {
                   dynamicFields: editingAccount.dynamicFields,
                 }),
               }
             : undefined
         }
+        relationshipFields={{
+          linked_contacts: {
+            options: contactsOptions,
+          },
+        }}
         excludeFields={["organizationId"]}
         defaultValues={{
           organizationId: organization?._id || "",

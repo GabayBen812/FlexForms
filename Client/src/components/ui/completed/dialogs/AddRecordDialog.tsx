@@ -6,6 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogB
 import { Input } from "@/components/ui/Input";
 import { formatDateForEdit, parseDateForSubmit, isDateValue } from "@/lib/dateUtils";
 import { MultiSelect } from "@/components/ui/multi-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { AddressInput } from "@/components/ui/address-input";
 import { isValidIsraeliID } from "@/lib/israeliIdValidator";
 import { toast } from "@/hooks/use-toast";
@@ -280,15 +287,28 @@ export function AddRecordDialog({
         }
       });
       
-      // Handle relationship fields - ensure they're arrays
+      // Handle relationship fields - check if single-select or multi-select
       if (relationshipFields) {
         Object.keys(relationshipFields).forEach((key) => {
+          const column = dataColumns.find((col) => (col as any).accessorKey === key);
+          const isSingleSelect = column && (column.meta as any)?.singleSelect === true;
+          
           if (editData[key] !== undefined) {
-            formattedData[key] = Array.isArray(editData[key]) ? editData[key] : [];
+            if (isSingleSelect) {
+              // Single-select: use the value directly (or null if empty)
+              formattedData[key] = editData[key] && editData[key].toString().trim() !== "" ? editData[key] : null;
+            } else {
+              // Multi-select: ensure it's an array
+              formattedData[key] = Array.isArray(editData[key]) ? editData[key] : [];
+            }
           } else if (defaultValues[key] !== undefined) {
-            formattedData[key] = Array.isArray(defaultValues[key]) ? defaultValues[key] : [];
+            if (isSingleSelect) {
+              formattedData[key] = defaultValues[key] && defaultValues[key].toString().trim() !== "" ? defaultValues[key] : null;
+            } else {
+              formattedData[key] = Array.isArray(defaultValues[key]) ? defaultValues[key] : [];
+            }
           } else {
-            formattedData[key] = [];
+            formattedData[key] = isSingleSelect ? null : [];
           }
         });
       }
@@ -314,8 +334,15 @@ export function AddRecordDialog({
       const initialForm: Record<string, any> = {};
       if (defaultValues) {
         Object.keys(defaultValues).forEach((key) => {
-          if (relationshipFields?.[key] && Array.isArray(defaultValues[key])) {
-            initialForm[key] = defaultValues[key];
+          if (relationshipFields?.[key]) {
+            const column = dataColumns.find((col) => (col as any).accessorKey === key);
+            const isSingleSelect = column && (column.meta as any)?.singleSelect === true;
+            
+            if (isSingleSelect) {
+              initialForm[key] = defaultValues[key] && defaultValues[key].toString().trim() !== "" ? defaultValues[key] : null;
+            } else if (Array.isArray(defaultValues[key])) {
+              initialForm[key] = defaultValues[key];
+            }
           }
         });
       }
@@ -392,15 +419,28 @@ export function AddRecordDialog({
       console.log("Processed data:", processedData);
       console.log("Dynamic fields:", dynamicFields);
       
-      // Include relationship fields from form even if they're empty arrays
+      // Include relationship fields from form - handle single-select vs multi-select
       if (relationshipFields) {
         Object.keys(relationshipFields).forEach((key) => {
+          const column = dataColumns.find((col) => (col as any).accessorKey === key);
+          const isSingleSelect = column && (column.meta as any)?.singleSelect === true;
+          
           if (form[key] !== undefined) {
-            processedData[key] = form[key];
+            if (isSingleSelect) {
+              // Single-select: use the value directly (or null if empty)
+              processedData[key] = form[key] && form[key].toString().trim() !== "" ? form[key] : null;
+            } else {
+              // Multi-select: ensure it's an array
+              processedData[key] = Array.isArray(form[key]) ? form[key] : [];
+            }
           } else if (defaultValues[key] !== undefined) {
-            processedData[key] = defaultValues[key];
+            if (isSingleSelect) {
+              processedData[key] = defaultValues[key] && defaultValues[key].toString().trim() !== "" ? defaultValues[key] : null;
+            } else {
+              processedData[key] = Array.isArray(defaultValues[key]) ? defaultValues[key] : [];
+            }
           } else {
-            processedData[key] = [];
+            processedData[key] = isSingleSelect ? null : [];
           }
         });
       }
@@ -523,6 +563,8 @@ export function AddRecordDialog({
             const dynamicFieldName = isDynamic ? getDynamicFieldName(accessorKey) : null;
             const isRelationshipField = relationshipFields?.[accessorKey];
             const relationshipOptions = isRelationshipField?.options || [];
+            const columnForRelationship = dataColumns.find((col) => (col as any).accessorKey === accessorKey);
+            const isSingleSelectRelationship = isRelationshipField && columnForRelationship && (columnForRelationship.meta as any)?.singleSelect === true;
 
             return (
               <div key={accessorKey} className="space-y-2">
@@ -532,7 +574,27 @@ export function AddRecordDialog({
                     <span className="text-destructive mr-1">*</span>
                   )}
                 </label>
-                {isRelationshipField ? (
+                {isRelationshipField && isSingleSelectRelationship ? (
+                  <Select
+                    value={fieldValue && fieldValue.toString().trim() !== "" ? fieldValue.toString() : undefined}
+                    onValueChange={(value) => {
+                      setForm({ ...form, [accessorKey]: value && value.trim() !== "" ? value : null });
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={t("select_option") || "בחר אפשרות..."} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {relationshipOptions
+                        .filter((option: { value: string; label: string }) => option.value !== "")
+                        .map((option: { value: string; label: string }) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                ) : isRelationshipField ? (
                   <MultiSelect
                     options={relationshipOptions}
                     selected={Array.isArray(fieldValue) ? fieldValue : fieldValue ? [fieldValue] : []}

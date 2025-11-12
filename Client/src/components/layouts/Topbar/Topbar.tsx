@@ -20,8 +20,8 @@ function Topbar() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   
-  // Allow editing if user is admin/system_admin OR if feature flag is enabled
-  const canEdit = useFeatureFlag("is_edit_org_name").isEnabled || user?.role === "admin" || user?.role === "system_admin";
+  // Allow editing if user is system_admin OR if feature flag is enabled
+  const canEdit = useFeatureFlag("is_edit_org_name").isEnabled || user?.role === "system_admin";
 
   if (!organization || isOrganizationFetching) {
     return null;

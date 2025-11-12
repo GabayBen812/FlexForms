@@ -8,7 +8,8 @@ import { useQuery } from "@tanstack/react-query";
 import DataTable from "@/components/ui/completed/data-table";
 import { TableEditButton } from "@/components/ui/completed/data-table/TableEditButton";
 import { useOrganization } from "@/hooks/useOrganization";
-import { TableAction, ApiQueryParams } from "@/types/ui/data-table-types";
+import { TableAction, ApiQueryParams, ApiResponse } from "@/types/ui/data-table-types";
+import { MutationResponse } from "@/types/api/auth";
 import { createApiService } from "@/api/utils/apiFactory";
 import { Parent } from "@/types/parents/parent";
 import { Kid } from "@/types/kids/kid";
@@ -280,13 +281,10 @@ export default function ParentsPage() {
     async (params?: ApiQueryParams) => {
       if (!organization?._id) {
         return {
-          status: 200,
-          data: {
-            data: [],
-            totalCount: 0,
-            totalPages: 0,
-          },
-        };
+          data: [],
+          totalCount: 0,
+          totalPages: 0,
+        } as ApiResponse<Parent>;
       }
 
       if (!isUnifiedContacts) {
@@ -299,7 +297,11 @@ export default function ParentsPage() {
       });
 
       if (contactResponse.error || !contactResponse.data) {
-        return contactResponse;
+        return {
+          status: contactResponse.status,
+          error: contactResponse.error,
+          data: undefined,
+        } as MutationResponse<Parent[]>;
       }
 
       const contacts = contactResponse.data.data || [];
@@ -309,7 +311,11 @@ export default function ParentsPage() {
       if (contactIds.length > 0) {
         const relationshipsResponse = await getRelationshipsForContacts(contactIds);
         if (relationshipsResponse.error || !relationshipsResponse.data) {
-          return relationshipsResponse;
+          return {
+            status: relationshipsResponse.status,
+            error: relationshipsResponse.error,
+            data: undefined,
+          } as MutationResponse<Parent[]>;
         }
         relationships = relationshipsResponse.data;
       }
@@ -331,13 +337,10 @@ export default function ParentsPage() {
       );
 
       return {
-        status: contactResponse.status,
-        data: {
-          data: parents,
-          totalCount: contactResponse.data.totalCount,
-          totalPages: contactResponse.data.totalPages,
-        },
-      };
+        data: parents,
+        totalCount: contactResponse.data.totalCount,
+        totalPages: contactResponse.data.totalPages,
+      } as ApiResponse<Parent>;
     },
     [organization?._id, isUnifiedContacts, mapContactToParent],
   );

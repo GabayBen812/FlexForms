@@ -36,7 +36,3 @@ export const deleteAccount = (id: string | number) => {
   return accountsApiService.delete(id);
 };
 
-export const deleteManyAccounts = (ids: (string | number)[]) => {
-  return accountsApiService.deleteMany(ids);
-};
-

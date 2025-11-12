@@ -11,6 +11,9 @@ export class Account {
   @Prop({ type: Types.ObjectId, ref: 'Organization', required: true })
   organizationId!: Types.ObjectId;
 
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Contact' }], default: [] })
+  linked_contacts!: Types.ObjectId[];
+
   @Prop({ type: Object, default: {} })
   dynamicFields!: Record<string, any>;
 }

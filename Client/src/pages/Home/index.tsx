@@ -51,7 +51,7 @@ export default function Home() {
       });
       return res.data;
     },
-    enabled: usersFF || userRole === "admin" || userRole === "system_admin",
+    enabled: usersFF || userRole === "system_admin",
   });
 
   const { data: payments = [], isLoading: paymentsLoading } = useQuery({
@@ -146,7 +146,7 @@ export default function Home() {
       onClick: () => navigate("/activity"),
       icon: "FileText",
     },
-    (usersFF || userRole === "admin" || userRole === "system_admin") && {
+    (usersFF || userRole === "system_admin") && {
       key: "users",
       title: t("users"),
       value: usersLoading ? "..." : users.length,

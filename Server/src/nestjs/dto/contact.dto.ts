@@ -52,6 +52,10 @@ export class CreateContactDto {
   @IsOptional()
   status?: ContactStatus;
 
+  @IsMongoId()
+  @IsOptional()
+  accountId?: string;
+
   @IsOptional()
   @IsObject()
   dynamicFields?: DynamicFields;
@@ -90,6 +94,10 @@ export class UpdateContactDto {
   @IsEnum(ContactStatus)
   @IsOptional()
   status?: ContactStatus;
+
+  @IsMongoId()
+  @IsOptional()
+  accountId?: string;
 
   @IsOptional()
   @IsObject()

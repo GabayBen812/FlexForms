@@ -112,6 +112,8 @@ When i write "FF" i usally refer to FeatureFlag
 - Always validate data before saving to database
 - Use transactions for operations that must be atomic
 - Index frequently queried fields
+- All data in the type of files should be save in the supabase. 
+- Avoid using base64 and saving them in the DB!
 
 ### Date Formatting
 - **All dates displayed in the UI must use DD/MM/YYYY format**

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, Delete, UseGuards } from '@nestjs/common';
 import { RegistrationService } from '../services/registration.service';
 import { CreateRegistrationDto } from '../dto/registration.dto';
 import { JwtAuthGuard } from '../middlewares/jwt-auth.guard';
@@ -39,4 +39,14 @@ export class RegistrationController {
     data: result,
   };
 }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete()
+  async deleteMany(@Body('ids') ids: (string | number)[]) {
+    console.log('Delete request for IDs:', ids);
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return { status: 400, message: 'No IDs provided for deletion' };
+    }
+    return this.service.deleteMany(ids);
+  }
 }

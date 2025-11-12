@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FieldConfig } from "@/components/forms/DynamicForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
@@ -50,6 +50,22 @@ export default function FormEditor({ initialFields, onUpdate }: Props) {
   const { t } = useTranslation();
   const [fields, setFields] = useState<FieldConfig[]>(initialFields);
   const [layoutMode, setLayoutMode] = useState<"grid" | "list">("list");
+
+  // Sync fields when initialFields changes (e.g., when form loads from server)
+  // Use a ref to track if this is the initial mount to avoid unnecessary updates
+  const isInitialMount = React.useRef(true);
+  
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      // On initial mount, fields are already set from useState(initialFields)
+      return;
+    }
+    // After initial mount, sync when initialFields changes (e.g., after form loads or saves)
+    if (initialFields) {
+      setFields(initialFields);
+    }
+  }, [initialFields]);
 
   const handleAddField = (type: string) => {
     const newField: FieldConfig = {

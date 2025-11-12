@@ -1,5 +1,5 @@
 import { UserRegistration } from "@/types/forms/UserRegistration";
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { useTranslation } from "react-i18next";
 import { createApiService } from "@/api/utils/apiFactory";
 import DataTable from "@/components/ui/completed/data-table";
@@ -13,6 +13,8 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { Pencil, Check, X } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/hooks/use-toast";
+import { getSelectionColumn } from "@/components/tables/selectionColumns";
+import { showConfirm } from "@/utils/swal";
 
 const registrationsApi = createApiService<UserRegistration>("/registrations");
 const formsApi = createApiService<Form>("/forms");
@@ -35,6 +37,8 @@ export default function FormRegistrationsTable({ form, onFormUpdate }: Props) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(form.title);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const actions: TableAction<UserRegistration>[] = [
     { label: t("delete"), type: "delete" },
@@ -107,6 +111,46 @@ export default function FormRegistrationsTable({ form, onFormUpdate }: Props) {
       handleSaveTitle();
     } else if (e.key === "Escape") {
       handleCancelEdit();
+    }
+  };
+
+  const handleBulkDelete = async (selectedRows: UserRegistration[]) => {
+    const selectedIds = selectedRows
+      .map((row) => row._id)
+      .filter((id): id is string => !!id);
+
+    if (selectedIds.length === 0) return;
+
+    const confirmed = await showConfirm(
+      t("confirm_delete") || "Are you sure you want to delete the selected registrations?",
+      t("delete") || "Delete"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const response = await registrationsApi.deleteMany(selectedIds);
+      
+      if (response.status >= 200 && response.status < 300) {
+        toast({
+          title: t("success") || "Success",
+          description: t("deleted_successfully") || "Registrations deleted successfully",
+          variant: "default",
+        });
+        
+        // Clear selection and refresh data
+        setRowSelection({});
+        setRefreshTrigger((prev) => prev + 1);
+      } else {
+        throw new Error("Delete failed");
+      }
+    } catch (error) {
+      console.error("Failed to delete registrations:", error);
+      toast({
+        title: t("error") || "Error",
+        description: t("delete_failed") || "Failed to delete registrations",
+        variant: "destructive",
+      });
     }
   };
 
@@ -196,6 +240,10 @@ export default function FormRegistrationsTable({ form, onFormUpdate }: Props) {
           actions={actions}
           extraFilters={advancedFilters}
           isPagination={false}
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
+          onBulkDelete={handleBulkDelete}
+          refreshTrigger={refreshTrigger}
         />
       </div>
     </div>
@@ -207,6 +255,7 @@ function getColumns(
   fields: { name: string; label: string; type?: string }[],
   showPaymentColumns: boolean
 ): ColumnDef<UserRegistration>[] {
+  const selectionColumn = getSelectionColumn<UserRegistration>();
   const baseColumns: ColumnDef<UserRegistration>[] = [
     // { accessorKey: "fullName", header: t("full_name") },
     // { accessorKey: "email", header: t("email") },
@@ -273,11 +322,15 @@ function getColumns(
 
         if (field.type === "signature" && typeof val === "string") {
           return (
-            <img
-              src={val}
-              alt="signature"
-              style={{ width: "120px", height: "60px", objectFit: "contain" }}
-            />
+            <div className="flex items-center justify-center w-full h-full min-h-[60px] py-1">
+              <div className="flex items-center justify-center bg-gray-50 border border-gray-200 rounded-md p-1.5 shadow-sm">
+                <img
+                  src={val}
+                  alt="signature"
+                  className="max-w-[100px] max-h-[40px] object-contain"
+                />
+              </div>
+            </div>
           );
         }
 
@@ -293,5 +346,5 @@ function getColumns(
       },
     }));
 
-  return [...baseColumns, ...paymentColumns, ...additionalColumns];
+  return [selectionColumn, ...baseColumns, ...paymentColumns, ...additionalColumns];
 }

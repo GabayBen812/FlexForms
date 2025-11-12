@@ -131,5 +131,15 @@ export class RegistrationService {
     return counts;
   }
 
+  async deleteMany(ids: (string | number)[]) {
+    const objectIds = ids.map(id => new Types.ObjectId(String(id)));
+    const result = await this.model.deleteMany({ _id: { $in: objectIds } });
+    return { 
+      status: 200,
+      deletedCount: result.deletedCount,
+      message: `Successfully deleted ${result.deletedCount} registration(s)`
+    };
+  }
+
 }
 

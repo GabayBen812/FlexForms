@@ -130,27 +130,51 @@ export function AdvancedSearchModal<T = any>({ open, onClose, columns, onApply, 
       );
     }
 
-    // Handle SELECT field type
+    // Handle SELECT field type - use MultiSelect for multi-selection filtering
     if (fieldType === "SELECT" && Array.isArray(options)) {
+      // Normalize selected values to match normalizedOptions format (all strings)
+      const rawSelectedValues = Array.isArray(fieldValue) ? fieldValue : fieldValue ? [fieldValue] : [];
+      // Convert all values to strings and match against normalizedOptions
+      const selectedValues = rawSelectedValues
+        .map((val) => String(val ?? ""))
+        .filter((stringVal) => {
+          // Only include values that exist in normalizedOptions
+          return stringVal !== "" && normalizedOptions.some((opt) => String(opt.value) === stringVal);
+        })
+        .map((stringVal) => {
+          // Get the exact value from normalizedOptions to ensure type consistency
+          const matchingOption = normalizedOptions.find((opt) => String(opt.value) === stringVal);
+          return matchingOption ? matchingOption.value : stringVal;
+        });
+      
       return (
-        <select
-          value={fieldValue || ""}
-          onChange={(e) => handleChange(accessorKey, e.target.value)}
-          className={selectClasses}
-        >
-          <option value="">{t("all", "הכל")}</option>
-          {normalizedOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+        <MultiSelect
+          options={normalizedOptions}
+          selected={selectedValues}
+          onSelect={(values) => handleChange(accessorKey, values)}
+          placeholder={t("select_options", "בחר אפשרויות...")}
+          className="h-auto rounded-xl border border-sky-200/60 bg-white/90 text-base font-medium text-slate-900 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700 focus:ring-2 focus:ring-sky-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:hover:border-sky-500/40 dark:hover:bg-slate-900 dark:hover:text-sky-200"
+        />
       );
     }
 
     // Handle MULTI_SELECT field type
     if (fieldType === "MULTI_SELECT" && Array.isArray(options)) {
-      const selectedValues = Array.isArray(fieldValue) ? fieldValue : fieldValue ? [fieldValue] : [];
+      // Normalize selected values to match normalizedOptions format (all strings)
+      const rawSelectedValues = Array.isArray(fieldValue) ? fieldValue : fieldValue ? [fieldValue] : [];
+      // Convert all values to strings and match against normalizedOptions
+      const selectedValues = rawSelectedValues
+        .map((val) => String(val ?? ""))
+        .filter((stringVal) => {
+          // Only include values that exist in normalizedOptions
+          return stringVal !== "" && normalizedOptions.some((opt) => String(opt.value) === stringVal);
+        })
+        .map((stringVal) => {
+          // Get the exact value from normalizedOptions to ensure type consistency
+          const matchingOption = normalizedOptions.find((opt) => String(opt.value) === stringVal);
+          return matchingOption ? matchingOption.value : stringVal;
+        });
+      
       return (
         <MultiSelect
           options={normalizedOptions}
@@ -277,9 +301,6 @@ export function AdvancedSearchModal<T = any>({ open, onClose, columns, onApply, 
           <DialogTitle className="text-3xl font-semibold text-slate-900 dark:text-slate-50">
             {t("advanced_search", "חיפוש מתקדם")}
           </DialogTitle>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            {t("advanced_search_hint", "בחר שדות, קבע תנאים, וסנן את הרשומות בדיוק שאתה צריך.")}
-          </p>
         </DialogHeader>
         <form
           onSubmit={e => {
@@ -314,9 +335,7 @@ export function AdvancedSearchModal<T = any>({ open, onClose, columns, onApply, 
                     <p className="text-lg font-semibold text-slate-900 dark:text-slate-50">
                       {t("select_fields_to_search", "בחר שדות לחיפוש")}
                     </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {t("search_and_select_fields", "חפש ובחר שדות...")}
-                    </p>
+                   
                   </div>
                 </div>
                 {selectedFields.length > 0 && (

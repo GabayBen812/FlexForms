@@ -58,34 +58,52 @@ export default function DynamicForm({
   const handleSignatureSave = async (fieldName: string) => {
     if (!sigCanvasRefs.current[fieldName]) return;
 
+    // Get the signature as a base64 string
+    const dataURL = sigCanvasRefs.current[fieldName]?.toDataURL("image/png");
+    if (!dataURL) {
+      console.error("No signature data available");
+      return;
+    }
+
+    setUploadingFields((prev) => ({ ...prev, [fieldName]: true }));
+
     try {
-      // Get the signature as a base64 string
-      const dataURL = sigCanvasRefs.current[fieldName]?.toDataURL("image/png");
-      if (!dataURL) {
-        console.error("No signature data available");
-        return;
-      }
+      // Convert data URL to File/Blob (same pattern as uploadImage)
+      const response = await fetch(dataURL);
+      const blob = await response.blob();
+      const fileFromBlob = new File([blob], "signature.png", { type: "image/png" });
 
-      // Set the base64 data immediately for preview
-      setValue(fieldName, dataURL);
+      // Generate unique path (same bucket as files/images: "uploads")
+      const timestamp = Date.now();
+      const uuid = crypto.randomUUID();
+      const fileName = `${timestamp}_${uuid}.png`;
+      const path = `uploads/signatures/${fieldName}/${fileName}`;
 
-      // Try to upload to Firebase
-      try {
-        const signatureUrl = await handleImageUpload(
-          dataURL,
-          `signatures/${fieldName}`
-        );
-        // If upload successful, update the value with the URL
-        setValue(fieldName, signatureUrl);
-      } catch (error) {
-        console.error(
-          "Failed to upload signature to Firebase, using base64 data instead:",
-          error
-        );
-        // Keep using the base64 data if upload fails
-      }
+      // Upload to Supabase
+      const signatureUrl = await uploadFile(fileFromBlob, path);
+      
+      // Only set URL after successful upload
+      setValue(fieldName, signatureUrl);
+
+      toast.success(
+        t("signature_uploaded_successfully", "חתימה הועלתה בהצלחה")
+      );
     } catch (error) {
-      console.error("Error saving signature:", error);
+      console.error("Error uploading signature to Supabase:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Signature upload error details:", {
+        fieldName,
+        error: errorMessage,
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+      });
+      
+      // Show error message
+      const displayMessage = t("error_uploading_signature", "שגיאה בהעלאת חתימה");
+      
+      toast.error(displayMessage);
+      // Don't throw - let user try again. Validation in index.tsx will catch base64 on submit.
+    } finally {
+      setUploadingFields((prev) => ({ ...prev, [fieldName]: false }));
     }
   };
 
@@ -96,26 +114,38 @@ export default function DynamicForm({
     for (const field of signatureFields) {
       const value = newData[field.name];
       if (value && typeof value === "string") {
-        try {
-          // If it's already a Firebase URL, keep it as is
-          if (value.startsWith("https://firebasestorage.googleapis.com")) {
-            continue;
-          }
+        // If it's already a Supabase URL, keep it as is
+        if (value.includes("supabase.co")) {
+          continue;
+        }
 
-          // If it's base64, try to upload it
-          if (value.startsWith("data:image")) {
-            const url = await handleImageUpload(
-              value,
-              `signatures/${field.name}`
-            );
+        // If it's base64, upload it to Supabase (strict mode - no fallback)
+        if (value.startsWith("data:image")) {
+          try {
+            // Convert data URL to File/Blob (same pattern as uploadImage)
+            const response = await fetch(value);
+            const blob = await response.blob();
+            const fileFromBlob = new File([blob], "signature.png", { type: "image/png" });
+
+            // Generate unique path (same bucket as files/images: "uploads")
+            const timestamp = Date.now();
+            const uuid = crypto.randomUUID();
+            const fileName = `${timestamp}_${uuid}.png`;
+            const path = `uploads/signatures/${field.name}/${fileName}`;
+
+            // Upload to Supabase
+            const url = await uploadFile(fileFromBlob, path);
             newData[field.name] = url;
+          } catch (error) {
+            console.error(
+              `Error processing signature field ${field.name}:`,
+              error
+            );
+            // Strict mode - throw error instead of keeping base64
+            throw new Error(
+              `Failed to upload signature for field ${field.name}: ${error instanceof Error ? error.message : String(error)}`
+            );
           }
-        } catch (error) {
-          console.error(
-            `Error processing signature field ${field.name}:`,
-            error
-          );
-          // Keep the base64 data if upload fails
         }
       }
     }
@@ -515,21 +545,34 @@ export default function DynamicForm({
                     />
                   ) : (
                     <>
-                      <SignatureCanvas
-                        penColor="black"
-                        canvasProps={{
-                          width: 300,
-                          height: 150,
-                          className: "border rounded bg-white",
-                        }}
-                        ref={(ref) => {
-                          sigCanvasRefs.current[field.name] = ref;
-                        }}
-                        onEnd={() => {
-                          handleSignatureSave(field.name);
-                        }}
-                        data-cy={`field-signature-canvas-${field.name}`}
-                      />
+                      <div className="relative">
+                        <SignatureCanvas
+                          penColor="black"
+                          canvasProps={{
+                            width: 300,
+                            height: 150,
+                            className: `border rounded bg-white ${
+                              uploadingFields[field.name] ? "opacity-50 pointer-events-none" : ""
+                            }`,
+                          }}
+                          ref={(ref) => {
+                            sigCanvasRefs.current[field.name] = ref;
+                          }}
+                          onEnd={() => {
+                            if (!uploadingFields[field.name]) {
+                              handleSignatureSave(field.name);
+                            }
+                          }}
+                          data-cy={`field-signature-canvas-${field.name}`}
+                        />
+                        {uploadingFields[field.name] && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded">
+                            <div className="text-sm text-gray-600">
+                              {t("uploading", "מעלה...")}
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
                       <Button
                         variant="outline"
@@ -539,6 +582,7 @@ export default function DynamicForm({
                           setValue(field.name, "");
                         }}
                         className="mt-2"
+                        disabled={uploadingFields[field.name]}
                         data-cy={`field-signature-clear-${field.name}`}
                       >
                         <div className="flex items-center gap-2">

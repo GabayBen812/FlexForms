@@ -1,15 +1,8 @@
 import * as React from "react";
-import { Check, ChevronDown, X } from "lucide-react";
+import { Check, ChevronDown, X, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+import { Input } from "@/components/ui/Input";
 import {
   Popover,
   PopoverContent,
@@ -35,13 +28,15 @@ export function MultiSelect({
   className,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
+  const [search, setSearch] = React.useState("");
 
-  const handleSelect = (value: string) => {
+  const handleSelect = React.useCallback((value: string) => {
     const newSelected = selected.includes(value)
       ? selected.filter((item) => item !== value)
       : [...selected, value];
     onSelect(newSelected);
-  };
+    // Don't close the popover - keep it open for multi-select
+  }, [selected, onSelect]);
 
   const handleRemove = (value: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -93,33 +88,82 @@ export function MultiSelect({
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
-        <Command>
-          <CommandInput placeholder="חפש..." />
-          <CommandList>
-            <CommandEmpty>לא נמצאו תוצאות.</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => {
+      <PopoverContent 
+        className="w-full p-0" 
+        align="start"
+        onInteractOutside={(e) => {
+          // Prevent closing when clicking inside dialog (but allow clicks inside popover)
+          // This allows multi-select to work properly inside a dialog
+          const target = e.target as HTMLElement;
+          // Only prevent if clicking on dialog content, not on popover itself
+          const dialogElement = target.closest('[role="dialog"]');
+          const popoverElement = target.closest('[data-radix-popover-content]');
+          // If click is inside dialog but not inside popover, prevent closing
+          if (dialogElement && !popoverElement) {
+            e.preventDefault();
+          }
+        }}
+      >
+        <div className="p-2 border-b">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="חפש..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 pr-3"
+            />
+          </div>
+        </div>
+        <div className="max-h-[300px] overflow-y-auto p-1">
+          {options.filter((option) =>
+            option.label.toLowerCase().includes(search.toLowerCase()) ||
+            option.value.toLowerCase().includes(search.toLowerCase())
+          ).length === 0 ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              לא נמצאו תוצאות.
+            </div>
+          ) : (
+            options
+              .filter((option) =>
+                option.label.toLowerCase().includes(search.toLowerCase()) ||
+                option.value.toLowerCase().includes(search.toLowerCase())
+              )
+              .map((option) => {
                 const isSelected = selected.includes(option.value);
                 return (
-                  <CommandItem
+                  <button
                     key={option.value}
-                    onSelect={() => handleSelect(option.value)}
-                    className="cursor-pointer rounded-md text-foreground transition-colors data-[highlighted=true]:bg-primary/10 data-[highlighted=true]:text-primary data-[selected=true]:bg-primary/10 data-[selected=true]:text-primary"
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleSelect(option.value);
+                    }}
+                    onPointerDown={(e) => {
+                      // Also handle pointer events for better compatibility
+                      e.stopPropagation();
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-primary/10 active:bg-primary/20 text-left select-none",
+                      isSelected && "bg-primary/10"
+                    )}
                   >
                     <Check
                       className={cn(
-                        "ml-2 h-4 w-4",
+                        "h-4 w-4 shrink-0",
                         isSelected ? "opacity-100" : "opacity-0"
                       )}
                     />
-                    {option.label}
-                  </CommandItem>
+                    <span className="flex-1">{option.label}</span>
+                  </button>
                 );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+              })
+          )}
+        </div>
       </PopoverContent>
     </Popover>
   );

@@ -118,6 +118,26 @@ export default function FormRegistration() {
                 .filter(f => f.name !== "title" && f.name !== "description" && f.name !== "paymentSum")
                 .map(f => f.name);
               
+              // Validate signature fields are URLs (not base64) before submission
+              const signatureFields = dynamicFields.filter(f => f.type === "signature");
+              for (const field of signatureFields) {
+                const value = data[field.name];
+                if (value && typeof value === "string") {
+                  // If it's base64, reject submission (signatures should already be uploaded to Supabase)
+                  if (value.startsWith("data:image")) {
+                    throw new Error(
+                      t("signature_not_uploaded", "חתימה לא הועלתה. אנא נסה שוב.")
+                    );
+                  }
+                  // Ensure it's a valid URL (should be Supabase URL or any valid http/https URL)
+                  if (!value.startsWith("http://") && !value.startsWith("https://")) {
+                    throw new Error(
+                      t("invalid_signature_url", "כתובת חתימה לא תקינה. אנא נסה שוב.")
+                    );
+                  }
+                }
+              }
+              
               // Add all dynamic fields to additionalData
               dynamicFieldNames.forEach((fieldName) => {
                 const value = data[fieldName];

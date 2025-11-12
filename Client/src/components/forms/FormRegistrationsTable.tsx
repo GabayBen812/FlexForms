@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/Input";
 import { useToast } from "@/hooks/use-toast";
 import { getSelectionColumn } from "@/components/tables/selectionColumns";
 import { showConfirm } from "@/utils/swal";
+import { FieldConfig } from "@/components/forms/DynamicForm";
 
 const registrationsApi = createApiService<UserRegistration>("/registrations");
 const formsApi = createApiService<Form>("/forms");
@@ -252,7 +253,7 @@ export default function FormRegistrationsTable({ form, onFormUpdate }: Props) {
 
 function getColumns(
   t: ReturnType<typeof useTranslation>["t"],
-  fields: { name: string; label: string; type?: string }[],
+  fields: FieldConfig[],
   showPaymentColumns: boolean
 ): ColumnDef<UserRegistration>[] {
   const selectionColumn = getSelectionColumn<UserRegistration>();
@@ -313,10 +314,33 @@ function getColumns(
 
   const additionalColumns: ColumnDef<UserRegistration>[] = fields
     .filter((f) => !!f.name)
-    .map((field) => ({
-      accessorKey: `additionalData.${field.name}`,
-      header: field.label,
-      meta: field.type === "date" ? { isDate: true, editable: false } : { editable: false },
+    .map((field) => {
+      // Build meta object with field type and options for SELECT/MULTI_SELECT fields
+      const meta: any = {
+        editable: false,
+      };
+
+      // Add date metadata
+      if (field.type === "date") {
+        meta.isDate = true;
+      }
+
+      // Add fieldType and options for SELECT fields
+      if (field.type === "select") {
+        meta.fieldType = "SELECT";
+        meta.options = field.config?.options || [];
+      }
+
+      // Add fieldType and options for MULTI_SELECT fields
+      if (field.type === "multiselect") {
+        meta.fieldType = "MULTI_SELECT";
+        meta.options = field.config?.options || [];
+      }
+
+      return {
+        accessorKey: `additionalData.${field.name}`,
+        header: field.label,
+        meta,
       cell: ({ row }) => {
         const additionalData = row.original.additionalData || {};
         let val: any;
@@ -471,7 +495,8 @@ function getColumns(
         // Return the value or "-" if empty
         return val !== undefined && val !== "" ? val : "-";
       },
-    }));
+      };
+    });
 
   return [selectionColumn, ...baseColumns, ...paymentColumns, ...additionalColumns];
 }

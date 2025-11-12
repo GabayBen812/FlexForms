@@ -19,6 +19,8 @@ import {
   Save,
   LayoutGrid,
   List,
+  Image,
+  File,
 } from "lucide-react";
 import FieldConfigEditor from "./FieldConfigEditor";
 import { motion, AnimatePresence } from "framer-motion";
@@ -44,6 +46,8 @@ const fieldTypeIcons = {
   select: ListFilter,
   multiselect: ListIcon,
   signature: PenLine,
+  image: Image,
+  file: File,
 };
 
 export default function FormEditor({ initialFields, onUpdate }: Props) {

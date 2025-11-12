@@ -318,14 +318,87 @@ function getColumns(
       header: field.label,
       meta: field.type === "date" ? { isDate: true, editable: false } : { editable: false },
       cell: ({ row }) => {
-        const val = row.original.additionalData?.[field.name];
+        const additionalData = row.original.additionalData || {};
+        let val: any;
+        
+        // Handle terms field - show checkmark if any terms field is checked
+        if (field.type === "terms") {
+          // For terms fields, check if ANY key starting with "terms" has a truthy value
+          // This handles cases where field names might not match exactly
+          const allKeys = Object.keys(additionalData);
+          const termsKeys = allKeys.filter(key => key.toLowerCase().startsWith('terms'));
+          
+          // Debug: Log field info
+          console.log(`[Terms Debug] Checking terms field: name="${field.name}", type="${field.type}", allKeys=`, allKeys, `termsKeys=`, termsKeys);
+          
+          // Try exact match first
+          let termsValue = additionalData[field.name];
+          console.log(`[Terms Debug] Exact match value:`, termsValue, typeof termsValue);
+          
+          // If not found, try to find matching terms key
+          if ((termsValue === undefined || termsValue === null) && termsKeys.length > 0) {
+            // Try to match by numeric suffix if field name has one
+            const fieldSuffix = field.name.match(/\d+$/)?.[0];
+            if (fieldSuffix) {
+              const matchingKey = termsKeys.find(key => key.endsWith(fieldSuffix));
+              if (matchingKey) {
+                termsValue = additionalData[matchingKey];
+              }
+            }
+            
+            // If still no match, use first terms key (assume single terms field per form)
+            if ((termsValue === undefined || termsValue === null) && termsKeys.length > 0) {
+              termsValue = additionalData[termsKeys[0]];
+            }
+          }
+          
+          // Check if value indicates terms were accepted
+          // Terms are accepted if value is truthy (true, "true", 1, "1", etc.)
+          // But exclude false, 0, empty string, null, undefined, "false"
+          if (termsValue === true || 
+              termsValue === "true" || 
+              termsValue === 1 || 
+              termsValue === "1") {
+            return (
+              <div className="flex items-center justify-center">
+                <Check className="h-5 w-5 text-green-600" />
+              </div>
+            );
+          }
+          
+          // Fallback: any other truthy value (but explicitly exclude falsy values)
+          if (termsValue !== undefined && 
+              termsValue !== null && 
+              termsValue !== false && 
+              termsValue !== "" && 
+              termsValue !== 0 && 
+              termsValue !== "false" &&
+              termsValue !== "0") {
+            // Debug: log unexpected truthy values
+            console.log(`[Terms Debug] Field "${field.name}" has unexpected truthy value:`, termsValue, typeof termsValue);
+            return (
+              <div className="flex items-center justify-center">
+                <Check className="h-5 w-5 text-green-600" />
+              </div>
+            );
+          }
+          
+          // Debug: log when value is not found or falsy
+          if (termsValue === undefined || termsValue === null) {
+            console.log(`[Terms Debug] Field "${field.name}" value not found. Terms keys:`, termsKeys, `All keys:`, allKeys);
+          }
+          
+          return "-";
+        }
 
-        if (field.type === "signature" && typeof val === "string") {
+        // For signature fields
+        if (field.type === "signature" && typeof additionalData[field.name] === "string") {
+          const sigVal = additionalData[field.name];
           return (
             <div className="flex items-center justify-center w-full h-full min-h-[60px] py-1">
               <div className="flex items-center justify-center bg-gray-50 border border-gray-200 rounded-md p-1.5 shadow-sm">
                 <img
-                  src={val}
+                  src={sigVal}
                   alt="signature"
                   className="max-w-[100px] max-h-[40px] object-contain"
                 />
@@ -334,14 +407,68 @@ function getColumns(
           );
         }
 
-        if (field.type === "date") {
-          return formatDateForDisplay(val) || "-";
+        // For image fields
+        if (field.type === "image" && typeof additionalData[field.name] === "string") {
+          const imageVal = additionalData[field.name];
+          return (
+            <div className="flex items-center justify-center w-full h-full min-h-[60px] py-1">
+              <div className="flex items-center justify-center bg-gray-50 border border-gray-200 rounded-md p-1.5 shadow-sm">
+                <img
+                  src={imageVal}
+                  alt={field.label}
+                  className="max-w-[100px] max-h-[40px] object-contain"
+                />
+              </div>
+            </div>
+          );
         }
 
+        // For file fields
+        if (field.type === "file" && typeof additionalData[field.name] === "string") {
+          const fileVal = additionalData[field.name];
+          return (
+            <div className="flex items-center gap-2">
+              <a
+                href={fileVal}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-primary hover:underline text-sm"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                  />
+                </svg>
+                {t("download_file", "הורד קובץ")}
+              </a>
+            </div>
+          );
+        }
+
+        // For date fields
+        if (field.type === "date") {
+          const dateVal = additionalData[field.name];
+          return formatDateForDisplay(dateVal) || "-";
+        }
+
+        // For all other fields, get the value
+        val = additionalData[field.name];
+
+        // If value is an object, return "-"
         if (val && typeof val === "object") {
           return "-";
         }
 
+        // Return the value or "-" if empty
         return val !== undefined && val !== "" ? val : "-";
       },
     }));

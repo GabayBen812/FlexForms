@@ -62,6 +62,8 @@ export default function FormRegistration() {
           return z.string().email({ message: t("invalid_email") });
         case "text":
         case "date":
+        case "image":
+        case "file":
           return z.string().min(1, { message: t("required_field") });
         case "checkbox":
           return z
@@ -78,6 +80,9 @@ export default function FormRegistration() {
       switch (field.type) {
         case "multiselect":
           return z.array(z.string()).optional();
+        case "image":
+        case "file":
+          return z.string().optional();
         default:
           return z.any().optional();
       }

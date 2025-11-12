@@ -5,10 +5,11 @@ import { ZodObject } from "zod";
 import { Input } from "@/components/ui/Input";
 import FieldConfigEditor from "./FieldConfigEditor";
 import SignatureCanvas from "react-signature-canvas";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { handleImageUpload } from "@/lib/imageUtils";
-import { Send, Eraser, Save } from "lucide-react";
+import { handleImageUpload, uploadFile } from "@/lib/imageUtils";
+import { Send, Eraser, Save, Upload, X, Download, File as FileIcon, Image as ImageIcon } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 export interface FieldConfig {
   name: string;
@@ -41,11 +42,13 @@ export default function DynamicForm({
 }: Props) {
   const { t } = useTranslation();
   const sigCanvasRefs = useRef<Record<string, SignatureCanvas | null>>({});
+  const [uploadingFields, setUploadingFields] = useState<Record<string, boolean>>({});
 
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(validationSchema),
@@ -118,6 +121,39 @@ export default function DynamicForm({
     }
 
     return newData;
+  };
+
+  const handleFileUpload = async (fieldName: string, file: File, fieldType: "image" | "file") => {
+    if (!file) return;
+
+    setUploadingFields((prev) => ({ ...prev, [fieldName]: true }));
+
+    try {
+      const timestamp = Date.now();
+      const uuid = crypto.randomUUID();
+      // Get file extension from original filename
+      const fileExtension = file.name.split('.').pop() || '';
+      const fileName = `${timestamp}_${uuid}${fileExtension ? '.' + fileExtension : ''}`;
+      const path = `uploads/form-fields/${fieldName}/${fileName}`;
+      
+      const fileUrl = await uploadFile(file, path);
+      setValue(fieldName, fileUrl);
+      
+      toast.success(
+        fieldType === "image" 
+          ? t("image_uploaded_successfully", "תמונה הועלתה בהצלחה")
+          : t("file_uploaded_successfully", "קובץ הועלה בהצלחה")
+      );
+    } catch (error) {
+      console.error(`Error uploading ${fieldType}:`, error);
+      toast.error(
+        fieldType === "image"
+          ? t("error_uploading_image", "שגיאה בהעלאת תמונה")
+          : t("error_uploading_file", "שגיאה בהעלאת קובץ")
+      );
+    } finally {
+      setUploadingFields((prev) => ({ ...prev, [fieldName]: false }));
+    }
   };
 
   const handleFormSubmit = async (data: any) => {
@@ -560,6 +596,179 @@ export default function DynamicForm({
                       className="text-red-500 text-sm"
                       data-cy={`field-error-${field.name}`}
                     >
+                      {errors[field.name]?.message as string}
+                    </p>
+                  )}
+                </div>
+              ) : field.type === "image" ? (
+                <div data-cy={`field-image-container-${field.name}`} className="space-y-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={mode !== "registration" || uploadingFields[field.name]}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleFileUpload(field.name, file, "image");
+                      }
+                    }}
+                    className="hidden"
+                    id={`image-input-${field.name}`}
+                  />
+                  <input
+                    type="hidden"
+                    {...register(field.name)}
+                  />
+                  {mode === "registration" && (
+                    <>
+                      <label
+                        htmlFor={`image-input-${field.name}`}
+                        className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors ${
+                          uploadingFields[field.name]
+                            ? "border-gray-300 bg-gray-50 opacity-50"
+                            : "border-gray-300 hover:border-primary hover:bg-primary/5"
+                        }`}
+                      >
+                        {uploadingFields[field.name] ? (
+                          <>
+                            <Upload className="w-8 h-8 text-gray-400 animate-pulse" />
+                            <span className="mt-2 text-sm text-gray-500">
+                              {t("uploading", "מעלה...")}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <ImageIcon className="w-8 h-8 text-gray-400" />
+                            <span className="mt-2 text-sm text-gray-600">
+                              {t("click_to_upload_image", "לחץ להעלאת תמונה")}
+                            </span>
+                          </>
+                        )}
+                      </label>
+                      {(() => {
+                        const watchValue = watch(field.name);
+                        const currentValue = watchValue || defaultValues?.[field.name];
+                        return currentValue ? (
+                          <div className="relative border rounded-lg p-2 bg-white">
+                            <img
+                              src={currentValue}
+                              alt={field.label}
+                              className="max-w-full max-h-48 object-contain rounded"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute top-2 right-2 bg-white/80 hover:bg-red-100"
+                              onClick={() => {
+                                setValue(field.name, "");
+                                const input = document.getElementById(`image-input-${field.name}`) as HTMLInputElement;
+                                if (input) input.value = "";
+                              }}
+                            >
+                              <X className="w-4 h-4 text-red-600" />
+                            </Button>
+                          </div>
+                        ) : null;
+                      })()}
+                    </>
+                  )}
+                  {mode !== "registration" && (
+                    <div className="text-sm text-gray-500 italic">
+                      {t("image_field_preview", "תצוגה מקדימה של שדה תמונה")}
+                    </div>
+                  )}
+                  {errors[field.name] && (
+                    <p className="text-red-500 text-sm" data-cy={`field-error-${field.name}`}>
+                      {errors[field.name]?.message as string}
+                    </p>
+                  )}
+                </div>
+              ) : field.type === "file" ? (
+                <div data-cy={`field-file-container-${field.name}`} className="space-y-2">
+                  <input
+                    type="file"
+                    accept="*/*"
+                    disabled={mode !== "registration" || uploadingFields[field.name]}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleFileUpload(field.name, file, "file");
+                      }
+                    }}
+                    className="hidden"
+                    id={`file-input-${field.name}`}
+                  />
+                  <input
+                    type="hidden"
+                    {...register(field.name)}
+                  />
+                  {mode === "registration" && (
+                    <>
+                      <label
+                        htmlFor={`file-input-${field.name}`}
+                        className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors ${
+                          uploadingFields[field.name]
+                            ? "border-gray-300 bg-gray-50 opacity-50"
+                            : "border-gray-300 hover:border-primary hover:bg-primary/5"
+                        }`}
+                      >
+                        {uploadingFields[field.name] ? (
+                          <>
+                            <Upload className="w-8 h-8 text-gray-400 animate-pulse" />
+                            <span className="mt-2 text-sm text-gray-500">
+                              {t("uploading", "מעלה...")}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <FileIcon className="w-8 h-8 text-gray-400" />
+                            <span className="mt-2 text-sm text-gray-600">
+                              {t("click_to_upload_file", "לחץ להעלאת קובץ")}
+                            </span>
+                          </>
+                        )}
+                      </label>
+                      {(() => {
+                        const watchValue = watch(field.name);
+                        const currentValue = watchValue || defaultValues?.[field.name];
+                        return currentValue ? (
+                          <div className="flex items-center gap-2 border rounded-lg p-3 bg-white">
+                            <FileIcon className="w-5 h-5 text-gray-400" />
+                            <a
+                              href={currentValue}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 text-sm text-primary hover:underline flex items-center gap-2"
+                            >
+                              <Download className="w-4 h-4" />
+                              {t("download_file", "הורד קובץ")}
+                            </a>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="hover:bg-red-100"
+                              onClick={() => {
+                                setValue(field.name, "");
+                                const input = document.getElementById(`file-input-${field.name}`) as HTMLInputElement;
+                                if (input) input.value = "";
+                              }}
+                            >
+                              <X className="w-4 h-4 text-red-600" />
+                            </Button>
+                          </div>
+                        ) : null;
+                      })()}
+                    </>
+                  )}
+                  {mode !== "registration" && (
+                    <div className="text-sm text-gray-500 italic">
+                      {t("file_field_preview", "תצוגה מקדימה של שדה קובץ")}
+                    </div>
+                  )}
+                  {errors[field.name] && (
+                    <p className="text-red-500 text-sm" data-cy={`field-error-${field.name}`}>
                       {errors[field.name]?.message as string}
                     </p>
                   )}

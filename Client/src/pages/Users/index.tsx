@@ -278,7 +278,20 @@ export default function Users() {
     if (!confirmed) return;
     
     try {
-      await Promise.all(selectedIds.map((id) => usersApi.delete(id)));
+      const results = await Promise.all(selectedIds.map((id) => usersApi.delete(id)));
+      
+      // Check if any delete operation failed
+      const hasError = results.some((result) => result.error || (result.status && result.status >= 400));
+      
+      if (hasError) {
+        const errorMessages = results
+          .filter((result) => result.error)
+          .map((result) => result.error)
+          .join(", ");
+        toast.error(errorMessages || t("delete_failed") || "Failed to delete items");
+        return;
+      }
+      
       toast.success(t("deleted_successfully") || "Successfully deleted item(s)");
       setRowSelection({});
       tableMethods?.refresh();

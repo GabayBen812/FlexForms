@@ -70,4 +70,8 @@ export class UserService {
       .lean()
       .exec();
   }
+
+  async remove(id: string): Promise<User | null> {
+    return this.userModel.findByIdAndDelete(id).exec();
+  }
 }

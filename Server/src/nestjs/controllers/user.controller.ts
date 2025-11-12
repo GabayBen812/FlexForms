@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
@@ -54,5 +55,16 @@ export class UserController {
     }
 
     return updatedUser;
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    const deletedUser = await this.service.remove(id);
+    
+    if (!deletedUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    return { message: 'User deleted successfully', id };
   }
 }

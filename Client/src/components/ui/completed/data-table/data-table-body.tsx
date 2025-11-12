@@ -130,7 +130,7 @@ function RelationshipChipsDisplay({
         <div
           key={values[index]}
           className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border",
+            "flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium border",
             relationshipChipClass
           )}
         >
@@ -186,7 +186,7 @@ function MultiSelectChipsDisplay({
         <div
           key={`${label}-${index}`}
           className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border",
+            "flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium border",
             multiSelectChipClass
           )}
         >
@@ -329,7 +329,7 @@ function SingleRelationshipChipsDisplay({
     >
       <div
         className={cn(
-          "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border",
+          "flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium border",
           relationshipChipClass
         )}
       >
@@ -1019,7 +1019,7 @@ function EditableCell<T>({
               hasValue ? "text-blue-600" : "text-gray-400"
             )} />
             <span className={cn(
-              "group-hover:text-blue-700 transition-colors",
+              "group-hover:text-blue-700 transition-colors text-base",
               hasValue ? "" : "text-gray-400"
             )}>
               {hasValue ? displayValue : ""}
@@ -1051,7 +1051,7 @@ function EditableCell<T>({
               hasValue ? "text-green-600" : "text-gray-400"
             )} />
             <span className={cn(
-              "group-hover:text-green-700 transition-colors",
+              "group-hover:text-green-700 transition-colors text-base",
               hasValue ? "" : "text-gray-400"
             )}>
               {hasValue ? displayValue : ""}
@@ -1072,11 +1072,11 @@ function EditableCell<T>({
           "cursor-pointer group relative px-2 py-1 rounded min-h-[1.5rem] transition-all duration-200",
           "hover:bg-blue-50 hover:border hover:border-blue-200 hover:shadow-sm",
           "hover:font-medium",
-          isMoney ? "font-semibold text-lg text-orange-700" : ""
+          isMoney ? "font-semibold text-xl text-orange-700" : ""
         )}
       >
         <div className="flex items-center justify-center gap-1.5">
-          <span className="group-hover:text-blue-700 transition-colors">
+          <span className="group-hover:text-blue-700 transition-colors text-base">
             {displayValue}
           </span>
           <Pencil className="w-3.5 h-3.5 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
@@ -1512,7 +1512,7 @@ const RowComponent = React.memo(function RowComponent<T>({
     }
     
     if (isDateColumn || isDateValue(value)) {
-      return formatDateForDisplay(value);
+      return <span className="text-base">{formatDateForDisplay(value)}</span>;
     }
 
     // Check if this is a money field
@@ -1521,7 +1521,7 @@ const RowComponent = React.memo(function RowComponent<T>({
     if (isMoney && value) {
       const formattedValue = `₪${parseFloat(value).toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
       return (
-        <span className="font-semibold text-lg text-orange-700">
+        <span className="font-semibold text-xl text-orange-700">
           {formattedValue}
         </span>
       );
@@ -1532,7 +1532,7 @@ const RowComponent = React.memo(function RowComponent<T>({
       // Try to get a string representation
       const objValue = value as any;
       const stringValue = objValue.name || objValue.email || objValue._id || JSON.stringify(value);
-      return <span>{String(stringValue)}</span>;
+      return <span className="text-base">{String(stringValue)}</span>;
     }
 
     return flexRender(columnDef.cell, cell.getContext());

@@ -113,7 +113,7 @@ function EditableHeader({
               setIsEditing(false);
             }
           }}
-          className="text-center bg-white text-gray-900 px-2 py-1 rounded border min-w-[100px] max-w-[200px] text-sm"
+          className="text-center bg-white text-gray-900 px-2 py-1 rounded border min-w-[100px] max-w-[200px] text-base"
         />
         <button
           onClick={(e) => {
@@ -150,7 +150,7 @@ function EditableHeader({
         setIsEditing(true);
       }}
     >
-      <span>{currentLabel}</span>
+      <span className="text-base">{currentLabel}</span>
       <Pencil className="h-3 w-3 opacity-0 group-hover/header:opacity-100 transition-opacity" />
     </div>
   );
@@ -423,6 +423,7 @@ function DataTableHeader<T>({
           padding: "0.375rem 1rem",
           lineHeight: "1.3",
           maxHeight: "4em",
+          fontSize: "1rem",
         }}
       >
         {flexRender(header.column.columnDef.header, header.getContext())}

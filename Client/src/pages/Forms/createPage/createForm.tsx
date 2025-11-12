@@ -89,7 +89,7 @@ export default function CreateForm() {
     try {
       const res = await apiClient.post("/forms", payload);
       if (res.status === 200 || res.status === 201) {
-        navigate(`/activity/${res.data.code}/edit`);
+        navigate(`/forms/${res.data.code}/edit`);
       } else {
         showError(t("form_created_fail"));
       }

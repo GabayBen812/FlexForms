@@ -272,7 +272,7 @@ export default function Forms() {
           className="min-w-[240px] justify-center gap-3 rounded-full bg-blue-500 px-10 py-5 text-xl font-semibold text-white shadow-lg transition-all duration-200 hover:bg-blue-600 hover:shadow-xl"
         >
           <Plus className="h-6 w-6" />
-          {t("create_new_activity")}
+          {t("create_new_form")}
         </Button>
       </div>
       <DataTable<Form>

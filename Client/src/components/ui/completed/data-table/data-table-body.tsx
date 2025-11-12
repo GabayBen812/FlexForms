@@ -1506,6 +1506,11 @@ const RowComponent = React.memo(function RowComponent<T>({
     }
 
     // Otherwise, render normally
+    // Check if there's a custom cell renderer first - if so, use it instead of automatic date formatting
+    if (columnDef.cell) {
+      return flexRender(columnDef.cell, cell.getContext());
+    }
+    
     if (isDateColumn || isDateValue(value)) {
       return formatDateForDisplay(value);
     }
@@ -1572,6 +1577,17 @@ const RowComponent = React.memo(function RowComponent<T>({
         data-state={row.getIsSelected() && "selected"}
         className="cursor-pointer data-table-row"
         style={{ width: "100%", height: "auto" }}
+        onClick={(e) => {
+          // Don't trigger row click if clicking on action buttons, checkboxes, or other interactive elements
+          const target = e.target as HTMLElement;
+          const isActionButton = target.closest('button') || target.closest('[role="button"]');
+          const isCheckbox = target.closest('input[type="checkbox"]') || target.closest('[role="checkbox"]');
+          const isClickable = target.closest('a') || target.closest('[onclick]');
+          
+          if (!isActionButton && !isCheckbox && !isClickable && onRowClick) {
+            onRowClick(row);
+          }
+        }}
       >
         {row.getVisibleCells().map((cell, cellIndex) => {
           const isFirst = cellIndex === 0;
@@ -1611,12 +1627,6 @@ const RowComponent = React.memo(function RowComponent<T>({
                     maxWidth: cell.column.getSize(),
                   }}
                   className={`text-center data-table-row-cell ${roundedClass} ${isSticky ? "sticky-column" : ""}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (onRowClick) {
-                      onRowClick(row);
-                    }
-                  }}
                 >
                   {renderCellContent(cell)}
                 </TableCell>
@@ -1663,12 +1673,6 @@ const RowComponent = React.memo(function RowComponent<T>({
                 maxWidth: cell.column.getSize(),
               }}
               className={`text-center data-table-row-cell ${roundedClass} ${isSticky ? "sticky-column" : ""}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onRowClick) {
-                  onRowClick(row);
-                }
-              }}
             >
               {renderCellContent(cell)}
             </TableCell>

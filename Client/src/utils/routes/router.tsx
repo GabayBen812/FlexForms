@@ -88,7 +88,7 @@ export const router = createBrowserRouter([
         },
       },
       {
-        path: "activity",
+        path: "forms",
         element: <Forms />,
         handle: {
           title: "forms",

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { createApiService } from "@/api/utils/apiFactory";
 import DataTable from "@/components/ui/completed/data-table";
 import { Form } from "@/types/forms/Form";
-import { formatDateForDisplay } from "@/lib/dateUtils";
+import { formatDateForDisplay, formatDateTimeForDisplay } from "@/lib/dateUtils";
 import { TableAction } from "@/types/ui/data-table-types";
 import { useState, useEffect } from "react";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
@@ -34,7 +34,7 @@ export default function FormRegistrationsTable({ form }: Props) {
   return (
     <div className="col-span-2">
       <h2 className="text-xl font-semibold mb-4">
-        {form.title} - {t("registrations_list")}
+        {form.title}
       </h2>
       <div
         className="overflow-x-auto w-full"
@@ -100,7 +100,9 @@ function getColumns(
     {
       accessorKey: "createdAt",
       header: t("registered_at"),
-      meta: { isDate: true },
+      meta: { isDate: true, editable: false },
+      cell: ({ row }) =>
+        formatDateTimeForDisplay(row.original.createdAt) || "-",
     },
   ];
 
@@ -109,25 +111,28 @@ function getColumns(
         {
           accessorKey: "additionalData.paymentDetails.cardOwnerName",
           header: t("card_owner_name"),
+          meta: { editable: false },
           cell: ({ row }) =>
             row.original.additionalData?.paymentDetails?.cardOwnerName || "-",
         },
         {
           accessorKey: "additionalData.paymentDetails.last4Digits",
           header: t("last4digits"),
+          meta: { editable: false },
           cell: ({ row }) =>
             row.original.additionalData?.paymentDetails?.last4Digits || "-",
         },
         {
           accessorKey: "additionalData.paymentDetails.amountPaid",
           header: t("amount_paid"),
+          meta: { editable: false },
           cell: ({ row }) =>
             row.original.additionalData?.paymentDetails?.amountPaid ?? "-",
         },
         {
           accessorKey: "additionalData.paymentDetails.paymentDate",
           header: t("payment_date"),
-          meta: { isDate: true },
+          meta: { isDate: true, editable: false },
           cell: ({ row }) =>
             formatDateForDisplay(
               row.original.additionalData?.paymentDetails?.paymentDate
@@ -136,6 +141,7 @@ function getColumns(
         {
           accessorKey: "additionalData.paymentDetails.lowProfileCode",
           header: t("low_profile_code"),
+          meta: { editable: false },
           cell: ({ row }) =>
             row.original.additionalData?.paymentDetails?.lowProfileCode || "-",
         },
@@ -147,7 +153,7 @@ function getColumns(
     .map((field) => ({
       accessorKey: `additionalData.${field.name}`,
       header: field.label,
-      meta: field.type === "date" ? { isDate: true } : undefined,
+      meta: field.type === "date" ? { isDate: true, editable: false } : { editable: false },
       cell: ({ row }) => {
         const val = row.original.additionalData?.[field.name];
 
@@ -159,6 +165,10 @@ function getColumns(
               style={{ width: "120px", height: "60px", objectFit: "contain" }}
             />
           );
+        }
+
+        if (field.type === "date") {
+          return formatDateForDisplay(val) || "-";
         }
 
         if (val && typeof val === "object") {

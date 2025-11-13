@@ -25,7 +25,7 @@ export default function Home() {
   const { isEnabled: roomsFF } = useFeatureFlag("ff_is_show_rooms");
   const { isEnabled: paymentsFF } = useFeatureFlag("IS_SHOW_PAYMENTS");
   const { isEnabled: usersFF } = useFeatureFlag("ff_is_show_users");
-  const { isEnabled: formsFF } = useFeatureFlag("is_show_forms");
+  const { isEnabled: formsFF } = useFeatureFlag("advanced_forms");
   const { isEnabled: kidsFF } = useFeatureFlag("IS_SHOW_KIDS");
   const { isEnabled: parentsFF } = useFeatureFlag("IS_SHOW_PARENTS");
   const { isEnabled: employeesFF } = useFeatureFlag("IS_SHOW_EMPLYESS");
@@ -141,9 +141,9 @@ export default function Home() {
     formsFF && {
       key: "forms",
       title: t("forms"),
-      value: formsLoading ? "..." : forms.length,
+      value: formsLoading ? "..." : (Array.isArray(forms) ? forms.length : (forms?.data?.length || forms?.totalCount || 0)),
       description: t("forms_count_in_org"),
-      onClick: () => navigate("/activity"),
+      onClick: () => navigate("/forms"),
       icon: "FileText",
     },
     (usersFF || userRole === "system_admin") && {

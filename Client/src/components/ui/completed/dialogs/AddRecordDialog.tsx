@@ -280,7 +280,13 @@ export function AddRecordDialog({
         if (key !== "dynamicFields") {
           const value = editData[key];
           if (isDateField(key) && value) {
-            formattedData[key] = formatDateForEdit(value);
+            // If value is already in DD/MM/YYYY format, use it as-is
+            // Otherwise, format it from ISO or other formats
+            if (typeof value === "string" && value.includes("/") && value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+              formattedData[key] = value;
+            } else {
+              formattedData[key] = formatDateForEdit(value);
+            }
           } else {
             formattedData[key] = value;
           }
@@ -402,8 +408,15 @@ export function AddRecordDialog({
           } else if (value === "" || value === null || value === undefined) {
             return;
           } else if (isDateField(key) && value && typeof value === "string") {
-            // Convert DD/MM/YYYY to YYYY-MM-DD for API
-            const isoDate = parseDateForSubmit(value);
+            // Convert DD/MM/YYYY or YYYY-MM-DD to YYYY-MM-DD for API
+            let isoDate: string;
+            if (value.includes("-") && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              // Already in YYYY-MM-DD format from date input
+              isoDate = value;
+            } else {
+              // Convert from DD/MM/YYYY
+              isoDate = parseDateForSubmit(value);
+            }
             processedData[key] = isoDate || value;
           } else {
             processedData[key] = value;
@@ -653,13 +666,32 @@ export function AddRecordDialog({
                   </label>
                 ) : (isDateField(accessorKey) || (isDynamic && fieldDefinition?.type === "DATE")) ? (
                   <input
-                    type="text"
+                    type="date"
                     name={accessorKey}
-                    value={fieldValue}
-                    onChange={handleChange}
-                    placeholder="DD/MM/YYYY"
-                    pattern="\d{2}/\d{2}/\d{4}"
-                    title="Please enter date in DD/MM/YYYY format"
+                    value={fieldValue && typeof fieldValue === "string" && fieldValue.includes("/") 
+                      ? (() => {
+                          // Convert DD/MM/YYYY to YYYY-MM-DD for date input
+                          const parts = fieldValue.split("/");
+                          if (parts.length === 3) {
+                            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                          }
+                          return fieldValue;
+                        })()
+                      : fieldValue || ""}
+                    onChange={(e) => {
+                      // Convert YYYY-MM-DD back to DD/MM/YYYY for form state
+                      const dateValue = e.target.value;
+                      if (dateValue) {
+                        const parts = dateValue.split("-");
+                        if (parts.length === 3) {
+                          setForm({ ...form, [accessorKey]: `${parts[2]}/${parts[1]}/${parts[0]}` });
+                        } else {
+                          setForm({ ...form, [accessorKey]: dateValue });
+                        }
+                      } else {
+                        setForm({ ...form, [accessorKey]: "" });
+                      }
+                    }}
                     className="w-full border border-border rounded-md placeholder:text-muted-foreground font-normal rtl:text-right ltr:text-left focus:outline-border outline-none px-3 py-2"
                     required={isRequiredField || fieldDefinition?.required}
                   />
@@ -701,11 +733,12 @@ export function AddRecordDialog({
                     required={isRequiredField || fieldDefinition?.required}
                     name={accessorKey}
                   />
-                ) : (isDynamic && fieldDefinition?.type === "MONEY") ? (
+                ) : ((isDynamic && fieldDefinition?.type === "MONEY") || (col.meta as any)?.isMoney || (col.meta as any)?.fieldType === "MONEY") ? (
                   <div className="flex items-center gap-2">
                     <Input
                       type="number"
                       step="0.01"
+                      min="0"
                       name={accessorKey}
                       value={fieldValue}
                       onChange={handleChange}
@@ -723,7 +756,7 @@ export function AddRecordDialog({
                     className="w-full"
                     required={isRequiredField || fieldDefinition?.required}
                   />
-                ) : (isDynamic && fieldDefinition?.type === "IMAGE") ? (
+                ) : ((isDynamic && fieldDefinition?.type === "IMAGE") || (col.meta as any)?.isImage || (col.meta as any)?.fieldType === "IMAGE") ? (
                   <FileUpload
                     value={fieldValue}
                     onChange={(file) => handleImageFieldChange(accessorKey, file)}

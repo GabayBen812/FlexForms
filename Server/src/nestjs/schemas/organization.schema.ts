@@ -29,6 +29,25 @@ export class Organization {
     secret: string
   };
 
+  @Prop()
+  paymentProvider?: string;
+
+  @Prop({ type: Object })
+  paymentProviderCredentials?: {
+    terminalNumber: string;
+    username: string;
+    password: string;
+  };
+
+  @Prop()
+  recurringChargeDay?: number;
+
+  @Prop()
+  invoicingProvider?: string;
+
+  @Prop()
+  invoicingProviderApiKey?: string;
+
   @Prop({ type: Object, default: {} })
     requestDefinitions!: Record<
       string,

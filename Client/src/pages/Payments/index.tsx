@@ -3,7 +3,7 @@ import { useContext } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Settings } from "lucide-react";
 
 import DataTable from "@/components/ui/completed/data-table";
 import DynamicForm, { FieldConfig } from "@/components/forms/DynamicForm";
@@ -16,6 +16,10 @@ import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
 import { toast } from "@/hooks/use-toast";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { GetDirection } from "@/lib/i18n";
+import Expenses from "./Expenses";
+import PaymentsSettings from "./PaymentsSettings";
 
 export type Payment = {
   id: string;
@@ -48,11 +52,17 @@ const paymentsApi = createApiService<Payment>("/payments", {
 export default function Payments() {
   const { t } = useTranslation();
   const { organization } = useContext(OrganizationsContext);
+  
+  const [currentTab, setCurrentTab] = useState('income');
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
     {}
   );
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+  const handleTabChange = (value: string) => {
+    setCurrentTab(value);
+  };
 
   const columns: ColumnDef<Payment>[] = [
     { accessorKey: "cardDetails.cardOwnerName", header: t("card_owner_name") },
@@ -130,7 +140,47 @@ export default function Payments() {
       <h1 className="text-2xl font-semibold text-primary mb-6">
         {t("payments")}
       </h1>
-      <DataTable<Payment>
+
+      <Tabs
+        value={currentTab}
+        onValueChange={handleTabChange}
+        className="w-full"
+        dir={GetDirection() ? "rtl" : "ltr"}
+      >
+        <div className="flex justify-center mb-8">
+          <TabsList className="bg-muted rounded-lg p-1 shadow border w-fit">
+            <TabsTrigger
+              value="income"
+              className="text-base px-5 py-2 font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
+              <div className="flex items-center gap-2">
+                הכנסות
+                <TrendingUp className="w-5 h-5" />
+              </div>
+            </TabsTrigger>
+            <TabsTrigger
+              value="expenses"
+              className="text-base px-5 py-2 font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
+              <div className="flex items-center gap-2">
+                הוצאות
+                <TrendingDown className="w-5 h-5" />
+              </div>
+            </TabsTrigger>
+            <TabsTrigger
+              value="settings"
+              className="text-base px-5 py-2 font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
+              <div className="flex items-center gap-2">
+                הגדרות
+                <Settings className="w-5 h-5" />
+              </div>
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="income">
+          <DataTable<Payment>
         data={[]}
         updateData={async () => Promise.resolve({} as any)}
         fetchData={async (params) => {
@@ -197,6 +247,16 @@ export default function Payments() {
           organizationId: organization?._id || "",
         }}
       />
+        </TabsContent>
+
+        <TabsContent value="expenses">
+          <Expenses />
+        </TabsContent>
+
+        <TabsContent value="settings">
+          <PaymentsSettings />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

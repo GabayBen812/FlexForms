@@ -1,4 +1,5 @@
-import { IsArray, IsMongoId, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsMongoId, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateOrganizationDto {
   @IsString()
@@ -22,6 +23,20 @@ export class RemoveFeatureFlagDto {
   featureFlagId!: string;
 }
 
+export class PaymentProviderCredentialsDto {
+  @IsString()
+  @IsOptional()
+  terminalNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  username?: string;
+
+  @IsString()
+  @IsOptional()
+  password?: string;
+}
+
 export class UpdateOrganizationDto {
   @IsString()
   @IsOptional()
@@ -31,5 +46,27 @@ export class UpdateOrganizationDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsString()
+  @IsOptional()
+  paymentProvider?: string;
+
+  @IsObject()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PaymentProviderCredentialsDto)
+  paymentProviderCredentials?: PaymentProviderCredentialsDto;
+
+  @IsNumber()
+  @IsOptional()
+  recurringChargeDay?: number;
+
+  @IsString()
+  @IsOptional()
+  invoicingProvider?: string;
+
+  @IsString()
+  @IsOptional()
+  invoicingProviderApiKey?: string;
 }
   

@@ -84,6 +84,29 @@ export class OrganizationService {
       updatePayload.description = update.description;
     }
 
+    if (update.paymentProvider !== undefined) {
+      updatePayload.paymentProvider = update.paymentProvider;
+    }
+
+    if (update.paymentProviderCredentials !== undefined) {
+      updatePayload.paymentProviderCredentials = update.paymentProviderCredentials;
+    }
+
+    if (update.recurringChargeDay !== undefined) {
+      if (typeof update.recurringChargeDay !== 'number' || update.recurringChargeDay < 1 || update.recurringChargeDay > 31) {
+        throw new BadRequestException('Recurring charge day must be a number between 1 and 31');
+      }
+      updatePayload.recurringChargeDay = update.recurringChargeDay;
+    }
+
+    if (update.invoicingProvider !== undefined) {
+      updatePayload.invoicingProvider = update.invoicingProvider;
+    }
+
+    if (update.invoicingProviderApiKey !== undefined) {
+      updatePayload.invoicingProviderApiKey = update.invoicingProviderApiKey;
+    }
+
     if (Object.keys(updatePayload).length === 0) {
       throw new BadRequestException('No valid fields provided for update');
     }

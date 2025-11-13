@@ -35,6 +35,15 @@ export interface Organization {
       fieldOrder?: string[]; // Array of field names in the desired order
     }
   >;
+  paymentProvider?: string;
+  paymentProviderCredentials?: {
+    terminalNumber?: string;
+    username?: string;
+    password?: string;
+  };
+  recurringChargeDay?: number;
+  invoicingProvider?: string;
+  invoicingProviderApiKey?: string;
 }
 
 export interface NewOrganizationPayload {

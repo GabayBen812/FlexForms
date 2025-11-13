@@ -674,7 +674,9 @@ function EditableCell<T>({
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    if ((isDynamic && fieldDefinition?.type === "IMAGE") || (isDynamic && fieldDefinition?.type === "FILE")) {
+    const isImageField = (isDynamic && fieldDefinition?.type === "IMAGE") || (!isDynamic && (isImage || fieldType === "IMAGE"));
+    const isFileField = (isDynamic && fieldDefinition?.type === "FILE") || (!isDynamic && (isFile || fieldType === "FILE"));
+    if (isImageField || isFileField) {
       e.preventDefault();
       e.stopPropagation();
       setIsDragging(true);
@@ -695,21 +697,29 @@ function EditableCell<T>({
     const file = e.dataTransfer.files[0];
     if (!file) return;
 
-    if (fieldDefinition?.type === "IMAGE" && !file.type.startsWith("image/")) {
+    const isImageField = (isDynamic && fieldDefinition?.type === "IMAGE") || (!isDynamic && (isImage || fieldType === "IMAGE"));
+    if (isImageField && !file.type.startsWith("image/")) {
       showError(t("invalid_file_type", "סוג קובץ לא תקין. אנא העלה תמונה."));
       return;
     }
 
     setIsUploading(true);
     try {
-      const fieldName = accessorKey.replace("dynamicFields.", "");
       const timestamp = Date.now();
       const uuid = crypto.randomUUID();
-      const path = `uploads/dynamic-fields/${fieldName}/${timestamp}_${uuid}`;
+      let path: string;
+      
+      if (isDynamic) {
+        const fieldName = accessorKey.replace("dynamicFields.", "");
+        path = `uploads/dynamic-fields/${fieldName}/${timestamp}_${uuid}`;
+      } else {
+        path = `uploads/${accessorKey}/${timestamp}_${uuid}`;
+      }
       
       const fileUrl = await uploadFile(file, path);
       
       if (isDynamic) {
+        const fieldName = accessorKey.replace("dynamicFields.", "");
         const existingDynamicFields = (row.original as any).dynamicFields || {};
         onSave({
           dynamicFields: {
@@ -729,7 +739,8 @@ function EditableCell<T>({
   };
 
   if (!isEditing) {
-    if (isDynamic && fieldDefinition?.type === "IMAGE") {
+    // Handle image fields (both dynamic and non-dynamic)
+    if ((isDynamic && fieldDefinition?.type === "IMAGE") || (!isDynamic && (isImage || fieldType === "IMAGE"))) {
       return (
         <>
           <input

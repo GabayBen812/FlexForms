@@ -16,6 +16,7 @@
   "field_type": "סוג שדה",
   "text": "טקסט",
   "employees":"עובדים",
+  "attendance":"נוכחות",
   "schedule":"לו''ז",
   "requests": "בקשות",
   "submitted_by": "נשלח על ידי",
@@ -782,18 +783,27 @@
       "contact": "דברו איתנו: support@paradize.co | 072-900-9000",
       "support": "תמיכה 24/7",
       "rights": "© {{year}} Paradize. כל הזכויות שמורות."
+    },
+    "login": {
+      "badge": "כניסה מאובטחת",
+      "title": "חיבור מאובטח ל-Paradize",
+      "subtitle": "השתמשו בפרטי המוסד והיכנסו אל מרכז השליטה העתידני שלכם.",
+      "emailPlaceholder": "אימייל ארגוני",
+      "passwordPlaceholder": "סיסמה",
+      "submit": "התחברו",
+      "support": "צריך עזרה? צוות התמיכה שלנו זמין 24/7 בטלפון, ווטסאפ וצ'אט חי.",
+      "error": {
+        "generic": "אירעה שגיאה, נסו שוב."
+      }
+    }
   },
-  "login": {
-    "badge": "כניסה מאובטחת",
-    "title": "חיבור מאובטח ל-Paradize",
-    "subtitle": "השתמשו בפרטי המוסד והיכנסו אל מרכז השליטה העתידני שלכם.",
-    "emailPlaceholder": "אימייל ארגוני",
-    "passwordPlaceholder": "סיסמה",
-    "submit": "התחברו",
-    "support": "צריך עזרה? צוות התמיכה שלנו זמין 24/7 בטלפון, ווטסאפ וצ'אט חי.",
-    "error": {
-      "generic": "אירעה שגיאה, נסו שוב."
-    }
-    }
-  }
+  "employee_name": "שם עובד",
+  "reported_date": "תאריך דיווח",
+  "start_time": "שעת התחלה",
+  "pause_time": "שעת הפסקה",
+  "resume_time": "שעת המשך",
+  "stop_time": "שעת סיום",
+  "total_time": "סה\"כ זמן",
+  "loading": "טוען...",
+  "error_loading_attendance": "שגיאה בטעינת נתוני נוכחות"
 }

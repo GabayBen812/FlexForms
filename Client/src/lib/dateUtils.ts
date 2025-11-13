@@ -200,3 +200,56 @@ export function parseDateForSubmit(dateStr: string | null | undefined): string {
   return "";
 }
 
+/**
+ * Formats a time value to HH:MM:SS format for UI display.
+ * 
+ * @param value - Time value (string in HH:MM:SS format, Date object, or null/undefined)
+ * @returns Formatted time string in HH:MM:SS format, or empty string if value is invalid
+ * 
+ * @example
+ * formatTimeForDisplay("09:30:45") // Returns "09:30:45"
+ * formatTimeForDisplay(new Date()) // Returns formatted time from date
+ */
+export function formatTimeForDisplay(value: string | Date | null | undefined): string {
+  if (!value) return "";
+  
+  // If it's already in HH:MM:SS format, return as-is
+  if (typeof value === "string" && /^\d{2}:\d{2}:\d{2}$/.test(value)) {
+    return value;
+  }
+  
+  // Handle Date objects
+  if (value instanceof Date) {
+    try {
+      return dayjs(value).format("HH:mm:ss");
+    } catch {
+      return "";
+    }
+  }
+  
+  // Try to parse as date and extract time
+  try {
+    const parsed = dayjs(value);
+    if (parsed.isValid()) {
+      return parsed.format("HH:mm:ss");
+    }
+  } catch {
+    return "";
+  }
+  
+  return String(value);
+}
+
+/**
+ * Formats a date value to DD/MM/YYYY format (date only, no time).
+ * 
+ * @param value - Date value (string, Date object, or null/undefined)
+ * @returns Formatted date string in DD/MM/YYYY format, or empty string if value is invalid
+ * 
+ * @example
+ * formatDateOnlyForDisplay("2024-01-15T00:00:00.000Z") // Returns "15/01/2024"
+ */
+export function formatDateOnlyForDisplay(value: string | Date | null | undefined): string {
+  return formatDateForDisplay(value);
+}
+

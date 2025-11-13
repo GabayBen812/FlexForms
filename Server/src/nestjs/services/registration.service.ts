@@ -59,28 +59,8 @@ export class RegistrationService {
     }
     // Support filtering on additionalData fields (dot notation)
     Object.keys(query).forEach(key => {
-      if (key.startsWith('additionalData.') && query[key] !== undefined && query[key] !== null) {
-        const value = query[key];
-        let values: any[] = [];
-        
-        // Handle array values (multi-select filters)
-        if (Array.isArray(value)) {
-          values = value.filter(v => v !== undefined && v !== null && v !== "");
-        } else if (typeof value === 'string' && value !== "") {
-          // Handle comma-separated string (fallback for URL query params)
-          // Check if it's a comma-separated list
-          if (value.includes(',')) {
-            values = value.split(',').map(v => v.trim()).filter(v => v !== "");
-          } else {
-            // Single value
-            values = [value];
-          }
-        }
-        
-        // Apply filter if we have values
-        if (values.length > 0) {
-          filter[key] = { $in: values };
-        }
+      if (key.startsWith('additionalData.') && query[key]) {
+        filter[key] = { $regex: query[key], $options: 'i' };
       }
     });
     // Remove empty filters
@@ -115,28 +95,8 @@ export class RegistrationService {
       filter.organizationId = new Types.ObjectId(query.organizationId);
     }
     Object.keys(query).forEach(key => {
-      if (key.startsWith('additionalData.') && query[key] !== undefined && query[key] !== null) {
-        const value = query[key];
-        let values: any[] = [];
-        
-        // Handle array values (multi-select filters)
-        if (Array.isArray(value)) {
-          values = value.filter(v => v !== undefined && v !== null && v !== "");
-        } else if (typeof value === 'string' && value !== "") {
-          // Handle comma-separated string (fallback for URL query params)
-          // Check if it's a comma-separated list
-          if (value.includes(',')) {
-            values = value.split(',').map(v => v.trim()).filter(v => v !== "");
-          } else {
-            // Single value
-            values = [value];
-          }
-        }
-        
-        // Apply filter if we have values
-        if (values.length > 0) {
-          filter[key] = { $in: values };
-        }
+      if (key.startsWith('additionalData.') && query[key]) {
+        filter[key] = { $regex: query[key], $options: 'i' };
       }
     });
     Object.keys(filter).forEach(key => {

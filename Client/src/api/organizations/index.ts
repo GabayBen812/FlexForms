@@ -50,3 +50,24 @@ export const updateTableFieldDefinitions = async (
     data: res.data,
   };
 };
+
+export const updatePaymentSettings = async (
+  organizationId: string,
+  paymentSettings: {
+    paymentProvider?: string;
+    paymentProviderCredentials?: {
+      terminalNumber?: string;
+      username?: string;
+      password?: string;
+    };
+    recurringChargeDay?: number;
+    invoicingProvider?: string;
+    invoicingProviderApiKey?: string;
+  }
+): Promise<MutationResponse<Organization>> => {
+  const res = await apiClient.put(`/organizations/${organizationId}`, paymentSettings);
+  return {
+    status: res.status,
+    data: res.data,
+  };
+};

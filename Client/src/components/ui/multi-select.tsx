@@ -92,16 +92,16 @@ export function MultiSelect({
         className="w-full p-0" 
         align="start"
         onInteractOutside={(e) => {
-          // Prevent closing when clicking inside dialog (but allow clicks inside popover)
-          // This allows multi-select to work properly inside a dialog
+          // Allow closing when clicking outside - this is the default behavior
+          // Only prevent if clicking inside dialog content (but not on popover itself)
           const target = e.target as HTMLElement;
-          // Only prevent if clicking on dialog content, not on popover itself
           const dialogElement = target.closest('[role="dialog"]');
           const popoverElement = target.closest('[data-radix-popover-content]');
           // If click is inside dialog but not inside popover, prevent closing
           if (dialogElement && !popoverElement) {
             e.preventDefault();
           }
+          // Otherwise, allow normal closing behavior (clicking outside closes)
         }}
       >
         <div className="p-2 border-b">

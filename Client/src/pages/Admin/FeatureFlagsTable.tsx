@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { FeatureFlag } from "@/types/feature-flags";
 import { DataTable } from "@/components/ui/completed/data-table";
-import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
+import { ColumnDef, RowSelectionState, flexRender } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -119,35 +119,64 @@ export default function FeatureFlagsTable() {
           editable: false,
         },
         cell: ({ getValue }) => (
-          <span
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-            className="cursor-default select-text"
-          >
-            {getValue<string>()}
-          </span>
+          <div className="flex justify-center">
+            <span
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              className="cursor-default select-text"
+            >
+              {getValue<string>()}
+            </span>
+          </div>
         ),
       },
-      { accessorKey: "name", header: t("name", "Name") },
-      { accessorKey: "description", header: t("description", "Description") },
+      { 
+        accessorKey: "name", 
+        header: t("name", "Name"),
+        cell: ({ getValue }) => (
+          <div className="flex justify-center">
+            <span>{getValue<string>()}</span>
+          </div>
+        )
+      },
+      { 
+        accessorKey: "description", 
+        header: t("description", "Description"),
+        cell: ({ getValue }) => (
+          <div className="flex justify-center">
+            <span>{getValue<string>()}</span>
+          </div>
+        )
+      },
       {
         accessorKey: "isEnabled",
         header: t("enabled", "Enabled"),
         meta: {
           fieldType: "CHECKBOX",
         },
+        cell: ({ getValue }) => {
+          const value = getValue();
+          const isChecked = value === true || value === "true" || value === "1";
+          return (
+            <div className="flex justify-center">
+              <span>{isChecked ? "✓" : ""}</span>
+            </div>
+          );
+        }
       },
       {
         accessorKey: "tags",
         header: t("tags", "Tags"),
         cell: ({ row }) => (
-          <div className="flex flex-wrap gap-1">
-            {row.original.tags?.map((tag) => (
-              <span key={tag} className="bg-muted px-2 py-0.5 rounded text-xs">
-                {tag}
-              </span>
-            ))}
+          <div className="flex justify-center">
+            <div className="flex flex-wrap gap-1">
+              {row.original.tags?.map((tag) => (
+                <span key={tag} className="bg-muted px-2 py-0.5 rounded text-xs">
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
         ),
       },
@@ -155,31 +184,33 @@ export default function FeatureFlagsTable() {
         id: "actions",
         header: t("actions", "Actions"),
         cell: ({ row }) => (
-          <div className="flex gap-2">
-            <Button
-              size="icon"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                setEditingFlag(row.original);
-              }}
-              aria-label={t("edit", "Edit")}
-              tooltip={t("edit", "Edit")}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="destructive"
-              onClick={(e) => {
-                e.stopPropagation();
-                setDeletingFlag(row.original);
-              }}
-              aria-label={t("delete", "Delete")}
-              tooltip={t("delete", "Delete")}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+          <div className="flex justify-center">
+            <div className="flex gap-2">
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingFlag(row.original);
+                }}
+                aria-label={t("edit", "Edit")}
+                tooltip={t("edit", "Edit")}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDeletingFlag(row.original);
+                }}
+                aria-label={t("delete", "Delete")}
+                tooltip={t("delete", "Delete")}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         ),
       },

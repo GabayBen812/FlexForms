@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import FormEditor from "@/components/forms/FormEditor";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, ExternalLink, List, ScanEye, Pencil, Settings, Check, X } from "lucide-react";
+import { Copy, ExternalLink, List, ScanEye, Pencil, Settings, Check, X, ArrowRight, ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -162,50 +162,74 @@ const handleCopy = () => {
         dir={direction}
       >
        <div className="flex flex-col items-center gap-4">
-        {isEditingTitle ? (
-          <div className="flex items-center gap-2 w-full max-w-2xl">
-            <Input
-              ref={inputRef}
-              value={editedTitle}
-              onChange={(e) => setEditedTitle(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="text-xl font-semibold"
-            />
+        <div className="w-full max-w-2xl flex items-center gap-4">
+          {isRTL && (
             <Button
-              size="icon"
               variant="ghost"
-              onClick={handleSaveTitle}
-              className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+              onClick={() => navigate("/forms")}
+              className="flex items-center gap-2 text-blue-400 hover:text-blue-500 hover:bg-blue-50/50 shrink-0"
             >
-              <Check className="h-4 w-4" />
+              <ArrowRight className="w-4 h-4" />
+              <span>חזור לעמוד טפסים</span>
             </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={handleCancelEdit}
-              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        ) : (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div
-                  className="group flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-md px-3 py-2 border border-transparent hover:border-gray-200 transition-all w-full max-w-2xl justify-center"
-                  onClick={() => setIsEditingTitle(true)}
+          )}
+          <div className="flex-1 flex justify-center">
+            {isEditingTitle ? (
+              <div className="flex items-center gap-2 w-full">
+                <Input
+                  ref={inputRef}
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="text-xl font-semibold"
+                />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleSaveTitle}
+                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
                 >
-                  <h1 className="text-2xl font-semibold">{form.title}</h1>
-                  <Pencil className="h-4 w-4 text-gray-500 opacity-60 group-hover:opacity-100 group-hover:text-blue-600 transition-all" />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{t("click_to_edit") || "Click to edit form title"}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
+                  <Check className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleCancelEdit}
+                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      className="group flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-md px-3 py-2 border border-transparent hover:border-gray-200 transition-all justify-center"
+                      onClick={() => setIsEditingTitle(true)}
+                    >
+                      <h1 className="text-2xl font-semibold">{form.title}</h1>
+                      <Pencil className="h-4 w-4 text-gray-500 opacity-60 group-hover:opacity-100 group-hover:text-blue-600 transition-all" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{t("click_to_edit") || "Click to edit form title"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+          {!isRTL && (
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/forms")}
+              className="flex items-center gap-2 text-blue-400 hover:text-blue-500 hover:bg-blue-50/50 shrink-0"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>חזור לעמוד טפסים</span>
+            </Button>
+          )}
+        </div>
         <TabsList className="bg-muted rounded-lg p-1 shadow border w-fit mx-auto sm:mx-0">
           <TabsTrigger
             value="dashboard"

@@ -139,49 +139,62 @@ export default function OrganizationsTable() {
           const isClickable = user?.role === "system_admin" && organization._id;
           
           if (!isClickable) {
-            return <span>{organization.name}</span>;
+            return (
+              <div className="flex justify-center">
+                <span>{organization.name}</span>
+              </div>
+            );
           }
 
           return (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (organization._id) {
-                  handleSwitchOrganization(organization._id);
-                }
-              }}
-              disabled={isSwitching}
-              className={`
-                cursor-pointer 
-                text-left 
-                w-full 
-                px-2 
-                py-1 
-                rounded 
-                transition-all 
-                duration-200
-                hover:bg-blue-50 
-                hover:text-blue-700
-                disabled:opacity-50 
-                disabled:cursor-not-allowed
-                ${isSwitching ? "animate-pulse" : ""}
-              `}
-              title={t("click_to_switch_organization") || "Click to switch to this organization"}
-            >
-              {isSwitching ? (
-                <span className="flex items-center gap-2">
-                  <span>{organization.name}</span>
-                  <span className="text-xs">...</span>
-                </span>
-              ) : (
-                organization.name
-              )}
-            </button>
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (organization._id) {
+                    handleSwitchOrganization(organization._id);
+                  }
+                }}
+                disabled={isSwitching}
+                className={`
+                  cursor-pointer 
+                  text-center 
+                  px-2 
+                  py-1 
+                  rounded 
+                  transition-all 
+                  duration-200
+                  hover:bg-blue-50 
+                  hover:text-blue-700
+                  disabled:opacity-50 
+                  disabled:cursor-not-allowed
+                  ${isSwitching ? "animate-pulse" : ""}
+                `}
+                title={t("click_to_switch_organization") || "Click to switch to this organization"}
+              >
+                {isSwitching ? (
+                  <span className="flex items-center gap-2">
+                    <span>{organization.name}</span>
+                    <span className="text-xs">...</span>
+                  </span>
+                ) : (
+                  organization.name
+                )}
+              </button>
+            </div>
           );
         }
       },
-      { accessorKey: "description", header: t("organization_description") },
+      { 
+        accessorKey: "description", 
+        header: t("organization_description"),
+        cell: ({ getValue }) => (
+          <div className="flex justify-center">
+            <span>{getValue<string>()}</span>
+          </div>
+        )
+      },
     ],
     [selectionColumn, t, user?.role, switchingOrgId, handleSwitchOrganization]
   );

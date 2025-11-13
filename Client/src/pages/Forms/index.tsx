@@ -6,13 +6,16 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { createApiService } from "@/api/utils/apiFactory";
 import { Form } from "@/types/forms/Form";
 import { TableAction } from "@/types/ui/data-table-types";
-import { useCallback, useEffect, useState } from "react";
-import { Copy, Plus, CheckCircle2, XCircle } from "lucide-react";
+import { useCallback, useEffect, useState, useMemo } from "react";
+import { Copy, Plus, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import apiClient from "@/api/apiClient";
+import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
+import { showConfirm } from "@/utils/swal";
+import { formatDateForDisplay } from "@/lib/dateUtils";
 
 const formsApi = createApiService<Form>("/forms");
 
@@ -30,6 +33,7 @@ export default function Forms() {
     Record<string, number>
   >({});
   const [refreshKey, setRefreshKey] = useState(0);
+  const [tableRows, setTableRows] = useState<Form[]>([]);
 
   const selectionColumn: ColumnDef<Form, any> = {
     id: "select",
@@ -48,25 +52,34 @@ export default function Forms() {
     size: 40,
   };
 
-  const columns: ColumnDef<Form>[] = [
+  const handleTitleClick = (form: Form) => {
+    if (form && form.code && form._id) {
+      navigate(`/activity/${form.code}/dashboard`);
+    } else {
+      console.warn("Form row is missing code or _id", form);
+    }
+  };
+
+  const baseColumns: ColumnDef<Form>[] = [
     selectionColumn,
     {
       accessorKey: "title",
       header: t("form_title"),
       cell: ({ row }) => {
-        console.log("Title cell data:", row.original.title); // Debug log
-        return <div className="w-full text-center">{row.original.title}</div>;
+        const form = row.original;
+        return (
+          <div
+            className="w-full text-center cursor-pointer text-primary hover:text-primary/80 hover:underline transition-colors text-lg font-medium"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleTitleClick(form);
+            }}
+          >
+            {form.title}
+          </div>
+        );
       },
       size: 250,
-      meta: { editable: false },
-    },
-    {
-      accessorKey: "description",
-      header: t("form_description"),
-      cell: ({ row }) => (
-        <div className="w-full text-center">{row.original.description}</div>
-      ),
-      size: 300,
       meta: { editable: false },
     },
     {
@@ -86,13 +99,56 @@ export default function Forms() {
       size: 120,
       meta: { editable: false },
     },
+    {
+      accessorKey: "createdAt",
+      header: t("date_created", "תאריך יצירה"),
+      cell: ({ row }) => (
+        <div className="w-full text-center">
+          {formatDateForDisplay(row.original.createdAt)}
+        </div>
+      ),
+      size: 150,
+      meta: { editable: false, isDate: true },
+    },
+    {
+      accessorKey: "code",
+      header: t("form_code", "קוד טופס"),
+      cell: ({ row }) => {
+        const form = row.original;
+        const registrationUrl = `${window.location.origin}/activity/${form.code}/registration`;
+        return (
+          <div
+            className="w-full text-center cursor-pointer text-primary hover:text-primary/80 hover:underline transition-colors flex items-center justify-center gap-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(registrationUrl, "_blank");
+            }}
+          >
+            <ExternalLink className="h-4 w-4" />
+            {form.code}
+          </div>
+        );
+      },
+      size: 120,
+      meta: { editable: false },
+    },
   ];
+
+  const columns = useMemo(() => {
+    return mergeColumnsWithDynamicFields(
+      baseColumns,
+      "forms",
+      organization,
+      t
+    );
+  }, [organization, t]);
 
   const columnOrder = [
     "select",
     "actions",
+    "code",
     "title",
-    "description",
+    "createdAt",
     "numberOfRegistrations",
   ];
 
@@ -169,8 +225,15 @@ export default function Forms() {
 
       console.log("Processed forms:", forms);
 
+      // Sort forms by createdAt in descending order (newest first)
+      const sortedForms = [...forms].sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA; // Descending order (newest first)
+      });
+
       // Get registration counts for the current page of forms only
-      const formIds = forms.map((f) => f._id).join(",");
+      const formIds = sortedForms.map((f) => f._id).join(",");
       if (formIds) {
         try {
           const res = await apiClient.get<{
@@ -196,11 +259,11 @@ export default function Forms() {
         //@ts-ignore
         status: response.status || 200,
         //@ts-ignore
-        data: forms,
+        data: sortedForms,
         //@ts-ignore
-        totalCount: response.totalCount || forms.length,
+        totalCount: response.totalCount || sortedForms.length,
         //@ts-ignore
-        totalPages: response.totalPages || Math.ceil(forms.length / pageSize),
+        totalPages: response.totalPages || Math.ceil(sortedForms.length / pageSize),
       };
     } catch (error) {
       console.error("Error fetching forms:", error);
@@ -267,6 +330,47 @@ export default function Forms() {
     navigate("/create-form");
   };
 
+  const handleBulkDelete = async (selectedRowsParam?: Form[]) => {
+    const fallbackSelectedRows = Object.keys(rowSelection)
+      .map(Number)
+      .map((index) => tableRows[index])
+      .filter((row): row is Form => !!row);
+
+    const selectedRows = selectedRowsParam?.length
+      ? selectedRowsParam
+      : fallbackSelectedRows;
+
+    const selectedIds = selectedRows
+      .map((row) => row._id)
+      .filter((id): id is string => !!id);
+    
+    if (selectedIds.length === 0) return;
+    
+    const confirmed = await showConfirm(
+      t("confirm_delete") || t("common:confirm_delete") || "Are you sure?"
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      await Promise.all(selectedIds.map((id) => formsApi.delete(id)));
+      setRefreshKey((prev) => prev + 1);
+      setRowSelection({});
+      toast({
+        title: t("forms_deleted_successfully", "הטפסים נמחקו בהצלחה"),
+        description: t("forms_deleted_description", `${selectedIds.length} טפסים נמחקו`),
+        variant: "success",
+      });
+    } catch (error) {
+      console.error("Error deleting forms:", error);
+      toast({
+        title: t("error_deleting_forms", "שגיאה במחיקת טפסים"),
+        description: t("error_deleting_forms_description", "אירעה שגיאה במחיקת הטפסים"),
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="mx-auto">
       <h1 className="text-2xl font-semibold text-primary mb-6">{t("forms")}</h1>
@@ -298,19 +402,15 @@ export default function Forms() {
         extraFilters={advancedFilters}
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}
-        onRowClick={(form) => {
-          if (form && form.code && form._id) {
-            navigate(`/activity/${form.code}/dashboard`);
-          } else {
-            console.warn("Form row is missing code or _id", form);
-          }
-        }}
         showActionColumn={true}
         showEditButton={false}
-        showDeleteButton={true}
+        showDeleteButton={false}
         showDuplicateButton={true}
         isPagination={false}
         isLazyLoading={true}
+        onBulkDelete={handleBulkDelete}
+        entityType="forms"
+        visibleRows={useCallback((rows) => setTableRows(rows), [])}
       />
     </div>
   );

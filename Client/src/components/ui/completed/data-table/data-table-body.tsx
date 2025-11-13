@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Ghost, MoreVertical, Pencil, Trash, Copy, X, Download, Mail, Phone } from "lucide-react";
+import { Ghost, MoreVertical, Pencil, Copy, X, Download, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TableEditButton } from "./TableEditButton";
 import { Input } from "@/components/ui/Input";
@@ -1640,20 +1640,22 @@ const RowComponent = React.memo(function RowComponent<T>({
                     {showDeleteButton && (
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         onClick={(e) => handleActionClick(e, "delete")}
                         className="text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors duration-200"
                       >
-                        <Trash className="w-4 h-4" />
+                        {t("delete", "מחק")}
                       </Button>
                     )}
                     {showDuplicateButton && (
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         onClick={(e) => handleActionClick(e, "duplicate")}
+                        className="gap-2"
                       >
                         <Copy className="w-4 h-4" />
+                        {t("duplicate_form", "שכפל טופס")}
                       </Button>
                     )}
                   </TableCell>

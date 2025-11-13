@@ -78,7 +78,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 interface Props {
   initialFields: FieldConfig[];
-  onUpdate: (updatedFields: FieldConfig[]) => void;
+  onUpdate: (updatedFields: FieldConfig[]) => void | Promise<void>;
   formTitle?: string;
   formDescription?: string;
   formBackgroundColor?: string;
@@ -403,8 +403,24 @@ export default function FormEditor({
     });
   };
 
-  const handleDeleteField = (name: string) => {
-    setFields(fields.filter((f) => f.name !== name));
+  const handleDeleteField = async (name: string) => {
+    const previousFields = [...fields];
+    const updatedFields = fields.filter((f) => f.name !== name);
+    
+    // Optimistically update UI
+    setFields(updatedFields);
+    
+    // Auto-save after deleting field
+    try {
+      await onUpdate(updatedFields);
+    } catch (error) {
+      // Revert on error
+      setFields(previousFields);
+      toast({
+        title: t("error_deleting_field") || "Error deleting field",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleMoveField = (index: number, direction: "up" | "down") => {

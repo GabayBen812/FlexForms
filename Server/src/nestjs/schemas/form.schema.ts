@@ -34,6 +34,9 @@ export class Form {
 
   @Prop()
   registrationDeadline?: string;
+
+  @Prop()
+  backgroundColor?: string;
 }
 
 export const FormSchema = SchemaFactory.createForClass(Form);

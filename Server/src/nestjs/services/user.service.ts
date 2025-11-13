@@ -74,4 +74,16 @@ export class UserService {
   async remove(id: string): Promise<User | null> {
     return this.userModel.findByIdAndDelete(id).exec();
   }
+
+  async findSystemAdminByOrganization(organizationId: string) {
+    const objectId = new Types.ObjectId(organizationId);
+    return this.userModel
+      .findOne({ 
+        organizationId: objectId, 
+        role: 'system_admin' 
+      })
+      .select('-password')
+      .lean()
+      .exec();
+  }
 }

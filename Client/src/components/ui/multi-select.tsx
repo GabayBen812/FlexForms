@@ -57,7 +57,7 @@ export function MultiSelect({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-full justify-between min-h-10 h-auto py-2 border-border bg-background text-foreground shadow-sm transition-all hover:bg-primary/5 hover:text-foreground focus-visible:ring-primary/30",
+            "w-full justify-between min-h-10 h-auto py-2 border-border bg-background text-foreground shadow-sm transition-all hover:bg-primary/10 hover:text-foreground focus-visible:ring-primary/30",
             className
           )}
         >
@@ -148,7 +148,7 @@ export function MultiSelect({
                       e.stopPropagation();
                     }}
                     className={cn(
-                      "w-full flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-primary/10 active:bg-primary/20 text-left select-none",
+                      "w-full flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-primary/15 active:bg-primary/25 text-left select-none",
                       isSelected && "bg-primary/10"
                     )}
                   >

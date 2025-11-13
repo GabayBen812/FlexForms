@@ -1,12 +1,16 @@
-import { Controller, Post, Body, Res, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Res, Get, Req, UseGuards, BadRequestException, NotFoundException } from '@nestjs/common';
 import { Request as ExpressRequest, Response } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { AuthService } from '../services/auth.service';
 import { JwtAuthGuard } from '../middlewares/jwt-auth.guard';
+import { UserService } from '../services/user.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private userService: UserService
+  ) {}
 
   @Post('login')
   async login(@Body() body: any, @Res() res: Response) {
@@ -56,5 +60,55 @@ export class AuthController {
     });
     
     return res.status(200).json({ status: 200, message: 'התנתקת בהצלחה' });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('switch-organization')
+  async switchOrganization(@Body() body: { organizationId: string }, @Req() req: ExpressRequest, @Res() res: Response) {
+    const currentUser = req.user as any;
+    
+    // Validate current user is system_admin
+    if (currentUser?.role !== 'system_admin') {
+      throw new BadRequestException('Only system_admin users can switch organizations');
+    }
+
+    const { organizationId } = body;
+    if (!organizationId) {
+      throw new BadRequestException('organizationId is required');
+    }
+
+    // Find system_admin user in target organization
+    const targetUser = await this.userService.findSystemAdminByOrganization(organizationId);
+    
+    if (!targetUser) {
+      throw new NotFoundException('No system_admin user found in the specified organization');
+    }
+
+    // Create new JWT token for target user
+    const token = jwt.sign(
+      {
+        UserInfo: {
+          id: targetUser._id,
+          email: targetUser.email,
+          organizationId: targetUser.organizationId,
+          role: targetUser.role,
+          name: targetUser.name,
+        },
+      },
+      process.env.ACCESS_TOKEN_SECRET!,
+      { expiresIn: '2h' }
+    );
+    
+    const isProd = process.env.NODE_ENV === 'production';
+    
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      sameSite: isProd ? 'none' : 'lax',
+      secure: isProd ? true : false,
+      path: '/',
+      maxAge: 1000 * 60 * 60 * 2,
+    });
+
+    return res.status(200).json({ status: 200, message: 'Switched organization successfully' });
   }
 }

@@ -7,8 +7,8 @@ import FieldConfigEditor from "./FieldConfigEditor";
 import SignatureCanvas from "react-signature-canvas";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { handleImageUpload, uploadFile } from "@/lib/imageUtils";
-import { Send, Eraser, Save, Upload, X, Download, File as FileIcon, Image as ImageIcon } from "lucide-react";
+import { uploadFile } from "@/lib/imageUtils";
+import { Send, Eraser, Save, X, Download, File as FileIcon, Image as ImageIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 export interface FieldConfig {
@@ -28,6 +28,7 @@ interface Props {
   defaultValues?: any;
   onSubmit: (data: any) => void;
   extraButtons?: React.ReactNode;
+  isPreview?: boolean;
 }
 
 export default function DynamicForm({
@@ -39,6 +40,7 @@ export default function DynamicForm({
   defaultValues,
   onSubmit,
   extraButtons,
+  isPreview = false,
 }: Props) {
   const { t } = useTranslation();
   const sigCanvasRefs = useRef<Record<string, SignatureCanvas | null>>({});
@@ -84,10 +86,6 @@ export default function DynamicForm({
       
       // Only set URL after successful upload
       setValue(fieldName, signatureUrl);
-
-      toast.success(
-        t("signature_uploaded_successfully", "חתימה הועלתה בהצלחה")
-      );
     } catch (error) {
       console.error("Error uploading signature to Supabase:", error);
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -168,12 +166,6 @@ export default function DynamicForm({
       
       const fileUrl = await uploadFile(file, path);
       setValue(fieldName, fileUrl);
-      
-      toast.success(
-        fieldType === "image" 
-          ? t("image_uploaded_successfully", "תמונה הועלתה בהצלחה")
-          : t("file_uploaded_successfully", "קובץ הועלה בהצלחה")
-      );
     } catch (error) {
       console.error(`Error uploading ${fieldType}:`, error);
       toast.error(
@@ -187,7 +179,9 @@ export default function DynamicForm({
   };
 
   const handleFormSubmit = async (data: any) => {
-    console.log("[handleFormSubmit] Raw form data:", data);
+    const startTime = Date.now();
+    const minLoadingTime = 400; // 0.4 seconds in milliseconds
+    
     const processedData = await processSignatureFields(data);
     
     // Ensure all fields are included, especially select fields
@@ -212,8 +206,13 @@ export default function DynamicForm({
       }
     });
     
-    console.log("[handleFormSubmit] Processed form data:", cleanedData);
-    onSubmit(cleanedData);
+    // Ensure minimum loading time of 0.4 seconds for better UX
+    const onSubmitPromise = Promise.resolve(onSubmit(cleanedData));
+    const elapsedTime = Date.now() - startTime;
+    const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+    const minDelayPromise = new Promise(resolve => setTimeout(resolve, remainingTime));
+    
+    await Promise.all([onSubmitPromise, minDelayPromise]);
   };
 
   const renderField = (field: FieldConfig) => {
@@ -274,11 +273,16 @@ export default function DynamicForm({
         );
       case "signature":
         return (
-          <div data-cy={`field-signature-container-${field.name}`}>
+          <div 
+            data-cy={`field-signature-container-${field.name}`}
+            className={isPreview ? "flex flex-col items-center" : ""}
+          >
             {mode === "create" ? (
               <img
                 alt="signature"
-                className="border rounded bg-white w-[300px] h-[150px] object-contain"
+                className={`border rounded bg-white object-contain ${
+                  isPreview ? "w-[200px] h-[100px]" : "w-[300px] h-[150px]"
+                }`}
                 data-cy={`field-signature-preview-${field.name}`}
               />
             ) : (
@@ -286,15 +290,17 @@ export default function DynamicForm({
                 <SignatureCanvas
                   penColor="black"
                   canvasProps={{
-                    width: 300,
-                    height: 150,
-                    className: "border rounded bg-white",
+                    width: isPreview ? 200 : 300,
+                    height: isPreview ? 100 : 150,
+                    className: `border rounded bg-white ${isPreview ? "mx-auto" : ""}`,
                   }}
                   ref={(ref) => {
                     sigCanvasRefs.current[field.name] = ref;
                   }}
                   onEnd={() => {
-                    handleSignatureSave(field.name);
+                    if (!isPreview) {
+                      handleSignatureSave(field.name);
+                    }
                   }}
                   data-cy={`field-signature-canvas-${field.name}`}
                 />
@@ -306,8 +312,9 @@ export default function DynamicForm({
                     sigCanvasRefs.current[field.name]?.clear();
                     setValue(field.name, "");
                   }}
-                  className="mt-2"
+                  className={`mt-2 ${isPreview ? "mx-auto" : ""}`}
                   data-cy={`field-signature-clear-${field.name}`}
+                  disabled={isPreview}
                 >
                   {t("clear_signature")}
                 </Button>
@@ -536,43 +543,37 @@ export default function DynamicForm({
                   {t(field.label)}
                 </label>
               ) : field.type === "signature" ? (
-                <div data-cy={`field-signature-container-${field.name}`}>
+                <div 
+                  data-cy={`field-signature-container-${field.name}`}
+                  className={isPreview ? "flex flex-col items-center" : ""}
+                >
                   {mode === "create" ? (
                     <img
                       alt="signature"
-                      className="border rounded bg-white w-[300px] h-[150px] object-contain"
+                      className={`border rounded bg-white object-contain ${
+                        isPreview ? "w-[200px] h-[100px]" : "w-[300px] h-[150px]"
+                      }`}
                       data-cy={`field-signature-preview-${field.name}`}
                     />
                   ) : (
                     <>
-                      <div className="relative">
-                        <SignatureCanvas
-                          penColor="black"
-                          canvasProps={{
-                            width: 300,
-                            height: 150,
-                            className: `border rounded bg-white ${
-                              uploadingFields[field.name] ? "opacity-50 pointer-events-none" : ""
-                            }`,
-                          }}
-                          ref={(ref) => {
-                            sigCanvasRefs.current[field.name] = ref;
-                          }}
-                          onEnd={() => {
-                            if (!uploadingFields[field.name]) {
-                              handleSignatureSave(field.name);
-                            }
-                          }}
-                          data-cy={`field-signature-canvas-${field.name}`}
-                        />
-                        {uploadingFields[field.name] && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded">
-                            <div className="text-sm text-gray-600">
-                              {t("uploading", "מעלה...")}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      <SignatureCanvas
+                        penColor="black"
+                        canvasProps={{
+                          width: isPreview ? 200 : 300,
+                          height: isPreview ? 100 : 150,
+                          className: `border rounded bg-white ${isPreview ? "mx-auto" : ""}`,
+                        }}
+                        ref={(ref) => {
+                          sigCanvasRefs.current[field.name] = ref;
+                        }}
+                        onEnd={() => {
+                          if (!isPreview) {
+                            handleSignatureSave(field.name);
+                          }
+                        }}
+                        data-cy={`field-signature-canvas-${field.name}`}
+                      />
 
                       <Button
                         variant="outline"
@@ -581,9 +582,9 @@ export default function DynamicForm({
                           sigCanvasRefs.current[field.name]?.clear();
                           setValue(field.name, "");
                         }}
-                        className="mt-2"
-                        disabled={uploadingFields[field.name]}
+                        className={`mt-2 ${isPreview ? "mx-auto" : ""}`}
                         data-cy={`field-signature-clear-${field.name}`}
+                        disabled={isPreview}
                       >
                         <div className="flex items-center gap-2">
                           {t("clear_signature")}
@@ -667,27 +668,12 @@ export default function DynamicForm({
                     <>
                       <label
                         htmlFor={`image-input-${field.name}`}
-                        className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors ${
-                          uploadingFields[field.name]
-                            ? "border-gray-300 bg-gray-50 opacity-50"
-                            : "border-gray-300 hover:border-primary hover:bg-primary/5"
-                        }`}
+                        className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors border-gray-300 hover:border-primary hover:bg-primary/5"
                       >
-                        {uploadingFields[field.name] ? (
-                          <>
-                            <Upload className="w-8 h-8 text-gray-400 animate-pulse" />
-                            <span className="mt-2 text-sm text-gray-500">
-                              {t("uploading", "מעלה...")}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <ImageIcon className="w-8 h-8 text-gray-400" />
-                            <span className="mt-2 text-sm text-gray-600">
-                              {t("click_to_upload_image", "לחץ להעלאת תמונה")}
-                            </span>
-                          </>
-                        )}
+                        <ImageIcon className="w-8 h-8 text-gray-400" />
+                        <span className="mt-2 text-sm text-gray-600">
+                          {t("click_to_upload_image", "לחץ להעלאת תמונה")}
+                        </span>
                       </label>
                       {(() => {
                         const watchValue = watch(field.name);
@@ -751,27 +737,12 @@ export default function DynamicForm({
                     <>
                       <label
                         htmlFor={`file-input-${field.name}`}
-                        className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors ${
-                          uploadingFields[field.name]
-                            ? "border-gray-300 bg-gray-50 opacity-50"
-                            : "border-gray-300 hover:border-primary hover:bg-primary/5"
-                        }`}
+                        className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors border-gray-300 hover:border-primary hover:bg-primary/5"
                       >
-                        {uploadingFields[field.name] ? (
-                          <>
-                            <Upload className="w-8 h-8 text-gray-400 animate-pulse" />
-                            <span className="mt-2 text-sm text-gray-500">
-                              {t("uploading", "מעלה...")}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <FileIcon className="w-8 h-8 text-gray-400" />
-                            <span className="mt-2 text-sm text-gray-600">
-                              {t("click_to_upload_file", "לחץ להעלאת קובץ")}
-                            </span>
-                          </>
-                        )}
+                        <FileIcon className="w-8 h-8 text-gray-400" />
+                        <span className="mt-2 text-sm text-gray-600">
+                          {t("click_to_upload_file", "לחץ להעלאת קובץ")}
+                        </span>
                       </label>
                       {(() => {
                         const watchValue = watch(field.name);
@@ -829,20 +800,22 @@ export default function DynamicForm({
         );
         
       })}
-            <div className="flex justify-end mt-4 gap-2" data-cy="form-actions">
+      <div className="flex justify-center mt-6 gap-2" data-cy="form-actions">
         {extraButtons}
-       
-       <Button 
-        loading={isSubmitting} 
-        type="submit" 
-        data-cy="submit-button"
-        variant="default"
-        size="lg"
-        className="text-lg px-6"
-       >
-        {mode === "registration" && <Send className="!w-5 !h-5 mr-2" />}
-        {mode === "registration" ? t("submit_registration") : t("create")}
-      </Button>
+        <Button 
+          loading={isSubmitting} 
+          type="submit" 
+          data-cy="submit-button"
+          variant="default"
+          size="lg"
+          className="text-lg px-8 min-w-[200px]"
+          disabled={isPreview}
+          onClick={isPreview ? (e) => e.preventDefault() : undefined}
+          style={isPreview ? { cursor: "not-allowed", opacity: 0.6 } : undefined}
+        >
+          {!isSubmitting && mode === "registration" && <Send className="!w-5 !h-5 mr-2" />}
+          {mode === "registration" ? t("submit_registration") : t("create")}
+        </Button>
       </div>
     </form>
   );

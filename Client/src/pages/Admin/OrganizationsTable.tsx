@@ -18,6 +18,9 @@ import { createApiService } from "@/api/utils/apiFactory";
 import { toast } from "@/hooks/use-toast";
 import { showConfirm } from "@/utils/swal";
 import OrganizationEditDialog from "./OrganizationEditDialog";
+import { switchOrganization } from "@/api/auth/switchOrganization";
+import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 const noopReject = async () => Promise.reject(new Error("Not implemented"));
 const organizationsApi = createApiService<Organization>("/organizations");
@@ -25,6 +28,8 @@ const organizationsApi = createApiService<Organization>("/organizations");
 export default function OrganizationsTable() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
     {}
   );
@@ -39,6 +44,7 @@ export default function OrganizationsTable() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingOrganization, setEditingOrganization] =
     useState<Organization | null>(null);
+  const [switchingOrgId, setSwitchingOrgId] = useState<string | null>(null);
 
   const selectionColumn: ColumnDef<Organization> = useMemo(
     () => ({
@@ -89,13 +95,95 @@ export default function OrganizationsTable() {
     [t]
   );
 
+  const handleSwitchOrganization = useCallback(
+    async (organizationId: string) => {
+      if (!organizationId || switchingOrgId) return;
+
+      setSwitchingOrgId(organizationId);
+      try {
+        const response = await switchOrganization(organizationId);
+        
+        if (response.status === 200) {
+          // Invalidate and refetch user data
+          await queryClient.invalidateQueries({ queryKey: ["user"] });
+          await queryClient.refetchQueries({ queryKey: ["user"] });
+          
+          // Navigate to home
+          navigate("/home");
+          
+          toast.success(t("switched_organization_successfully") || "Switched organization successfully");
+        } else {
+          throw new Error(response.error || "Failed to switch organization");
+        }
+      } catch (error: any) {
+        console.error("Error switching organization:", error);
+        const errorMessage = error?.response?.data?.message || error?.message || t("error_switching_organization") || "Failed to switch organization";
+        toast.error(errorMessage);
+      } finally {
+        setSwitchingOrgId(null);
+      }
+    },
+    [navigate, queryClient, t, switchingOrgId]
+  );
+
   const columns: ColumnDef<Organization>[] = useMemo(
     () => [
       selectionColumn,
-      { accessorKey: "name", header: t("organization_name") },
+      { 
+        accessorKey: "name", 
+        header: t("organization_name"),
+        meta: { editable: false },
+        cell: ({ row }) => {
+          const organization = row.original;
+          const isSwitching = switchingOrgId === organization._id;
+          const isClickable = user?.role === "system_admin" && organization._id;
+          
+          if (!isClickable) {
+            return <span>{organization.name}</span>;
+          }
+
+          return (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (organization._id) {
+                  handleSwitchOrganization(organization._id);
+                }
+              }}
+              disabled={isSwitching}
+              className={`
+                cursor-pointer 
+                text-left 
+                w-full 
+                px-2 
+                py-1 
+                rounded 
+                transition-all 
+                duration-200
+                hover:bg-blue-50 
+                hover:text-blue-700
+                disabled:opacity-50 
+                disabled:cursor-not-allowed
+                ${isSwitching ? "animate-pulse" : ""}
+              `}
+              title={t("click_to_switch_organization") || "Click to switch to this organization"}
+            >
+              {isSwitching ? (
+                <span className="flex items-center gap-2">
+                  <span>{organization.name}</span>
+                  <span className="text-xs">...</span>
+                </span>
+              ) : (
+                organization.name
+              )}
+            </button>
+          );
+        }
+      },
       { accessorKey: "description", header: t("organization_description") },
     ],
-    [selectionColumn, t]
+    [selectionColumn, t, user?.role, switchingOrgId, handleSwitchOrganization]
   );
 
   const actions: TableAction<Organization>[] = useMemo(
@@ -284,9 +372,6 @@ export default function OrganizationsTable() {
 
   return (
     <div className="mx-auto">
-      <h1 className="text-2xl font-semibold text-primary mb-6">
-        {t("organizations")}
-      </h1>
       <DataTable<Organization>
         data={organizations}
         columns={columns}

@@ -16,21 +16,21 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-light shadow hover:shadow-md hover:bg-primary/90",
+        default: "bg-primary text-light shadow hover:shadow-md hover:brightness-110 active:scale-95 active:brightness-95",
         destructive:
-          "bg-destructive text-destructive-foreground shadow hover:shadow-md hover:bg-destructive/90",
+          "bg-destructive text-destructive-foreground shadow hover:shadow-md hover:brightness-110 active:scale-95 active:brightness-95",
         outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground hover:shadow-md",
+          "border border-input bg-background shadow-sm hover:bg-accent/50 hover:text-accent-foreground hover:shadow-md active:scale-95 active:bg-accent",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-sm hover:shadow-md hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-secondary text-secondary-foreground shadow-sm hover:shadow-md hover:brightness-110 active:scale-95 active:brightness-95",
+        ghost: "hover:bg-accent/50 hover:text-accent-foreground active:scale-95 active:bg-accent",
+        link: "text-primary underline-offset-4 hover:underline active:opacity-80",
         success:
-          "bg-green-600 text-white shadow hover:shadow-md hover:bg-green-700",
+          "bg-green-600 text-white shadow hover:shadow-md hover:brightness-110 active:scale-95 active:brightness-95",
         info:
-          "bg-blue-600 text-white shadow hover:shadow-md hover:bg-blue-700",
+          "bg-blue-600 text-white shadow hover:shadow-md hover:brightness-110 active:scale-95 active:brightness-95",
         warning:
-          "bg-amber-600 text-white shadow hover:shadow-md hover:bg-amber-700",
+          "bg-amber-600 text-white shadow hover:shadow-md hover:brightness-110 active:scale-95 active:brightness-95",
       },
       size: {
         default: "h-9 px-4 py-2",

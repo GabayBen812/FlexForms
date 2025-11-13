@@ -24,7 +24,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="p-2 w-full" dir={direction}>
-      <h1 className="text-3xl font-bold mb-6">{t('admin_dashboard')}</h1>
       <Tabs
         defaultValue="organizations"
         className={`w-full ${isRTL ? "text-right" : "text-left"}`}

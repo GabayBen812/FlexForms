@@ -28,4 +28,8 @@ export class CreateFormDto {
 
   @IsOptional()
   code?: number;
+
+  @IsOptional()
+  @IsString()
+  backgroundColor?: string;
 }

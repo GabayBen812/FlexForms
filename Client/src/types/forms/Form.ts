@@ -14,4 +14,5 @@ export type Form = {
   updatedAt: Date;
   maxRegistrators?: number;
   registrationDeadline?: string;
+  backgroundColor?: string;
 };

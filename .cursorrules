@@ -1,7 +1,7 @@
 # Paradize Cursor Rules
 
 ## Project Overview
-Paradize is a multi-tenant ERP/CRM platform with a React frontend and NestJS backend. This project uses TypeScript throughout, MongoDB for data storage, and modern tooling including Vite, Tailwind CSS, and React Query. also Radix UI.
+Paradize is a multi-tenant ERP/CRM platform with a React frontend and NestJS backend. This project uses TypeScript throughout, MongoDB for data storage, and modern tooling including Vite, Tailwind CSS, and React Query. also Radix UI - also shadcn/ui 
 This will be dedicated for education organizations
 
 When i write "FF" i usally refer to FeatureFlag
@@ -11,7 +11,7 @@ When i write "FF" i usally refer to FeatureFlag
 ### Client (`/Client`)
 - **Frontend Framework:** React 18+ with TypeScript
 - **Build Tool:** Vite
-- **Styling:** Tailwind CSS with Radix UI components
+- **Styling:** Tailwind CSS with Radix UI components - also shadcn/ui 
 - **State Management:** React Query (@tanstack/react-query) for server state
 - **Routing:** React Router v7
 - **Internationalization:** i18next with support for English (en) and Hebrew (he)
@@ -83,6 +83,7 @@ When i write "FF" i usally refer to FeatureFlag
 - Support both RTL (Hebrew) and LTR (English) layouts
 
 ### Styling
+- use shadcn/ui 
 - Use Tailwind CSS utility classes
 - Prefer Radix UI components for complex UI elements
 - Use Tailwind's RTL support for Hebrew language support
@@ -185,7 +186,7 @@ export class UsersController {
 - Extract form logic into custom hooks when reused
 
 ## Dependencies to Prefer
-- **UI Components:** Radix UI primitives
+- **UI Components:** shadcn/ui  or Radix UI primitives
 - **Forms:** React Hook Form + Zod
 - **HTTP Client:** Axios (via apiClient)
 - **Date Handling:** date-fns or dayjs

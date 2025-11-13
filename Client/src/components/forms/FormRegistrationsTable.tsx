@@ -157,41 +157,7 @@ export default function FormRegistrationsTable({ form, onFormUpdate }: Props) {
 
   return (
     <div className="col-span-2">
-      {isEditingTitle ? (
-        <div className="flex items-center gap-2 mb-4">
-          <Input
-            ref={inputRef}
-            value={editedTitle}
-            onChange={(e) => setEditedTitle(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="text-xl font-semibold"
-          />
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={handleSaveTitle}
-            className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-          >
-            <Check className="h-4 w-4" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={handleCancelEdit}
-            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      ) : (
-        <div
-          className="group flex items-center gap-2 mb-4 cursor-pointer hover:bg-gray-50 rounded-md px-2 py-1 -ml-2 transition-colors"
-          onClick={() => setIsEditingTitle(true)}
-        >
-          <h2 className="text-xl font-semibold">{form.title}</h2>
-          <Pencil className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-        </div>
-      )}
+      
       <div
         className="overflow-x-auto w-full"
         style={{

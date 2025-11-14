@@ -38,12 +38,33 @@ export class FormService {
     for (const key of Object.keys(data)) {
       if (data[key] === null) {
         unset[key] = "";
-      } else {
-        update[key] = data[key];
+      } else if (data[key] !== undefined) {
+        // Clean fields array to remove undefined values and ensure proper structure
+        if (key === 'fields' && Array.isArray(data[key])) {
+          update[key] = data[key]
+            .filter((field: any) => field && typeof field === 'object')
+            .map((field: any) => {
+              const cleaned: any = {};
+              // Only include defined properties
+              if (field.name !== undefined) cleaned.name = field.name;
+              if (field.label !== undefined) cleaned.label = field.label;
+              if (field.type !== undefined) cleaned.type = field.type;
+              if (field.isRequired !== undefined) cleaned.isRequired = field.isRequired;
+              if (field.config !== undefined && field.config !== null) {
+                cleaned.config = field.config;
+              }
+              return cleaned;
+            });
+        } else {
+          update[key] = data[key];
+        }
       }
     }
-    const updateObj =
-      Object.keys(unset).length > 0 ? { $set: update, $unset: unset } : update;
+    // Always use $set operator for proper MongoDB updates
+    const updateObj: any = { $set: update };
+    if (Object.keys(unset).length > 0) {
+      updateObj.$unset = unset;
+    }
     return this.model.findByIdAndUpdate(id, updateObj, { new: true }).exec();
   }
 

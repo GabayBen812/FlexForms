@@ -331,7 +331,25 @@ const handleCopy = () => {
             }}
             onUpdate={async (updatedFields) => {
               try {
-                const updatedForm = { ...form, fields: updatedFields };
+                // Clean fields array to remove undefined values and ensure proper serialization
+                const cleanedFields = updatedFields
+                  .filter((field) => field && typeof field === 'object' && field.name && field.type)
+                  .map((field) => {
+                    const cleaned: any = {
+                      name: field.name,
+                      label: field.label || '',
+                      type: field.type,
+                    };
+                    if (field.isRequired !== undefined) {
+                      cleaned.isRequired = field.isRequired;
+                    }
+                    if (field.config !== undefined && field.config !== null) {
+                      cleaned.config = field.config;
+                    }
+                    return cleaned;
+                  });
+                
+                const updatedForm = { ...form, fields: cleanedFields };
                 const res = await formsApi.customRequest(
                   "put",
                   `/forms/${form._id}`,

@@ -43,7 +43,10 @@ export interface Organization {
   };
   recurringChargeDay?: number;
   invoicingProvider?: string;
-  invoicingProviderApiKey?: string;
+  invoicingProviderApiKey?: {
+    apiKey: string;
+    secret: string;
+  };
 }
 
 export interface NewOrganizationPayload {

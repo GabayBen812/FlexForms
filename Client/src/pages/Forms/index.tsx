@@ -7,6 +7,7 @@ import { createApiService } from "@/api/utils/apiFactory";
 import { Form } from "@/types/forms/Form";
 import { TableAction } from "@/types/ui/data-table-types";
 import { useCallback, useEffect, useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, Plus, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
@@ -24,16 +25,43 @@ export default function Forms() {
   const { organization } = useOrganization();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
     {}
   );
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [registrationCounts, setRegistrationCounts] = useState<
-    Record<string, number>
-  >({});
   const [refreshKey, setRefreshKey] = useState(0);
   const [tableRows, setTableRows] = useState<Form[]>([]);
+
+  // Get form IDs from table rows for the query
+  const formIds = useMemo(
+    () => tableRows.map((f) => f._id).filter(Boolean).join(","),
+    [tableRows]
+  );
+
+  // Fetch registration counts using React Query
+  const { data: registrationCounts = {} } = useQuery({
+    queryKey: ["registrationCounts", formIds, organization?._id],
+    queryFn: async () => {
+      if (!formIds || !organization?._id) return {};
+      const res = await apiClient.get<{
+        status: number;
+        data: Record<string, number>;
+      }>("/registrations/count-by-form-ids", {
+        params: {
+          formIds,
+          organizationId: organization._id,
+        },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+      });
+      return res.data.data;
+    },
+    enabled: !!formIds && !!organization?._id,
+    staleTime: 30000, // Cache for 30 seconds
+  });
 
   const selectionColumn: ColumnDef<Form, any> = {
     id: "select",
@@ -60,7 +88,7 @@ export default function Forms() {
     }
   };
 
-  const baseColumns: ColumnDef<Form>[] = [
+  const baseColumns = useMemo<ColumnDef<Form>[]>(() => [
     selectionColumn,
     {
       accessorKey: "title",
@@ -132,7 +160,7 @@ export default function Forms() {
       size: 120,
       meta: { editable: false },
     },
-  ];
+  ], [t, registrationCounts]);
 
   const columns = useMemo(() => {
     return mergeColumnsWithDynamicFields(
@@ -141,7 +169,7 @@ export default function Forms() {
       organization,
       t
     );
-  }, [organization, t]);
+  }, [organization, t, baseColumns]);
 
   const columnOrder = [
     "select",
@@ -232,28 +260,6 @@ export default function Forms() {
         return dateB - dateA; // Descending order (newest first)
       });
 
-      // Get registration counts for the current page of forms only
-      const formIds = sortedForms.map((f) => f._id).join(",");
-      if (formIds) {
-        try {
-          const res = await apiClient.get<{
-            status: number;
-            data: Record<string, number>;
-          }>("/registrations/count-by-form-ids", {
-            params: { formIds },
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-            },
-          });
-          setRegistrationCounts((prev) => ({
-            ...prev,
-            ...res.data.data,
-          }));
-        } catch (err) {
-          console.error("Error fetching registration counts:", err);
-        }
-      }
-
       // Return in the format expected by DataTable
       return {
         //@ts-ignore
@@ -289,6 +295,8 @@ export default function Forms() {
       const created = await formsApi.create(duplicatedForm);
       if (created) {
         setRefreshKey((prev) => prev + 1);
+        // Invalidate registration counts to refresh after duplication
+        queryClient.invalidateQueries({ queryKey: ["registrationCounts"] });
       }
     } catch (error) {
       console.error("שגיאה בשכפול הטופס:", error);
@@ -301,6 +309,8 @@ export default function Forms() {
       const response = await formsApi.delete(id);
       if (response.status === 200) {
         setRefreshKey((prev) => prev + 1); // Refresh the table
+        // Invalidate registration counts to refresh after deletion
+        queryClient.invalidateQueries({ queryKey: ["registrationCounts"] });
         toast({
           title: t("form_deleted_successfully"),
           description: t("form_deleted_description"),
@@ -356,6 +366,8 @@ export default function Forms() {
       await Promise.all(selectedIds.map((id) => formsApi.delete(id)));
       setRefreshKey((prev) => prev + 1);
       setRowSelection({});
+      // Invalidate registration counts to refresh after bulk deletion
+      queryClient.invalidateQueries({ queryKey: ["registrationCounts"] });
       toast({
         title: t("forms_deleted_successfully", "הטפסים נמחקו בהצלחה"),
         description: t("forms_deleted_description", `${selectedIds.length} טפסים נמחקו`),

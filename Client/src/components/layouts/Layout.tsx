@@ -3,6 +3,8 @@ import { AppSidebar } from "@/components/layouts/Sidebar/Sidebar";
 import { GetDirection } from "@/lib/i18n";
 import { Toaster } from "@/components/ui/toaster";
 import Topbar from "./Topbar/Topbar";
+import { NavigationLoader } from "@/components/routes/NavigationLoader";
+
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -26,6 +28,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         />
         <Toaster />
       </SidebarProvider>
+      <NavigationLoader />
     </div>
   );
 };

@@ -27,6 +27,25 @@ const paymentSettingsSchema = z.object({
   recurringChargeDay: z.number().min(1).max(31).optional().nullable(),
   invoicingProvider: z.string().optional(),
   invoicingProviderApiKey: z.string().optional(),
+  invoicingProviderSecret: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // If invoicing provider is selected, both apiKey and secret are required
+  if (data.invoicingProvider) {
+    if (!data.invoicingProviderApiKey || data.invoicingProviderApiKey.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "מפתח API נדרש",
+        path: ["invoicingProviderApiKey"],
+      });
+    }
+    if (!data.invoicingProviderSecret || data.invoicingProviderSecret.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "סוד (Secret) נדרש",
+        path: ["invoicingProviderSecret"],
+      });
+    }
+  }
 });
 
 type PaymentSettingsValues = z.infer<typeof paymentSettingsSchema>;
@@ -65,6 +84,7 @@ export default function PaymentsSettings() {
       recurringChargeDay: null,
       invoicingProvider: "",
       invoicingProviderApiKey: "",
+      invoicingProviderSecret: "",
     },
   });
 
@@ -78,7 +98,8 @@ export default function PaymentsSettings() {
         password: organization.paymentProviderCredentials?.password || "",
         recurringChargeDay: organization.recurringChargeDay || null,
         invoicingProvider: organization.invoicingProvider || "",
-        invoicingProviderApiKey: organization.invoicingProviderApiKey || "",
+        invoicingProviderApiKey: organization.invoicingProviderApiKey?.apiKey || "",
+        invoicingProviderSecret: organization.invoicingProviderApiKey?.secret || "",
       });
     }
   }, [organization, form]);
@@ -103,7 +124,13 @@ export default function PaymentsSettings() {
           : undefined,
         recurringChargeDay: data.recurringChargeDay || undefined,
         invoicingProvider: data.invoicingProvider || undefined,
-        invoicingProviderApiKey: data.invoicingProviderApiKey || undefined,
+        invoicingProviderApiKey: 
+          data.invoicingProviderApiKey && data.invoicingProviderSecret
+            ? {
+                apiKey: data.invoicingProviderApiKey,
+                secret: data.invoicingProviderSecret,
+              }
+            : undefined,
       };
 
       return updatePaymentSettings(organization._id, paymentSettings);
@@ -137,7 +164,8 @@ export default function PaymentsSettings() {
         password: organization.paymentProviderCredentials?.password || "",
         recurringChargeDay: organization.recurringChargeDay || null,
         invoicingProvider: organization.invoicingProvider || "",
-        invoicingProviderApiKey: organization.invoicingProviderApiKey || "",
+        invoicingProviderApiKey: organization.invoicingProviderApiKey?.apiKey || "",
+        invoicingProviderSecret: organization.invoicingProviderApiKey?.secret || "",
       });
     }
   };
@@ -232,7 +260,7 @@ export default function PaymentsSettings() {
                 <div className="col-span-8">
                   <Input
                     {...form.register("password")}
-                    type="password"
+                    type="text"
                     placeholder="סיסמא"
                   />
                   {form.formState.errors.password && (
@@ -291,6 +319,7 @@ export default function PaymentsSettings() {
                   form.setValue("invoicingProvider", value);
                   if (!value) {
                     form.setValue("invoicingProviderApiKey", "");
+                    form.setValue("invoicingProviderSecret", "");
                   }
                 }}
               >
@@ -309,22 +338,42 @@ export default function PaymentsSettings() {
           </div>
 
           {invoicingProvider && (
-            <div className="grid grid-cols-12 gap-6 items-center">
-              <label className="col-span-4 rtl:order-2 rtl:text-right text-sm font-medium">
-                מפתח API
-              </label>
-              <div className="col-span-8">
-                <Input
-                  {...form.register("invoicingProviderApiKey")}
-                  placeholder="מפתח API"
-                />
-                {form.formState.errors.invoicingProviderApiKey && (
-                  <p className="text-sm text-destructive mt-1">
-                    {form.formState.errors.invoicingProviderApiKey.message}
-                  </p>
-                )}
+            <>
+              <div className="grid grid-cols-12 gap-6 items-center">
+                <label className="col-span-4 rtl:order-2 rtl:text-right text-sm font-medium">
+                  מפתח API
+                </label>
+                <div className="col-span-8">
+                  <Input
+                    {...form.register("invoicingProviderApiKey")}
+                    placeholder="מפתח API"
+                  />
+                  {form.formState.errors.invoicingProviderApiKey && (
+                    <p className="text-sm text-destructive mt-1">
+                      {form.formState.errors.invoicingProviderApiKey.message}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
+
+              <div className="grid grid-cols-12 gap-6 items-center">
+                <label className="col-span-4 rtl:order-2 rtl:text-right text-sm font-medium">
+                  סוד (Secret)
+                </label>
+                <div className="col-span-8">
+                  <Input
+                    {...form.register("invoicingProviderSecret")}
+                    type="text"
+                    placeholder="סוד (Secret)"
+                  />
+                  {form.formState.errors.invoicingProviderSecret && (
+                    <p className="text-sm text-destructive mt-1">
+                      {form.formState.errors.invoicingProviderSecret.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </>
           )}
         </div>
 

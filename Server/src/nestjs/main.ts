@@ -1,7 +1,7 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import * as cookieParser from "cookie-parser";
-import { ValidationPipe } from "@nestjs/common";
+import { ValidationPipe, BadRequestException } from "@nestjs/common";
 import * as dotenv from "dotenv";
 dotenv.config();
 
@@ -17,6 +17,20 @@ async function bootstrap() {
       whitelist: true,
       transform: true,
       forbidNonWhitelisted: false,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+      exceptionFactory: (errors) => {
+        const messages = errors.map((error) => {
+          const constraints = error.constraints || {};
+          return Object.values(constraints).join(', ');
+        });
+        console.error('Validation errors:', JSON.stringify(errors, null, 2));
+        return new BadRequestException({
+          message: messages.join('; '),
+          errors,
+        });
+      },
     })
   );
 

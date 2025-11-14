@@ -3,7 +3,7 @@ import { useContext } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
 import { useState } from "react";
-import { Plus, TrendingUp, TrendingDown, Settings } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Settings, FileText, Loader2 } from "lucide-react";
 
 import DataTable from "@/components/ui/completed/data-table";
 import DynamicForm, { FieldConfig } from "@/components/forms/DynamicForm";
@@ -15,11 +15,13 @@ import { Button } from "@/components/ui/button";
 import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { GetDirection } from "@/lib/i18n";
 import Expenses from "./Expenses";
 import PaymentsSettings from "./PaymentsSettings";
+import { createInvoice } from "@/api/invoices";
+import { CreateInvoiceDto, InvoiceDocumentType, InvoicePaymentType, Currency, Language } from "@/types/invoices/invoice";
 
 export type Payment = {
   id: string;
@@ -52,6 +54,7 @@ const paymentsApi = createApiService<Payment>("/payments", {
 export default function Payments() {
   const { t } = useTranslation();
   const { organization } = useContext(OrganizationsContext);
+  const { toast } = useToast();
   
   const [currentTab, setCurrentTab] = useState('income');
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
@@ -59,6 +62,7 @@ export default function Payments() {
   );
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
 
   const handleTabChange = (value: string) => {
     setCurrentTab(value);
@@ -125,13 +129,107 @@ export default function Payments() {
       };
       const res = await paymentsApi.create(newPayment);
       if (res.status === 200 || res.data) {
-        toast.success(t("form_created_success"));
+        toast({
+          title: t("success") || "הצלחה",
+          description: t("form_created_success") || "הטופס נוצר בהצלחה",
+        });
         // Table will refresh automatically via fetchData
       }
     } catch (error) {
       console.error("Error creating payment:", error);
-      toast.error(t("error"));
+      toast({
+        title: t("error") || "שגיאה",
+        description: t("error") || "אירעה שגיאה",
+        variant: "destructive",
+      });
       throw error;
+    }
+  };
+
+  const handleTestInvoice = async () => {
+    if (!organization?._id) {
+      toast({
+        title: "שגיאה",
+        description: "נדרש מזהה ארגון",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreatingInvoice(true);
+    try {
+      const testInvoiceData: CreateInvoiceDto = {
+        organizationId: organization._id,
+        documentType: InvoiceDocumentType.RECEIPT,
+        client: {
+          name: "לקוח בדיקה",
+          personalId: "123456782", // Valid Israeli ID (passes Luhn algorithm)
+          email: "test@example.com",
+          phone: "050-1234567",
+        },
+        items: [
+          {
+            name: "שירות בדיקה",
+            quantity: 1,
+            price: 5,
+            description: "זהו חשבונית בדיקה",
+          },
+        ],
+        payment: {
+          type: InvoicePaymentType.CREDIT_CARD,
+          date: new Date().toISOString().split('T')[0],
+          amount: 5,
+        },
+        subject: "חשבונית בדיקה",
+        description: "זהו חשבונית בדיקה שנוצרה על מנת לבדוק את האינטגרציה עם GreenInvoice",
+        language: Language.HEBREW,
+        currency: Currency.ILS,
+      };
+
+      console.log("Sending invoice data:", JSON.stringify(testInvoiceData, null, 2));
+      const result = await createInvoice(testInvoiceData);
+      
+      if (result.success && result.data) {
+        toast({
+          title: "הצלחה!",
+          description: `החשבונית נוצרה בהצלחה. מזהה: ${result.data.id}`,
+        });
+        
+        // Open invoice URL in new tab
+        if (result.data.documentUrl) {
+          window.open(result.data.documentUrl, "_blank");
+        }
+      } else {
+        toast({
+          title: "שגיאה",
+          description: "יצירת החשבונית נכשלה",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error creating test invoice:", error);
+      console.error("Error response:", error?.response?.data);
+      console.error("Error status:", error?.response?.status);
+      
+      // Extract error message
+      let errorMessage = "יצירת החשבונית נכשלה";
+      if (error?.response?.data?.message) {
+        if (Array.isArray(error.response.data.message)) {
+          errorMessage = error.response.data.message.join(", ");
+        } else {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: "שגיאה",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingInvoice(false);
     }
   };
 
@@ -210,13 +308,31 @@ export default function Payments() {
         idField="id"
         extraFilters={advancedFilters}
         customLeftButtons={
-          <Button 
-            variant="outline" 
-            onClick={() => setIsAddDialogOpen(true)}
-            className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 hover:border-blue-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
-          >
-            <Plus className="w-4 h-4 mr-2" /> {t("add")}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsAddDialogOpen(true)}
+              className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 hover:border-blue-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+            >
+              <Plus className="w-4 h-4 mr-2" /> {t("add")}
+            </Button>
+            {/* <Button 
+              variant="outline" 
+              onClick={handleTestInvoice}
+              disabled={isCreatingInvoice}
+              className="bg-green-500 hover:bg-green-600 text-white border-green-500 hover:border-green-600 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+            >
+              {isCreatingInvoice ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> יוצר חשבונית...
+                </>
+              ) : (
+                <>
+                  <FileText className="w-4 h-4 mr-2" /> צור חשבונית בדיקה
+                </>
+              )}
+            </Button> */}
+          </div>
         }
         renderExpandedContent={({ handleSave }) => (
           <DynamicForm

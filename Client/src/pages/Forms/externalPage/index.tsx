@@ -9,7 +9,8 @@ import axios from "axios";
 import { createPaymentSession } from '@/api/services/paymentService';
 import DynamicForm, { FieldConfig } from "@/components/forms/DynamicForm";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PageLoader } from "@/components/ui/page-loader";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Separator } from "@/components/ui/separator";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -43,24 +44,7 @@ export default function FormRegistration() {
   }, [code]);
 
   if (!form) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl mx-auto">
-          <Card className="shadow-lg">
-            <CardHeader className="space-y-4">
-              <Skeleton className="h-10 w-3/4" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-5/6" />
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   const dynamicFields: FieldConfig[] = [
@@ -260,7 +244,7 @@ export default function FormRegistration() {
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-[400px]">
-                  <Skeleton className="h-full w-full" />
+                  <LoadingSpinner size="lg" />
                 </div>
               )}
             </CardContent>

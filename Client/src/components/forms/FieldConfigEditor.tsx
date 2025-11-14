@@ -97,6 +97,18 @@ export default function FieldConfigEditor({ field, onChange }: Props) {
           }}
           className="mt-2"
         />
+        <div className="mt-4">
+          <label className="font-semibold flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={!!field.isRequired}
+              onChange={(e) =>
+                onChange({ ...field, isRequired: e.target.checked })
+              }
+            />
+            {t("required_field")}
+          </label>
+        </div>
       </div>
     );
   }
@@ -125,6 +137,18 @@ export default function FieldConfigEditor({ field, onChange }: Props) {
               Use rich text editor (experimental)
             </button>
           )}
+          <div className="mt-4">
+            <label className="font-semibold flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={!!field.isRequired}
+                onChange={(e) =>
+                  onChange({ ...field, isRequired: e.target.checked })
+                }
+              />
+              {t("required_field")}
+            </label>
+          </div>
         </div>
       );
     }
@@ -179,6 +203,18 @@ export default function FieldConfigEditor({ field, onChange }: Props) {
         >
           Switch to simple text editor
         </button>
+        <div className="mt-4">
+          <label className="font-semibold flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={!!field.isRequired}
+              onChange={(e) =>
+                onChange({ ...field, isRequired: e.target.checked })
+              }
+            />
+            {t("required_field")}
+          </label>
+        </div>
       </div>
     );
   }

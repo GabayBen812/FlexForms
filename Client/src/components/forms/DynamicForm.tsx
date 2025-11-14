@@ -1,15 +1,24 @@
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { ZodObject } from "zod";
 import { Input } from "@/components/ui/Input";
+import { DateInput } from "@/components/ui/date-input";
 import FieldConfigEditor from "./FieldConfigEditor";
 import SignatureCanvas from "react-signature-canvas";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { uploadFile } from "@/lib/imageUtils";
 import { Send, Eraser, Save, X, Download, File as FileIcon, Image as ImageIcon } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { toast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export interface FieldConfig {
   name: string;
@@ -45,17 +54,66 @@ export default function DynamicForm({
   const { t } = useTranslation();
   const sigCanvasRefs = useRef<Record<string, SignatureCanvas | null>>({});
   const [uploadingFields, setUploadingFields] = useState<Record<string, boolean>>({});
+  const blobUrlRefs = useRef<Record<string, string>>({});
 
   const {
     register,
     handleSubmit,
     setValue,
     watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(validationSchema),
     defaultValues,
   });
+
+  // Watch all form values for real-time validation
+  const formValues = watch();
+
+  // Cleanup blob URLs on component unmount
+  useEffect(() => {
+    return () => {
+      Object.values(blobUrlRefs.current).forEach((blobUrl) => {
+        URL.revokeObjectURL(blobUrl);
+      });
+      blobUrlRefs.current = {};
+    };
+  }, []);
+
+  // Function to check if a field value is empty based on field type
+  const isFieldEmpty = (field: FieldConfig, value: any): boolean => {
+    if (value === null || value === undefined) return true;
+    
+    switch (field.type) {
+      case "text":
+      case "date":
+      case "email":
+      case "select":
+      case "signature":
+      case "image":
+      case "file":
+        return value === "";
+      case "checkbox":
+      case "terms":
+        return value === false;
+      case "multiselect":
+        return !Array.isArray(value) || value.length === 0;
+      default:
+        return value === "";
+    }
+  };
+
+  // Get missing required fields
+  const getMissingRequiredFields = (): FieldConfig[] => {
+    return fields.filter((field) => {
+      if (!field.isRequired) return false;
+      const value = formValues[field.name];
+      return isFieldEmpty(field, value);
+    });
+  };
+
+  const missingRequiredFields = getMissingRequiredFields();
 
   const handleSignatureSave = async (fieldName: string) => {
     if (!sigCanvasRefs.current[fieldName]) return;
@@ -154,6 +212,12 @@ export default function DynamicForm({
   const handleFileUpload = async (fieldName: string, file: File, fieldType: "image" | "file") => {
     if (!file) return;
 
+    // Create blob URL immediately for instant preview
+    const blobUrl = URL.createObjectURL(file);
+    blobUrlRefs.current[fieldName] = blobUrl;
+    
+    // Set form value optimistically with blob URL
+    setValue(fieldName, blobUrl);
     setUploadingFields((prev) => ({ ...prev, [fieldName]: true }));
 
     try {
@@ -164,10 +228,29 @@ export default function DynamicForm({
       const fileName = `${timestamp}_${uuid}${fileExtension ? '.' + fileExtension : ''}`;
       const path = `uploads/form-fields/${fieldName}/${fileName}`;
       
+      // Upload to Supabase in the background
       const fileUrl = await uploadFile(file, path);
+      
+      // Replace blob URL with Supabase URL
       setValue(fieldName, fileUrl);
+      
+      // Clean up blob URL
+      if (blobUrlRefs.current[fieldName]) {
+        URL.revokeObjectURL(blobUrlRefs.current[fieldName]);
+        delete blobUrlRefs.current[fieldName];
+      }
     } catch (error) {
       console.error(`Error uploading ${fieldType}:`, error);
+      
+      // Clear the preview on error
+      setValue(fieldName, "");
+      
+      // Clean up blob URL
+      if (blobUrlRefs.current[fieldName]) {
+        URL.revokeObjectURL(blobUrlRefs.current[fieldName]);
+        delete blobUrlRefs.current[fieldName];
+      }
+      
       toast.error(
         fieldType === "image"
           ? t("error_uploading_image", "שגיאה בהעלאת תמונה")
@@ -217,8 +300,27 @@ export default function DynamicForm({
 
   const renderField = (field: FieldConfig) => {
     switch (field.type) {
-      case "text":
       case "date":
+        return (
+          <Controller
+            name={field.name}
+            control={control}
+            render={({ field: formField }) => (
+              <DateInput
+                value={formField.value || ""}
+                onChange={(value) => {
+                  formField.onChange(value);
+                }}
+                onBlur={formField.onBlur}
+                disabled={mode !== "registration"}
+                required={field.isRequired}
+                name={formField.name}
+                data-cy={`field-input-${field.name}`}
+              />
+            )}
+          />
+        );
+      case "text":
       case "email":
         return (
           <Input
@@ -494,41 +596,74 @@ export default function DynamicForm({
               className="mt-3"
               data-cy={`field-input-container-${field.name}`}
             >
-              {field.type === "text" ||
-              field.type === "date" ||
-              field.type === "email" ? (
+              {field.type === "text" || field.type === "email" ? (
                 <Input
                   type={field.type}
                   {...register(field.name)}
                   disabled={mode !== "registration"}
                   data-cy={`field-input-${field.name}`}
                 />
+              ) : field.type === "date" ? (
+                // <Input
+                //   type={field.type}
+                //   {...register(field.name)}
+                //   disabled={mode !== "registration"}
+                //   data-cy={`field-input-${field.name}`}
+                // />
+                <Controller
+                  name={field.name}
+                  control={control}
+                  render={({ field: formField }) => (
+                    <DateInput
+                      value={formField.value || ""}
+                      onChange={(value) => {
+                        formField.onChange(value);
+                      }}
+                      onBlur={formField.onBlur}
+                      disabled={mode !== "registration"}
+                      required={field.isRequired}
+                      name={formField.name}
+                      data-cy={`field-input-${field.name}`}
+                    />
+                  )}
+                />
               ) : field.type === "select" ? (
-                <select
-                  {...register(field.name, {
-                    valueAsNumber: false,
-                  })}
-                  className="border px-2 py-1 rounded"
-                  disabled={mode !== "registration"}
-                  data-cy={`field-select-${field.name}`}
+                <Controller
+                  name={field.name}
+                  control={control}
                   defaultValue=""
-                >
-                  <option
-                    value=""
-                    data-cy={`field-select-option-${field.name}-empty`}
-                  >
-                    {t("select_option")}
-                  </option>
-                  {field.config?.options?.map((opt: any, i: number) => (
-                    <option
-                      key={i}
-                      value={opt.value || opt.label || ""}
-                      data-cy={`field-select-option-${field.name}-${opt.value}`}
-                    >
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+                  render={({ field: controllerField }) => {
+                    // Convert empty string to undefined for Radix Select, but keep empty string in form state
+                    const selectValue = controllerField.value === "" ? undefined : controllerField.value;
+                    return (
+                      <Select
+                        value={selectValue}
+                        onValueChange={(value) => {
+                          controllerField.onChange(value === undefined ? "" : value);
+                        }}
+                        disabled={mode !== "registration"}
+                      >
+                        <SelectTrigger
+                          className="w-full"
+                          data-cy={`field-select-${field.name}`}
+                        >
+                          <SelectValue placeholder={t("select_option")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {field.config?.options?.map((opt: any, i: number) => (
+                            <SelectItem
+                              key={i}
+                              value={opt.value || opt.label || ""}
+                              data-cy={`field-select-option-${field.name}-${opt.value}`}
+                            >
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    );
+                  }}
+                />
               ) : field.type === "checkbox" ? (
                 <label
                   className="flex items-center gap-2"
@@ -678,6 +813,7 @@ export default function DynamicForm({
                       {(() => {
                         const watchValue = watch(field.name);
                         const currentValue = watchValue || defaultValues?.[field.name];
+                        const isUploading = uploadingFields[field.name];
                         return currentValue ? (
                           <div className="relative border rounded-lg p-2 bg-white">
                             <img
@@ -685,12 +821,23 @@ export default function DynamicForm({
                               alt={field.label}
                               className="max-w-full max-h-48 object-contain rounded"
                             />
+                            {isUploading && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg">
+                                <LoadingSpinner size="md" />
+                              </div>
+                            )}
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
                               className="absolute top-2 right-2 bg-white/80 hover:bg-red-100"
+                              disabled={isUploading}
                               onClick={() => {
+                                // Clean up blob URL if exists
+                                if (blobUrlRefs.current[field.name]) {
+                                  URL.revokeObjectURL(blobUrlRefs.current[field.name]);
+                                  delete blobUrlRefs.current[field.name];
+                                }
                                 setValue(field.name, "");
                                 const input = document.getElementById(`image-input-${field.name}`) as HTMLInputElement;
                                 if (input) input.value = "";
@@ -747,8 +894,9 @@ export default function DynamicForm({
                       {(() => {
                         const watchValue = watch(field.name);
                         const currentValue = watchValue || defaultValues?.[field.name];
+                        const isUploading = uploadingFields[field.name];
                         return currentValue ? (
-                          <div className="flex items-center gap-2 border rounded-lg p-3 bg-white">
+                          <div className="relative flex items-center gap-2 border rounded-lg p-3 bg-white">
                             <FileIcon className="w-5 h-5 text-gray-400" />
                             <a
                               href={currentValue}
@@ -759,12 +907,23 @@ export default function DynamicForm({
                               <Download className="w-4 h-4" />
                               {t("download_file", "הורד קובץ")}
                             </a>
+                            {isUploading && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg">
+                                <LoadingSpinner size="sm" />
+                              </div>
+                            )}
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
                               className="hover:bg-red-100"
+                              disabled={isUploading}
                               onClick={() => {
+                                // Clean up blob URL if exists
+                                if (blobUrlRefs.current[field.name]) {
+                                  URL.revokeObjectURL(blobUrlRefs.current[field.name]);
+                                  delete blobUrlRefs.current[field.name];
+                                }
                                 setValue(field.name, "");
                                 const input = document.getElementById(`file-input-${field.name}`) as HTMLInputElement;
                                 if (input) input.value = "";
@@ -800,22 +959,29 @@ export default function DynamicForm({
         );
         
       })}
-      <div className="flex justify-center mt-6 gap-2" data-cy="form-actions">
-        {extraButtons}
-        <Button 
-          loading={isSubmitting} 
-          type="submit" 
-          data-cy="submit-button"
-          variant="default"
-          size="lg"
-          className="text-lg px-8 min-w-[200px]"
-          disabled={isPreview}
-          onClick={isPreview ? (e) => e.preventDefault() : undefined}
-          style={isPreview ? { cursor: "not-allowed", opacity: 0.6 } : undefined}
-        >
-          {!isSubmitting && mode === "registration" && <Send className="!w-5 !h-5 mr-2" />}
-          {mode === "registration" ? t("submit_registration") : t("create")}
-        </Button>
+      <div className="flex flex-col items-center mt-6 gap-2" data-cy="form-actions">
+        <div className="flex gap-2">
+          {extraButtons}
+          <Button 
+            loading={isSubmitting} 
+            type="submit" 
+            data-cy="submit-button"
+            variant="default"
+            size="lg"
+            className="text-lg px-8 min-w-[200px]"
+            disabled={isPreview || missingRequiredFields.length > 0}
+            onClick={isPreview ? (e) => e.preventDefault() : undefined}
+            style={isPreview ? { cursor: "not-allowed", opacity: 0.6 } : undefined}
+          >
+            {!isSubmitting && mode === "registration" && <Send className="!w-5 !h-5 mr-2" />}
+            {mode === "registration" ? t("submit_registration") : t("create")}
+          </Button>
+        </div>
+        {missingRequiredFields.length > 0 && mode === "registration" && (
+          <p className="text-sm text-red-500 mt-1" data-cy="missing-fields-message">            
+            נא למלא: {missingRequiredFields.slice(0, 2).map((field) => t(field.label)).join(", ")}
+          </p>
+        )}
       </div>
     </form>
   );

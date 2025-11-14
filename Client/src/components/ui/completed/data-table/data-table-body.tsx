@@ -556,6 +556,12 @@ function EditableCell<T>({
       } else if (isPhoneField && cellValue) {
         // For phone fields, show formatted value when editing
         setValue(formatPhoneNumber(cellValue));
+      } else if (isMoney && cellValue !== undefined && cellValue !== null) {
+        // For money fields, extract numeric value and convert to string for input
+        const numericValue = typeof cellValue === "number" 
+          ? cellValue 
+          : parseFloat(String(cellValue).replace(/[^\d.]/g, '')) || 0;
+        setValue(String(numericValue));
       } else {
         // Safely convert cellValue to string, handling objects
         const stringValue = typeof cellValue === "object" && cellValue !== null && !Array.isArray(cellValue)
@@ -571,7 +577,7 @@ function EditableCell<T>({
         }
       }, 0);
     }
-  }, [isEditing, cellValue, isDate, fieldType, isPhoneField]);
+  }, [isEditing, cellValue, isDate, fieldType, isPhoneField, isMoney]);
 
   // Sync optimistic checkbox value with server value when it updates
   useEffect(() => {
@@ -614,11 +620,24 @@ function EditableCell<T>({
       processedValue = value;
     }
     
-    // Process money values - remove currency symbols and format
-    if (isMoney && value) {
-      // Remove any non-digit characters except decimal point
-      const numericValue = value.toString().replace(/[^\d.]/g, '');
-      processedValue = numericValue;
+    // Process money values - remove currency symbols and convert to number
+    if (isMoney) {
+      if (value !== undefined && value !== null && value !== "") {
+        // Remove any non-digit characters except decimal point
+        const cleanedValue = value.toString().replace(/[^\d.]/g, '');
+        // Convert to number
+        const numericValue = parseFloat(cleanedValue);
+        // Only save if it's a valid number
+        if (!isNaN(numericValue)) {
+          processedValue = numericValue;
+        } else {
+          // If invalid, set to 0
+          processedValue = 0;
+        }
+      } else {
+        // Handle empty money values - set to 0
+        processedValue = 0;
+      }
     }
     
     // Process phone values - unformat phone numbers (remove formatting, store as digits)

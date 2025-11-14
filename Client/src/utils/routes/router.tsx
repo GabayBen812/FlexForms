@@ -3,6 +3,7 @@ import ProtectedRoute from "@/routes/ProtectedRoute";
 import CreateOrganization from "@/pages/CreateOrganization/CreateOrganization";
 import Login from "@/pages/Login/Login";
 import { Layout } from "@/components/layouts/Layout";
+import { RouteWrapper } from "@/components/routes/RouteWrapper";
 import HomeIcon from "@/assets/icons/HomeIcon";
 import ReportsIcon from "@/assets/icons/ReportsIcon";
 import TasksIcon from "@/assets/icons/TasksIcon";
@@ -50,7 +51,7 @@ import { DoorOpen } from "lucide-react";
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <LandingPage />,
+    element: <RouteWrapper><LandingPage /></RouteWrapper>,
     handle: { showInSidebar: false },
   },
   {
@@ -281,27 +282,30 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  { path: "/login", element: <Login /> },
-  { path: "/create-organization", element: <CreateOrganization /> },
+  { path: "/login", element: <RouteWrapper><Login /></RouteWrapper> },
+  { path: "/create-organization", element: <RouteWrapper><CreateOrganization /></RouteWrapper> },
   {
     path: "/activity/:code/registration",
-    element: <FormRegistration />,
+    element: <RouteWrapper><FormRegistration /></RouteWrapper>,
     handle: { showInSidebar: false },
   },
   {
     path: "/activity/:code/registration/success",
-    element: <RegistrationSuccess />,
+    element: <RouteWrapper><RegistrationSuccess /></RouteWrapper>,
     handle: { showInSidebar: false },
   },
   {
     path: "/payment/error",
-    element: <PaymentError />,
+    element: <RouteWrapper><PaymentError /></RouteWrapper>,
     handle: { showInSidebar: false },
   },
   {
     path: "/payment/success",
-    element: <PaymentSuccess />,
+    element: <RouteWrapper><PaymentSuccess /></RouteWrapper>,
     handle: { showInSidebar: false },
   },
 
 ]);
+
+
+

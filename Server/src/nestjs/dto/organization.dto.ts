@@ -37,6 +37,16 @@ export class PaymentProviderCredentialsDto {
   password?: string;
 }
 
+export class InvoicingProviderApiKeyDto {
+  @IsString()
+  @IsNotEmpty()
+  apiKey!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  secret!: string;
+}
+
 export class UpdateOrganizationDto {
   @IsString()
   @IsOptional()
@@ -65,8 +75,10 @@ export class UpdateOrganizationDto {
   @IsOptional()
   invoicingProvider?: string;
 
-  @IsString()
+  @IsObject()
   @IsOptional()
-  invoicingProviderApiKey?: string;
+  @ValidateNested()
+  @Type(() => InvoicingProviderApiKeyDto)
+  invoicingProviderApiKey?: InvoicingProviderApiKeyDto;
 }
   

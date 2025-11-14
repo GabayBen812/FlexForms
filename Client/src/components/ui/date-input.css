@@ -1,0 +1,207 @@
+/* Custom styles for react-mobile-picker */
+.date-picker-container {
+  position: relative;
+  min-height: 200px;
+  color: #111827 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Style the picker root */
+.date-picker-container > div {
+  display: flex;
+  flex-direction: row;
+  background: #f9fafb !important;
+  position: relative;
+  height: 200px;
+  color: #111827 !important;
+}
+
+/* Style each column */
+.date-picker-container > div > div {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  color: #111827 !important;
+}
+
+.date-picker-container > div > div:last-child {
+  border-right: none;
+}
+
+/* RTL support */
+[dir="rtl"] .date-picker-container > div > div {
+  border-right: none;
+  border-left: 1px solid #e5e7eb;
+}
+
+[dir="rtl"] .date-picker-container > div > div:last-child {
+  border-left: none;
+}
+
+/* Style picker column wrapper */
+.date-picker-container > div > div > div {
+  position: relative;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  color: #111827 !important;
+}
+
+/* Hide scrollbar */
+.date-picker-container > div > div > div::-webkit-scrollbar {
+  display: none;
+}
+
+.date-picker-container > div > div > div {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Style picker items - ensure text is always visible - target all possible structures */
+.date-picker-container > div > div > div > div,
+.date-picker-container > div > div > div > div > div,
+.date-picker-container * {
+  color: #1f2937 !important;
+}
+
+/* Unselected items */
+.date-picker-container > div > div > div > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  font-size: 15px;
+  color: #374151 !important;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+  text-align: center;
+  padding: 0 12px;
+  font-weight: 400;
+  background: transparent !important;
+}
+
+/* Selected item styling - ensure selected text is dark and visible */
+.date-picker-container > div > div > div > div[data-selected="true"],
+.date-picker-container > div > div > div > div.selected,
+.date-picker-container > div > div > div > div[data-selected="true"] *,
+.date-picker-container > div > div > div > div.selected * {
+  color: #111827 !important;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* Force all text to be visible - override any global styles */
+/* Default: all text should be visible (gray for unselected) */
+.date-picker-container * {
+  color: #4b5563 !important;
+}
+
+/* More specific targeting for all nested elements */
+.date-picker-container div div div div,
+.date-picker-container div div div div div,
+.date-picker-container div div div div span,
+.date-picker-container div div div div p {
+  color: #4b5563 !important;
+  background: transparent !important;
+}
+
+/* Unselected items - dark gray (very visible) */
+.date-picker-container > div > div > div > div:not([data-selected="true"]):not(.selected),
+.date-picker-container > div > div > div > div:not([data-selected="true"]):not(.selected) *,
+.date-picker-container > div > div > div > div:not([data-selected="true"]):not(.selected) span {
+  color: #1f2937 !important;
+}
+
+/* Selected items should be very dark/black */
+.date-picker-container > div > div > div > div[data-selected="true"],
+.date-picker-container > div > div > div > div.selected,
+.date-picker-container > div > div > div > div[data-selected="true"] *,
+.date-picker-container > div > div > div > div.selected *,
+.date-picker-container > div > div > div > div[data-selected="true"] span,
+.date-picker-container > div > div > div > div.selected span {
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+/* Hover effect */
+.date-picker-container > div > div > div > div:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Selection indicator overlay - top gradient */
+.date-picker-container::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 80px;
+  height: 40px;
+  pointer-events: none;
+  z-index: 10;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.85) 50%, transparent 100%);
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Selection indicator overlay - bottom gradient */
+.date-picker-container::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 80px;
+  height: 40px;
+  pointer-events: none;
+  z-index: 10;
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.85) 50%, transparent 100%);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Selection highlight box - visual indicator for selected area */
+.date-picker-container > div::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 80px;
+  height: 40px;
+  pointer-events: none;
+  z-index: 4;
+  background: rgba(59, 130, 246, 0.04);
+  border-radius: 4px;
+}
+
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .date-picker-container {
+    min-height: 180px;
+  }
+  
+  .date-picker-container > div {
+    height: 180px;
+  }
+  
+  .date-picker-container > div > div > div > div {
+    height: 36px;
+    font-size: 14px;
+  }
+  
+  .date-picker-container::before {
+    top: 72px;
+    height: 36px;
+  }
+  
+  .date-picker-container::after {
+    bottom: 72px;
+    height: 36px;
+  }
+}
+

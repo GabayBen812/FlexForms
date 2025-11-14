@@ -30,15 +30,20 @@ export class RegistrationController {
     };
   }
  @Get('/count-by-form-ids')
-  async countByFormIds(@Query('formIds') formIds: string) {
+  async countByFormIds(
+    @Query('formIds') formIds: string,
+    @Query('organizationId') organizationId?: string
+  ) {
     console.log('Received formIds:', formIds);
-  const ids = formIds.split(',');
-  const result = await this.service.countNumOfRegisteringByFormIds(ids);
-  return {
-    status: 200,
-    data: result,
-  };
-}
+    console.log('Received organizationId:', organizationId);
+    const ids = formIds.split(',').filter(id => id && id.trim() !== '');
+    const result = await this.service.countNumOfRegisteringByFormIds(ids, organizationId);
+    console.log('Count result:', result);
+    return {
+      status: 200,
+      data: result,
+    };
+  }
 
   @UseGuards(JwtAuthGuard)
   @Delete()

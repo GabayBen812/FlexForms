@@ -269,7 +269,7 @@ export default function Expenses() {
 
       if ((res.status === 200 || res.status === 201) && res.data) {
         const createdExpense = res.data;
-        toast.success(t("form_created_success") || "Expense created successfully");
+        toast.success(t("expense_created_successfully") || "הוצאה נוצרה בהצלחה");
         setIsAddDialogOpen(false);
         tableMethods?.addItem(createdExpense);
       } else {
@@ -387,7 +387,7 @@ export default function Expenses() {
       : getFallbackSelectedRows();
 
     if (!rowsToUpdate.length) {
-      toast.error(t("select_rows_first", "בחר רשומות לעדכון"));
+      toast.error(t("select_rows_first") || "בחר רשומות לעדכון");
       return;
     }
 
@@ -409,7 +409,7 @@ export default function Expenses() {
       .filter((id): id is string => !!id);
 
     if (!ids.length) {
-      toast.error(t("select_rows_first", "בחר רשומות לעדכון"));
+      toast.error(t("select_rows_first") || "בחר רשומות לעדכון");
       return;
     }
 
@@ -506,7 +506,7 @@ export default function Expenses() {
               className="bg-purple-600 hover:bg-purple-700 text-white hover:text-white border-purple-600 hover:border-purple-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
             >
               <Settings className="w-4 h-4 mr-2" />{" "}
-              {t("configure_fields", "ערוך שדות דינאמיים")}
+              {t("configure_fields") || "ערוך שדות דינאמיים"}
             </Button>
           </div>
         }

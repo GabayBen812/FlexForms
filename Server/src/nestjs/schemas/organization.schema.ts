@@ -45,8 +45,11 @@ export class Organization {
   @Prop()
   invoicingProvider?: string;
 
-  @Prop()
-  invoicingProviderApiKey?: string;
+  @Prop({ type: Object })
+  invoicingProviderApiKey?: {
+    apiKey: string;
+    secret: string;
+  };
 
   @Prop({ type: Object, default: {} })
     requestDefinitions!: Record<

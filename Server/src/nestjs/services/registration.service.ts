@@ -117,10 +117,26 @@ export class RegistrationService {
     return [data, total];
   }
 
-  async countNumOfRegisteringByFormIds(formIds: string[]) {
-    const objectIds = formIds.map(id => new Types.ObjectId(id));
+  async countNumOfRegisteringByFormIds(formIds: string[], organizationId?: string) {
+    // Filter out invalid ObjectIds
+    const validIds = formIds
+      .filter(id => id && id.trim() !== '')
+      .filter(id => Types.ObjectId.isValid(id))
+      .map(id => new Types.ObjectId(id));
+
+    if (validIds.length === 0) {
+      return {};
+    }
+
+    const matchStage: any = { formId: { $in: validIds } };
+    
+    // CRITICAL: Filter by organizationId in multi-tenant system
+    if (organizationId && Types.ObjectId.isValid(organizationId)) {
+      matchStage.organizationId = new Types.ObjectId(organizationId);
+    }
+
     const result = await this.model.aggregate([
-      { $match: { formId: { $in: objectIds } } },
+      { $match: matchStage },
       { $group: { _id: '$formId', count: { $sum: 1 } } },
     ]);
 
@@ -128,6 +144,7 @@ export class RegistrationService {
     result.forEach(entry => {
       counts[entry._id.toString()] = entry.count;
     });
+    
     return counts;
   }
 

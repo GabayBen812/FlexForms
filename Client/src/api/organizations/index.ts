@@ -62,7 +62,10 @@ export const updatePaymentSettings = async (
     };
     recurringChargeDay?: number;
     invoicingProvider?: string;
-    invoicingProviderApiKey?: string;
+    invoicingProviderApiKey?: {
+      apiKey: string;
+      secret: string;
+    };
   }
 ): Promise<MutationResponse<Organization>> => {
   const res = await apiClient.put(`/organizations/${organizationId}`, paymentSettings);

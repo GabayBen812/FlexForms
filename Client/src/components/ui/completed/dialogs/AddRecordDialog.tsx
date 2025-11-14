@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AddressInput } from "@/components/ui/address-input";
+import { DateInput } from "@/components/ui/date-input";
 import { isValidIsraeliID } from "@/lib/israeliIdValidator";
 import { toast } from "@/hooks/use-toast";
 import { showError } from "@/utils/swal";
@@ -665,35 +666,15 @@ export function AddRecordDialog({
                     <span className="text-sm text-foreground">{t("yes_no", "כן / לא")}</span>
                   </label>
                 ) : (isDateField(accessorKey) || (isDynamic && fieldDefinition?.type === "DATE")) ? (
-                  <input
-                    type="date"
+                  <DateInput
                     name={accessorKey}
-                    value={fieldValue && typeof fieldValue === "string" && fieldValue.includes("/") 
-                      ? (() => {
-                          // Convert DD/MM/YYYY to YYYY-MM-DD for date input
-                          const parts = fieldValue.split("/");
-                          if (parts.length === 3) {
-                            return `${parts[2]}-${parts[1]}-${parts[0]}`;
-                          }
-                          return fieldValue;
-                        })()
-                      : fieldValue || ""}
-                    onChange={(e) => {
-                      // Convert YYYY-MM-DD back to DD/MM/YYYY for form state
-                      const dateValue = e.target.value;
-                      if (dateValue) {
-                        const parts = dateValue.split("-");
-                        if (parts.length === 3) {
-                          setForm({ ...form, [accessorKey]: `${parts[2]}/${parts[1]}/${parts[0]}` });
-                        } else {
-                          setForm({ ...form, [accessorKey]: dateValue });
-                        }
-                      } else {
-                        setForm({ ...form, [accessorKey]: "" });
-                      }
+                    value={fieldValue || ""}
+                    onChange={(value) => {
+                      // DateInput returns ISO format (YYYY-MM-DD)
+                      setForm({ ...form, [accessorKey]: value });
                     }}
-                    className="w-full border border-border rounded-md placeholder:text-muted-foreground font-normal rtl:text-right ltr:text-left focus:outline-border outline-none px-3 py-2"
                     required={isRequiredField || fieldDefinition?.required}
+                    className="w-full"
                   />
                 ) : (accessorKey === "email" || (isDynamic && fieldDefinition?.type === "EMAIL")) ? (
                   <Input

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Req, UseGuards, Param, BadRequestException, Query, Put, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Get, Req, UseGuards, Param, BadRequestException, Query, Put, Delete, UnauthorizedException } from '@nestjs/common';
 import { OrganizationService } from '../services/organization.service';
 import { CreateOrganizationDto, UpdateOrganizationDto } from '../dto/organization.dto';
 import { JwtAuthGuard } from '../middlewares/jwt-auth.guard';
@@ -98,8 +98,24 @@ async updateTableFieldDefinitions(
   @Put(':id')
   async updateOrganization(
     @Param('id') id: string,
-    @Body() body: UpdateOrganizationDto
+    @Body() body: UpdateOrganizationDto,
+    @Req() req: CustomRequest
   ) {
+    const userOrgId = req.user?.organizationId;
+
+    if (!userOrgId || typeof userOrgId !== 'string' || !Types.ObjectId.isValid(userOrgId)) {
+      throw new BadRequestException('Invalid organizationId in token');
+    }
+
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid organization ID parameter');
+    }
+
+    // Verify that the user can only update their own organization
+    if (id !== userOrgId) {
+      throw new UnauthorizedException('You can only update your own organization');
+    }
+
     return this.organizationService.update(id, body);
   }
 

@@ -95,7 +95,7 @@ export function DataTable<TData>({
   onExportSelected,
   addButtonClassName,
   addButtonWrapperClassName,
-
+  prependNewItems = false,
 }: DataTableProps<TData> & {
   extraFilters?: Record<string, any>;
   customLeftButtons?: React.ReactNode;
@@ -119,10 +119,20 @@ export function DataTable<TData>({
   const [specialRow, setSpecialRow] = useState<"add" | null>(null);
   
   // Internal state for column order - persist it even if parent doesn't manage it
-  const defaultColumnOrder = useMemo(
-    () => columns.map((col) => (col as any).id || (col as any).accessorKey as string),
-    [columns]
-  );
+  // Use a ref to track column keys to prevent unnecessary recalculations
+  const columnKeysRef = useRef<string>("");
+  const cachedColumnOrderRef = useRef<string[]>([]);
+  const defaultColumnOrder = useMemo(() => {
+    const keys = columns.map((col) => (col as any).id || (col as any).accessorKey as string).join(",");
+    if (columnKeysRef.current === keys && columnKeysRef.current !== "" && cachedColumnOrderRef.current.length > 0) {
+      // Return cached version if keys haven't changed
+      return cachedColumnOrderRef.current;
+    }
+    columnKeysRef.current = keys;
+    const order = columns.map((col) => (col as any).id || (col as any).accessorKey as string);
+    cachedColumnOrderRef.current = order;
+    return order;
+  }, [columns]);
   const [internalColumnOrder, setInternalColumnOrder] = useState<string[]>(
     columnOrder || defaultColumnOrder
   );
@@ -498,14 +508,48 @@ export function DataTable<TData>({
     }
   }, [table.getRowModel().rows, visibleRows]);
 
-  // Expose refresh function and addItem/updateItem functions to parent component
+  // Store loadDataMemoized in ref to prevent infinite loops
+  const loadDataMemoizedRef = useRef(loadDataMemoized);
   useEffect(() => {
-    if (onRefreshReady) {
-      onRefreshReady({
-        refresh: () => loadDataMemoized(false),
+    loadDataMemoizedRef.current = loadDataMemoized;
+  }, [loadDataMemoized]);
+
+  // Expose refresh function and addItem/updateItem functions to parent component
+  // Use refs to prevent infinite loops - only call when onRefreshReady changes
+  const onRefreshReadyRef = useRef(onRefreshReady);
+  const prevOnRefreshReadyRef = useRef(onRefreshReady);
+  useEffect(() => {
+    if (prevOnRefreshReadyRef.current !== onRefreshReady) {
+      prevOnRefreshReadyRef.current = onRefreshReady;
+    }
+    onRefreshReadyRef.current = onRefreshReady;
+  }, [onRefreshReady]);
+
+  const addItemToState = useCallback(
+    (item: TData) => {
+      setTableData((prev) => {
+        const filtered = idField
+          ? prev.filter(
+              (row) => (row as any)[idField] !== (item as any)[idField]
+            )
+          : prev;
+        return prependNewItems ? [item, ...filtered] : [...filtered, item];
+      });
+    },
+    [idField, prependNewItems]
+  );
+
+  // Only call onRefreshReady when it actually changes, not when loadDataMemoized changes
+  const hasCalledOnRefreshReadyRef = useRef(false);
+  useEffect(() => {
+    if (onRefreshReadyRef.current && !hasCalledOnRefreshReadyRef.current) {
+      hasCalledOnRefreshReadyRef.current = true;
+      onRefreshReadyRef.current({
+        refresh: () => {
+          loadDataMemoizedRef.current(false);
+        },
         addItem: (item: TData) => {
-          // Add item directly to table - clean and simple
-          setTableData((prev) => [...prev, item]);
+          addItemToState(item);
           // Don't increment totalCount - it will be updated on next fetch if needed
         },
         updateItem: (item: TData) => {
@@ -516,8 +560,24 @@ export function DataTable<TData>({
           );
         },
       });
+    } else if (onRefreshReadyRef.current && prevOnRefreshReadyRef.current !== onRefreshReady) {
+      onRefreshReadyRef.current({
+        refresh: () => {
+          loadDataMemoizedRef.current(false);
+        },
+        addItem: (item: TData) => {
+          addItemToState(item);
+        },
+        updateItem: (item: TData) => {
+          if (!idField) return;
+          const id = item[idField];
+          setTableData((prev) =>
+            prev.map((row) => ((row as any)[idField] === id ? item : row))
+          );
+        },
+      });
     }
-  }, [onRefreshReady, loadDataMemoized, idField]);
+  }, [onRefreshReady, idField, prependNewItems, addItemToState]); // Removed loadDataMemoized from dependencies
 
   // Trigger refresh when refreshTrigger changes
   useEffect(() => {

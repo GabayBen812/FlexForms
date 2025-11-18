@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 
 import axios, { AxiosResponse } from 'axios';
+import { fetchDocumentFileName } from '../utils/document.utils';
 
 // Enums for GreenInvoice API
 export enum DocumentType {
@@ -120,6 +121,7 @@ interface ResponseData {
 export interface InvoiceResult {
   id: string;
   originalDocumentUrl: string;
+  fileName?: string | null;
 }
 
 
@@ -329,9 +331,12 @@ export class GreenInvoiceService {
         throw new BadRequestException('Invalid response from GreenInvoice API: missing document ID or URL');
       }
 
+      const fileName = await fetchDocumentFileName(responseData.url.origin).catch(() => null);
+
       return {
         id: responseData.id,
         originalDocumentUrl: responseData.url.origin,
+        fileName,
       };
     } catch (error: any) {
       if (error instanceof BadRequestException) {

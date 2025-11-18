@@ -3,8 +3,7 @@ import { Input } from "@/components/ui/Input";
 import { useContext, useState } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock } from "lucide-react";
-import heroIllustration from "@/assets/landing/hero-illustration.svg";
+import { Mail, Lock, GraduationCap, Sparkles } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -47,89 +46,201 @@ export default function Login() {
   const logoSrc = "/paradize-logo.svg";
 
   return (
-    <div className="flex flex-col min-h-screen overflow-hidden">
-      <div className="absolute inset-0 bg-black" />
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-32 -right-24 h-[420px] w-[420px] rounded-full bg-gradient-to-br from-pink-300 via-orange-300 to-emerald-300 opacity-40 blur-3xl" />
-        <div className="absolute bottom-[-160px] left-1/4 h-[520px] w-[520px] rounded-full bg-gradient-to-tr from-sky-400 via-teal-300 to-emerald-200 opacity-35 blur-3xl" />
+    <div className="flex min-h-screen flex-col overflow-hidden bg-white">
+      {/* Animated Background Elements */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <motion.div
+          className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-gradient-to-br from-peach-200/40 via-peach-300/30 to-transparent blur-3xl"
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -30, 0],
+            scale: [1, 1.1, 1],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute bottom-[-120px] left-1/4 h-[420px] w-[420px] rounded-full bg-gradient-to-tr from-eduGreen-200/40 via-eduBlue-200/30 to-transparent blur-3xl"
+          animate={{
+            x: [0, -30, 0],
+            y: [0, 30, 0],
+            scale: [1, 1.1, 1],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute top-1/2 right-1/4 h-64 w-64 rounded-full bg-gradient-to-br from-eduBlue-200/30 via-peach-200/20 to-eduGreen-200/30 blur-3xl"
+          animate={{
+            x: [0, 20, 0],
+            y: [0, -20, 0],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
       </div>
-      <img
-        src={heroIllustration}
-        alt=""
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-10 mix-blend-screen"
-      />
 
+      {/* Header */}
       <header className="relative z-10">
-        <div className="mx-auto flex max-w-6xl items-center justify-center px-4 pt-14 sm:px-6">
+        <div className="mx-auto flex max-w-7xl items-center justify-center px-4 pt-8 sm:px-6">
           <Link
             to="/"
-            className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/10 px-6 py-3 text-white shadow-[0_20px_45px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/20"
+            className="inline-flex items-center gap-3 rounded-full border border-gray-200 bg-white/80 px-6 py-3 text-gray-900 shadow-md backdrop-blur-xl transition hover:bg-white hover:shadow-lg"
           >
             <img
               src={logoSrc}
               alt="Paradize"
-              className="h-10 w-10 rounded-full ring-1 ring-white/50"
+              className="h-10 w-10 rounded-full ring-1 ring-gray-200"
             />
             <span className="text-lg font-semibold">Paradize</span>
           </Link>
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto -mt-6 flex w-full grow items-center justify-center px-4 pb-16 pt-12 sm:-mt-10 sm:px-6">
+      {/* Main Content */}
+      <main className="relative z-10 mx-auto flex w-full grow items-center justify-center px-4 pb-16 pt-12 sm:px-6">
         <motion.div
-          className="w-full max-w-3xl rounded-4xl border border-white/10 bg-white/5 p-8 shadow-[0_55px_120px_rgba(0,0,0,0.45)] backdrop-blur-2xl lg:p-12"
+          className="w-full max-w-md"
           initial={{ opacity: 0, y: 35 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
-          <div className="flex flex-col gap-3 text-right text-white">
-            <span className="inline-flex items-center gap-2 self-end rounded-full border border-white/20 bg-white/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-white/75">
-              {t("landing.login.badge")}
-            </span>
-            <h1 className="text-3xl font-black leading-tight md:text-4xl">
-              <span className="bg-gradient-to-l from-emerald-200 via-teal-200 to-pink-200 bg-clip-text text-transparent">
-                {t("landing.login.title")}
-              </span>
-            </h1>
-            <p className="text-sm text-white/70 md:text-base">
-              {t("landing.login.subtitle")}
+          {/* Educational Icon */}
+          <motion.div
+            className="mb-8 flex justify-center"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            <div className="relative">
+              <motion.div
+                className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-peach-400 via-eduGreen-400 to-eduBlue-400 shadow-lg"
+                animate={{ rotate: [0, 360] }}
+                transition={{
+                  duration: 20,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
+              >
+                <GraduationCap className="h-10 w-10 text-white" />
+              </motion.div>
+              <motion.div
+                className="absolute -top-2 -right-2"
+                animate={{ rotate: [0, 360] }}
+                transition={{
+                  duration: 15,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
+              >
+                <Sparkles className="h-6 w-6 text-peach-500" />
+              </motion.div>
+            </div>
+          </motion.div>
+
+          {/* Login Card */}
+          <div className="rounded-3xl border-2 border-gray-200 bg-white/80 p-8 shadow-2xl backdrop-blur-xl lg:p-10">
+            <div className="mb-8 text-center">
+              <motion.div
+                className="mb-4 inline-flex items-center gap-2 rounded-full border border-peach-200 bg-peach-50/50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-peach-600"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+              >
+                <Sparkles className="h-3 w-3 text-peach-500" />
+                {t("landing.login.badge")}
+              </motion.div>
+              <h1 className="mt-4 text-3xl font-black leading-tight text-gray-900 md:text-4xl">
+                <span className="bg-gradient-to-r from-peach-500 via-eduGreen-500 to-eduBlue-500 bg-clip-text text-transparent">
+                  {t("landing.login.title")}
+                </span>
+              </h1>
+              <p className="mt-3 text-sm text-gray-600 md:text-base">
+                {t("landing.login.subtitle")}
+              </p>
+            </div>
+
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-col gap-4"
+            >
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4, duration: 0.5 }}
+              >
+                <Input
+                  name="mail"
+                  placeholder={t("landing.login.emailPlaceholder")}
+                  icon={<Mail className="text-gray-400" />}
+                  className="h-12 w-full rounded-xl border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus-visible:ring-peach-400 focus-visible:border-peach-400"
+                />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5, duration: 0.5 }}
+              >
+                <Input
+                  name="password"
+                  placeholder={t("landing.login.passwordPlaceholder")}
+                  type="password"
+                  icon={<Lock className="text-gray-400" />}
+                  className="h-12 w-full rounded-xl border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus-visible:ring-peach-400 focus-visible:border-peach-400"
+                />
+              </motion.div>
+              {errorMessage && (
+                <motion.p
+                  className="text-right text-sm font-medium text-red-500"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  {errorMessage}
+                </motion.p>
+              )}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, duration: 0.5 }}
+              >
+                <Button
+                  type="submit"
+                  loading={isLoginLoading}
+                  className="mt-2 w-full rounded-xl bg-gradient-to-r from-peach-400 via-eduGreen-400 to-eduBlue-400 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-peach-200/50 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-peach-300/50"
+                >
+                  {t("landing.login.submit")}
+                </Button>
+              </motion.div>
+            </form>
+
+            <p className="mt-6 text-center text-sm text-gray-500">
+              {t("landing.login.support")}
             </p>
           </div>
 
-          <form
-            onSubmit={handleSubmit}
-            className="mt-10 flex flex-col items-center gap-4"
+          {/* Back to Home Link */}
+          <motion.div
+            className="mt-6 text-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7, duration: 0.5 }}
           >
-            <Input
-              name="mail"
-              placeholder={t("landing.login.emailPlaceholder")}
-              icon={<Mail className="text-white/60" />}
-              className="mx-auto h-12 w-full max-w-[440px] rounded-full border-white/20 bg-white/10 text-white placeholder:text-white/50 focus-visible:ring-white/40"
-            />
-            <Input
-              name="password"
-              placeholder={t("landing.login.passwordPlaceholder")}
-              type="password"
-              icon={<Lock className="text-white/60" />}
-              className="mx-auto h-12 w-full max-w-[440px] rounded-full border-white/20 bg-white/10 text-white placeholder:text-white/50 focus-visible:ring-white/40"
-            />
-            {errorMessage && (
-              <p className="w-full max-w-[440px] text-right text-sm font-medium text-rose-300">
-                {errorMessage}
-              </p>
-            )}
-            <Button
-              type="submit"
-              loading={isLoginLoading}
-              className="mt-2 mx-auto inline-flex w-full max-w-[320px] justify-center rounded-full border border-white/20 bg-gradient-to-r from-pink-400 via-orange-300 to-emerald-300 px-6 py-3 text-base font-semibold text-slate-900 shadow-[0_30px_65px_rgba(236,72,153,0.35)] hover:scale-[1.01]"
+            <Link
+              to="/"
+              className="text-sm font-medium text-gray-600 transition-colors hover:text-peach-600"
             >
-              {t("landing.login.submit")}
-            </Button>
-          </form>
-
-          <p className="mt-6 text-sm text-white/60">
-            {t("landing.login.support")}
-          </p>
+              {t("landing.login.backToHome")}
+            </Link>
+          </motion.div>
         </motion.div>
       </main>
     </div>

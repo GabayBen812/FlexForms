@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
@@ -20,8 +20,18 @@ export function AdvancedSearchModal<T = any>({ open, onClose, columns, onApply, 
   const [filters, setFilters] = useState<Record<string, any>>(initialFilters);
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
 
+  // Use ref to track column keys and cached options to prevent unnecessary recalculations
+  const columnsKeysRef = useRef<string>("");
+  const cachedOptionsRef = useRef<Array<{ label: string; value: string }>>([]);
   const availableFieldOptions = useMemo(() => {
-    return columns
+    const keys = columns.map((col) => String((col as any).accessorKey || "")).join(",");
+    // Only recalculate if column keys actually changed
+    if (columnsKeysRef.current === keys && columnsKeysRef.current !== "" && cachedOptionsRef.current.length > 0) {
+      // Return cached version - columns structure hasn't changed
+      return cachedOptionsRef.current;
+    }
+    columnsKeysRef.current = keys;
+    const options = columns
       .filter((col) => typeof (col as any).accessorKey === "string")
       .map((col) => {
         const accessorKey = String((col as any).accessorKey);
@@ -31,18 +41,26 @@ export function AdvancedSearchModal<T = any>({ open, onClose, columns, onApply, 
           value: accessorKey,
         };
       });
+    cachedOptionsRef.current = options;
+    return options;
   }, [columns, t]);
 
   // Reset filters when initialFilters change (e.g., when modal opens)
+  // Only run when modal opens, not when availableFieldOptions changes
+  const availableFieldOptionsRef = useRef(availableFieldOptions);
+  useEffect(() => {
+    availableFieldOptionsRef.current = availableFieldOptions;
+  }, [availableFieldOptions]);
+
   useEffect(() => {
     if (!open) return;
 
     setFilters(initialFilters);
     const initialSelected = Object.keys(initialFilters).filter((key) =>
-      availableFieldOptions.some((option) => option.value === key)
+      availableFieldOptionsRef.current.some((option) => option.value === key)
     );
     setSelectedFields(initialSelected);
-  }, [open, initialFilters, availableFieldOptions]);
+  }, [open, initialFilters]);
 
   const handleChange = (key: string, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));

@@ -1,124 +1,277 @@
-import heroIllustration from "@/assets/landing/hero-illustration.svg";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { GraduationCap, Users, BookOpen, Sparkles, Phone } from "lucide-react";
 
-type HeroStat = {
-  value: string;
-  label: string;
-};
+import {
+  Dialog,
+  DialogBody,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 export default function Hero() {
   const { t } = useTranslation();
-  const stats = t("landing.hero.stats", { returnObjects: true }) as HeroStat[];
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+
+  const handleDialogToggle = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setPhoneNumber("");
+    }
+  };
 
   return (
     <section
-      id="product"
-      className="relative overflow-hidden bg-black text-white"
+      id="hero"
+      className="relative overflow-hidden bg-white pt-32 pb-24 md:pt-40 md:pb-32"
     >
-      <div
-        className="pointer-events-none absolute inset-0"
-        aria-hidden="true"
-      >
-        <div className="absolute -top-16 -right-32 h-96 w-96 rounded-full bg-gradient-to-br from-pink-300 via-orange-300 to-teal-300 opacity-60 blur-3xl" />
-        <div className="absolute bottom-[-120px] left-1/4 h-[420px] w-[420px] rounded-full bg-gradient-to-tr from-emerald-300 via-teal-300 to-orange-400 opacity-40 blur-3xl" />
-        <img
-          src={heroIllustration}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover opacity-20 mix-blend-screen"
+      {/* Animated Background Elements */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* Floating gradient orbs */}
+        <motion.div
+          className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-gradient-to-br from-peach-200/40 via-peach-300/30 to-transparent blur-3xl"
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -30, 0],
+            scale: [1, 1.1, 1],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute bottom-[-120px] left-1/4 h-[420px] w-[420px] rounded-full bg-gradient-to-tr from-eduGreen-200/40 via-eduBlue-200/30 to-transparent blur-3xl"
+          animate={{
+            x: [0, -30, 0],
+            y: [0, 30, 0],
+            scale: [1, 1.1, 1],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute top-1/2 right-1/4 h-64 w-64 rounded-full bg-gradient-to-br from-eduBlue-200/30 via-peach-200/20 to-eduGreen-200/30 blur-3xl"
+          animate={{
+            x: [0, 20, 0],
+            y: [0, -20, 0],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
         />
       </div>
 
-      <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-12 px-4 sm:px-6 pt-32 pb-24 md:flex-row md:items-center md:justify-between">
-        <motion.div
-          className="max-w-xl text-center md:max-w-2xl md:text-right"
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        >
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/80 backdrop-blur">
-            <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.75)]" />
-            {t("landing.hero.badge")}
-          </div>
-          <h1 className="text-4xl font-black leading-tight md:text-6xl">
-            <span className="bg-gradient-to-r from-pink-300 via-orange-200 to-teal-200 bg-clip-text text-transparent drop-shadow-[0_18px_30px_rgba(120,81,255,0.25)]">
-              {t("landing.hero.title")}
-            </span>
-          </h1>
-          <p className="mt-6 text-lg leading-relaxed text-white/80 md:text-xl">
-            {t("landing.hero.subtitle")}
-          </p>
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="flex flex-col items-center gap-12 lg:flex-row lg:items-center lg:justify-between">
+          {/* Left Content */}
           <motion.div
-            className="mt-6 rounded-2xl border border-white/15 bg-white/5 p-6 text-base text-white/70 shadow-[0_25px_80px_rgba(253,164,175,0.15)] backdrop-blur"
-            initial={{ opacity: 0, y: 16 }}
+            className="flex-1 text-center lg:text-right"
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
           >
-            {t("landing.hero.highlight")}
-          </motion.div>
-          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row md:justify-end">
-            <Link
-              to="/create-organization"
-              className="inline-flex items-center justify-center rounded-full bg-gradient-to-br from-pink-400 via-orange-300 to-emerald-300 px-8 py-3 text-base font-semibold text-black shadow-[0_20px_45px_rgba(236,72,153,0.35)] transition hover:scale-[1.02]"
-            >
-              {t("landing.hero.primaryCta")}
-            </Link>
-            <a
-              href="#support"
-              className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/30 bg-white/10 px-7 py-3 text-base font-semibold text-white transition hover:bg-white/20"
-            >
-              <span>{t("landing.hero.secondaryCta")}</span>
-              <span className="text-xs text-emerald-200">
-                {t("landing.hero.secondaryCtaHint")}
-              </span>
-            </a>
-          </div>
-        </motion.div>
-
-        <motion.div
-          className="relative flex w-full max-w-md flex-col gap-5 rounded-3xl border border-white/10 bg-white/10 p-6 backdrop-blur-xl md:w-auto"
-          initial={{ opacity: 0, y: 32 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.6, ease: "easeOut" }}
-        >
-          <div className="pointer-events-none absolute -top-16 -left-24 h-64 w-64 rounded-full bg-gradient-to-br from-pink-300 via-orange-300 to-teal-300 opacity-60 blur-3xl" />
-          <div className="relative">
             <motion.div
-              className="grid grid-cols-1 gap-4"
-              initial="hidden"
-              animate="visible"
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                visible: {
-                  opacity: 1,
-                  y: 0,
-                  transition: { staggerChildren: 0.15 },
-                },
-              }}
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-peach-200 bg-peach-50/50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-peach-600 backdrop-blur-sm"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
             >
-              {stats.map((stat) => (
+              <Sparkles className="h-3 w-3 text-peach-500" />
+              {t("landing.hero.badge")}
+            </motion.div>
+
+            <h1 className="text-4xl font-black leading-tight text-gray-900 md:text-5xl lg:text-6xl">
+              <span className="bg-gradient-to-r from-peach-500 via-eduGreen-500 to-eduBlue-500 bg-clip-text text-transparent">
+                Paradize
+              </span>
+              <br />
+              <span className="text-gray-700 text-3xl md:text-4xl lg:text-5xl">
+                {t("landing.hero.title")}
+              </span>
+            </h1>
+
+            <p className="mt-6 text-lg leading-relaxed text-gray-600 md:text-xl">
+              {t("landing.hero.subtitle")}
+            </p>
+
+            <p className="mt-4 text-base text-gray-500">
+              {t("landing.hero.description")}
+            </p>
+
+            <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-eduGreen-200 bg-eduGreen-50/50 px-4 py-2 text-sm font-semibold text-eduGreen-700">
+              <span className="h-2 w-2 rounded-full bg-eduGreen-500 animate-pulse" />
+              {t("landing.hero.support24")}
+            </div>
+
+            <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-end">
+              <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-end">
+                <Button
+                  type="button"
+                  onClick={() => setIsDialogOpen(true)}
+                  className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-peach-400 via-eduGreen-400 to-eduBlue-400 px-12 py-5 text-lg font-semibold text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-peach-200"
+                >
+                  {t("landing.hero.primaryCta")}
+                </Button>
+              </div>
+              <Dialog open={isDialogOpen} onOpenChange={handleDialogToggle}>
+                <DialogContent className="bg-white text-gray-900">
+                  <DialogHeader>
+                    <div className="flex flex-col gap-2 text-right">
+                      <DialogTitle className="text-2xl font-bold">
+                        {t("landing.hero.contactDialog.title")}
+                      </DialogTitle>
+                      <DialogDescription className="text-base text-gray-500">
+                        {t("landing.hero.contactDialog.description")}
+                      </DialogDescription>
+                    </div>
+                  </DialogHeader>
+                  <DialogBody>
+                    <div className="flex flex-col gap-4">
+                      <Label
+                        htmlFor="contact-phone"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        {t("landing.hero.contactDialog.phoneLabel")}
+                      </Label>
+                      <div className="relative">
+                        <Phone className="absolute right-4 top-1/2 h-6 w-6 -translate-y-1/2 text-gray-400" />
+                        <Input
+                          id="contact-phone"
+                          type="tel"
+                          value={phoneNumber}
+                          onChange={(event) => setPhoneNumber(event.target.value)}
+                          placeholder={t(
+                            "landing.hero.contactDialog.phonePlaceholder"
+                          )}
+                          className="h-20 rounded-3xl border-2 border-gray-200 bg-gray-50 text-center text-2xl font-semibold tracking-wide text-gray-800 focus:border-peach-300 focus:bg-white focus:text-gray-900 focus:ring-0"
+                        />
+                      </div>
+                    </div>
+                  </DialogBody>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button className="w-full rounded-full bg-gradient-to-r from-peach-400 via-eduGreen-400 to-eduBlue-400 py-6 text-lg font-semibold text-white shadow-lg shadow-peach-200/60 transition-all hover:scale-[1.01] hover:shadow-xl hover:shadow-peach-300/60">
+                        {t("landing.hero.contactDialog.submit")}
+                      </Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </motion.div>
+
+          {/* Right Side - Educational Graphics */}
+          <motion.div
+            className="relative flex w-full max-w-lg items-center justify-center lg:w-auto"
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
+          >
+            <div className="relative">
+              {/* Main Circle Container */}
+              <div className="relative h-96 w-96 md:h-[500px] md:w-[500px]">
+                {/* Central Icon */}
                 <motion.div
-                  key={stat.label}
-                  className="rounded-2xl border border-white/10 bg-black/40 px-6 py-5 shadow-[0_18px_45px_rgba(0,0,0,0.25)]"
-                  variants={{
-                    hidden: { opacity: 0, y: 20 },
-                    visible: {
-                      opacity: 1,
-                      y: 0,
-                      transition: { duration: 0.45, ease: "easeOut" },
-                    },
+                  className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
+                  animate={{ rotate: [0, 360] }}
+                  transition={{
+                    duration: 20,
+                    repeat: Infinity,
+                    ease: "linear",
                   }}
                 >
-                  <div className="text-3xl font-black text-white md:text-4xl">
-                    {stat.value}
+                  <div className="flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-peach-400 via-eduGreen-400 to-eduBlue-400 p-6 shadow-2xl">
+                    <GraduationCap className="h-16 w-16 text-white" />
                   </div>
-                  <div className="mt-2 text-sm text-white/60">{stat.label}</div>
                 </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </motion.div>
+
+                {/* Floating Icons Around */}
+                {[
+                  { icon: Users, colorClass: "text-peach-500", angle: 0, delay: 0 },
+                  { icon: BookOpen, colorClass: "text-eduGreen-500", angle: 120, delay: 0.2 },
+                  { icon: GraduationCap, colorClass: "text-eduBlue-500", angle: 240, delay: 0.4 },
+                ].map(({ icon: Icon, colorClass, angle, delay }) => {
+                  const radius = 180;
+                  const x = Math.cos((angle * Math.PI) / 180) * radius;
+                  const y = Math.sin((angle * Math.PI) / 180) * radius;
+
+                  return (
+                    <motion.div
+                      key={angle}
+                      className="absolute left-1/2 top-1/2 z-20"
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: delay + 0.5, duration: 0.5 }}
+                    >
+                      <motion.div
+                        className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white shadow-xl"
+                        style={{
+                          transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
+                        }}
+                        animate={{
+                          y: [0, -10, 0],
+                        }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                          delay: delay,
+                        }}
+                      >
+                        <Icon className={`h-10 w-10 ${colorClass}`} />
+                      </motion.div>
+                    </motion.div>
+                  );
+                })}
+
+                {/* Decorative Circles */}
+                <motion.div
+                  className="absolute left-1/2 top-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-peach-200/30"
+                  animate={{ rotate: [0, 360] }}
+                  transition={{
+                    duration: 30,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                />
+                <motion.div
+                  className="absolute left-1/2 top-1/2 h-3/4 w-3/4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-eduGreen-200/30"
+                  animate={{ rotate: [360, 0] }}
+                  transition={{
+                    duration: 25,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                />
+                <motion.div
+                  className="absolute left-1/2 top-1/2 h-1/2 w-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-eduBlue-200/30"
+                  animate={{ rotate: [0, 360] }}
+                  transition={{
+                    duration: 20,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                />
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );

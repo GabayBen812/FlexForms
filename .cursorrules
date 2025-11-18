@@ -6,6 +6,10 @@ This will be dedicated for education organizations
 
 When i write "FF" i usally refer to FeatureFlag
 
+this project use Mixpanel and google analytics and SendGrid
+
+Multi-tenant: The endpoint should use the organizationId from the JWT token,
+
 ## Project Structure
 
 ### Client (`/Client`)

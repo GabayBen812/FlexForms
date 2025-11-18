@@ -5,12 +5,14 @@ import { Task, TaskDocument } from '../schemas/task.schema';
 import { CreateTaskDto, UpdateTaskDto, MoveTaskDto } from '../dto/task.dto';
 import { TaskColumnService } from './task-column.service';
 import { TaskColumn } from '../schemas/task-column.schema';
+import { EmailService } from './email.service';
 
 @Injectable()
 export class TaskService {
   constructor(
     @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
     private readonly taskColumnService: TaskColumnService,
+    private readonly emailService: EmailService,
   ) {}
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
@@ -66,6 +68,17 @@ export class TaskService {
       { path: 'assignedTo', select: 'name email' },
       { path: 'createdBy', select: 'name email' },
     ]);
+
+    // Send email notification if task is assigned
+    if (task.assignedTo && typeof task.assignedTo === 'object' && 'email' in task.assignedTo) {
+      const assignedUser = task.assignedTo as { name?: string; email: string };
+      const createdByUser = task.createdBy as { name?: string; email?: string } | undefined;
+      
+      this.sendTaskAssignmentEmail(task, assignedUser, createdByUser?.name).catch((err) => {
+        console.error('Error sending task assignment email:', err);
+      });
+    }
+
     return task;
   }
 
@@ -125,13 +138,54 @@ export class TaskService {
       task.dueDate = updateTaskDto.dueDate ? new Date(updateTaskDto.dueDate) : null;
     }
 
+    const previousAssignedTo = task.assignedTo;
+    const wasAssigned = previousAssignedTo && typeof previousAssignedTo === 'object' && 'email' in previousAssignedTo;
+    
     await task.save();
     await task.populate([
       { path: 'assignedTo', select: 'name email' },
       { path: 'createdBy', select: 'name email' },
     ]);
 
+    // Send email if task was newly assigned or assignment changed
+    if (updateTaskDto.assignedTo !== undefined && task.assignedTo && typeof task.assignedTo === 'object' && 'email' in task.assignedTo) {
+      const assignedUser = task.assignedTo as { name?: string; email: string };
+      const createdByUser = task.createdBy as { name?: string; email?: string } | undefined;
+      
+      // Only send if newly assigned or assignment changed
+      if (!wasAssigned || String(previousAssignedTo?._id) !== String(task.assignedTo._id)) {
+        this.sendTaskAssignmentEmail(task, assignedUser, createdByUser?.name).catch((err) => {
+          console.error('Error sending task assignment email:', err);
+        });
+      }
+    }
+
     return task;
+  }
+
+  private async sendTaskAssignmentEmail(
+    task: TaskDocument,
+    assignedUser: { name?: string; email: string },
+    assignedByName?: string
+  ) {
+    try {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const taskUrl = `${frontendUrl}/tasks`;
+
+      await this.emailService.sendTaskAssignmentEmail({
+        recipientEmail: assignedUser.email,
+        recipientName: assignedUser.name || 'User',
+        taskTitle: task.title,
+        taskDescription: task.description,
+        taskStatus: task.status,
+        taskUrl,
+        assignedBy: assignedByName,
+        dueDate: task.dueDate,
+        language: 'he',
+      });
+    } catch (err) {
+      console.error('Error in sendTaskAssignmentEmail:', err);
+    }
   }
 
   async moveTask(moveTaskDto: MoveTaskDto, organizationId: string): Promise<Task | null> {

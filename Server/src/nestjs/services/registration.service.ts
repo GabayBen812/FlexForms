@@ -4,10 +4,18 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Registration, RegistrationDocument } from '../schemas/registration.schema';
 import { CreateRegistrationDto } from '../dto/registration.dto';
+import { EmailService } from './email.service';
+import { FormService } from './form.service';
+import { UserService } from './user.service';
 
 @Injectable()
 export class RegistrationService {
-  constructor(@InjectModel(Registration.name) private model: Model<RegistrationDocument>) {}
+  constructor(
+    @InjectModel(Registration.name) private model: Model<RegistrationDocument>,
+    private readonly emailService: EmailService,
+    private readonly formService: FormService,
+    private readonly userService: UserService
+  ) {}
 
   async create(data: CreateRegistrationDto) {
     try {
@@ -24,10 +32,59 @@ export class RegistrationService {
       };
 
       const result = await this.model.create(registration);
+
+      // Send email notifications asynchronously (don't block registration)
+      this.sendRegistrationEmails(result, data).catch((err) => {
+        console.error('Error sending registration emails:', err);
+      });
+
       return result;
     } catch (err) {
       console.error("Error while saving registration:", err);
       throw err;
+    }
+  }
+
+  private async sendRegistrationEmails(registration: RegistrationDocument, data: CreateRegistrationDto) {
+    try {
+      // Get form details
+      const form = await this.formService.findById(String(data.formId));
+      const formName = form?.title || 'Form';
+
+      // Get organization admin to notify
+      const adminUser = await this.userService.findSystemAdminByOrganization(String(data.organizationId));
+
+      // Prepare submission data
+      const submissionData: Record<string, unknown> = {
+        fullName: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        ...data.additionalData,
+      };
+
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const submissionUrl = `${frontendUrl}/forms/registrations/${registration._id}`;
+
+      // Send notification to admin
+      if (adminUser && adminUser.email) {
+        await this.emailService.sendFormSubmissionNotification({
+          recipientEmail: adminUser.email,
+          recipientName: adminUser.name,
+          formName,
+          submitterName: data.fullName,
+          submitterEmail: data.email,
+          submissionData,
+          submissionUrl,
+          language: 'he',
+        });
+      }
+
+      // Send confirmation to submitter (optional)
+      if (data.email) {
+        // You can add a confirmation email here if needed
+      }
+    } catch (err) {
+      console.error('Error in sendRegistrationEmails:', err);
     }
   }
 

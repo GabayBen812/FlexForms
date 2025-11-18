@@ -66,6 +66,9 @@ export const updatePaymentSettings = async (
       apiKey: string;
       secret: string;
     };
+    icountCredentials?: {
+      apiKey: string;
+    };
   }
 ): Promise<MutationResponse<Organization>> => {
   const res = await apiClient.put(`/organizations/${organizationId}`, paymentSettings);

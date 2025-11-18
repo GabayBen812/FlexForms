@@ -18,6 +18,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Lock, Loader2, X } from "lucide-react";
 import { useEffect } from "react";
+import axios from "axios";
 
 const paymentSettingsSchema = z.object({
   paymentProvider: z.string().optional(),
@@ -28,22 +29,35 @@ const paymentSettingsSchema = z.object({
   invoicingProvider: z.string().optional(),
   invoicingProviderApiKey: z.string().optional(),
   invoicingProviderSecret: z.string().optional(),
+  icountApiKey: z.string().optional(),
 }).superRefine((data, ctx) => {
-  // If invoicing provider is selected, both apiKey and secret are required
+  // If invoicing provider is selected, validate credentials based on provider
   if (data.invoicingProvider) {
-    if (!data.invoicingProviderApiKey || data.invoicingProviderApiKey.trim() === "") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "מפתח API נדרש",
-        path: ["invoicingProviderApiKey"],
-      });
-    }
-    if (!data.invoicingProviderSecret || data.invoicingProviderSecret.trim() === "") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "סוד (Secret) נדרש",
-        path: ["invoicingProviderSecret"],
-      });
+    if (data.invoicingProvider === 'icount') {
+      // iCount only requires API key
+      if (!data.icountApiKey || data.icountApiKey.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "מפתח API נדרש",
+          path: ["icountApiKey"],
+        });
+      }
+    } else {
+      // Other providers require both API key and secret
+      if (!data.invoicingProviderApiKey || data.invoicingProviderApiKey.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "מפתח API נדרש",
+          path: ["invoicingProviderApiKey"],
+        });
+      }
+      if (!data.invoicingProviderSecret || data.invoicingProviderSecret.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "סוד (Secret) נדרש",
+          path: ["invoicingProviderSecret"],
+        });
+      }
     }
   }
 });
@@ -85,6 +99,7 @@ export default function PaymentsSettings() {
       invoicingProvider: "",
       invoicingProviderApiKey: "",
       invoicingProviderSecret: "",
+      icountApiKey: "",
     },
   });
 
@@ -100,6 +115,7 @@ export default function PaymentsSettings() {
         invoicingProvider: organization.invoicingProvider || "",
         invoicingProviderApiKey: organization.invoicingProviderApiKey?.apiKey || "",
         invoicingProviderSecret: organization.invoicingProviderApiKey?.secret || "",
+        icountApiKey: (organization as any).icountCredentials?.apiKey || "",
       });
     }
   }, [organization, form]);
@@ -125,10 +141,17 @@ export default function PaymentsSettings() {
         recurringChargeDay: data.recurringChargeDay || undefined,
         invoicingProvider: data.invoicingProvider || undefined,
         invoicingProviderApiKey: 
+          data.invoicingProvider && data.invoicingProvider !== 'icount' &&
           data.invoicingProviderApiKey && data.invoicingProviderSecret
             ? {
                 apiKey: data.invoicingProviderApiKey,
                 secret: data.invoicingProviderSecret,
+              }
+            : undefined,
+        icountCredentials:
+          data.invoicingProvider === 'icount' && data.icountApiKey
+            ? {
+                apiKey: data.icountApiKey,
               }
             : undefined,
       };
@@ -143,9 +166,20 @@ export default function PaymentsSettings() {
       queryClient.invalidateQueries({ queryKey: ["organization"] });
     },
     onError: (error: any) => {
+      let errorMessage = t("payment_settings_save_failed") || "שמירת הגדרות התשלומים נכשלה";
+      
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.message 
+          || error.response?.data?.error
+          || error.message
+          || errorMessage;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: t("error") || "שגיאה",
-        description: error?.message || t("payment_settings_save_failed") || "שמירת הגדרות התשלומים נכשלה",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -166,6 +200,7 @@ export default function PaymentsSettings() {
         invoicingProvider: organization.invoicingProvider || "",
         invoicingProviderApiKey: organization.invoicingProviderApiKey?.apiKey || "",
         invoicingProviderSecret: organization.invoicingProviderApiKey?.secret || "",
+        icountApiKey: (organization as any).icountCredentials?.apiKey || "",
       });
     }
   };
@@ -320,6 +355,12 @@ export default function PaymentsSettings() {
                   if (!value) {
                     form.setValue("invoicingProviderApiKey", "");
                     form.setValue("invoicingProviderSecret", "");
+                    form.setValue("icountApiKey", "");
+                  } else if (value === 'icount') {
+                    form.setValue("invoicingProviderApiKey", "");
+                    form.setValue("invoicingProviderSecret", "");
+                  } else {
+                    form.setValue("icountApiKey", "");
                   }
                 }}
               >
@@ -339,40 +380,61 @@ export default function PaymentsSettings() {
 
           {invoicingProvider && (
             <>
-              <div className="grid grid-cols-12 gap-6 items-center">
-                <label className="col-span-4 rtl:order-2 rtl:text-right text-sm font-medium">
-                  מפתח API
-                </label>
-                <div className="col-span-8">
-                  <Input
-                    {...form.register("invoicingProviderApiKey")}
-                    placeholder="מפתח API"
-                  />
-                  {form.formState.errors.invoicingProviderApiKey && (
-                    <p className="text-sm text-destructive mt-1">
-                      {form.formState.errors.invoicingProviderApiKey.message}
-                    </p>
-                  )}
+              {invoicingProvider === 'icount' ? (
+                <div className="grid grid-cols-12 gap-6 items-center">
+                  <label className="col-span-4 rtl:order-2 rtl:text-right text-sm font-medium">
+                    מפתח API
+                  </label>
+                  <div className="col-span-8">
+                    <Input
+                      {...form.register("icountApiKey")}
+                      placeholder="מפתח API"
+                    />
+                    {form.formState.errors.icountApiKey && (
+                      <p className="text-sm text-destructive mt-1">
+                        {form.formState.errors.icountApiKey.message}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-12 gap-6 items-center">
+                    <label className="col-span-4 rtl:order-2 rtl:text-right text-sm font-medium">
+                      מפתח API
+                    </label>
+                    <div className="col-span-8">
+                      <Input
+                        {...form.register("invoicingProviderApiKey")}
+                        placeholder="מפתח API"
+                      />
+                      {form.formState.errors.invoicingProviderApiKey && (
+                        <p className="text-sm text-destructive mt-1">
+                          {form.formState.errors.invoicingProviderApiKey.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-12 gap-6 items-center">
-                <label className="col-span-4 rtl:order-2 rtl:text-right text-sm font-medium">
-                  סוד (Secret)
-                </label>
-                <div className="col-span-8">
-                  <Input
-                    {...form.register("invoicingProviderSecret")}
-                    type="text"
-                    placeholder="סוד (Secret)"
-                  />
-                  {form.formState.errors.invoicingProviderSecret && (
-                    <p className="text-sm text-destructive mt-1">
-                      {form.formState.errors.invoicingProviderSecret.message}
-                    </p>
-                  )}
-                </div>
-              </div>
+                  <div className="grid grid-cols-12 gap-6 items-center">
+                    <label className="col-span-4 rtl:order-2 rtl:text-right text-sm font-medium">
+                      סוד (Secret)
+                    </label>
+                    <div className="col-span-8">
+                      <Input
+                        {...form.register("invoicingProviderSecret")}
+                        type="text"
+                        placeholder="סוד (Secret)"
+                      />
+                      {form.formState.errors.invoicingProviderSecret && (
+                        <p className="text-sm text-destructive mt-1">
+                          {form.formState.errors.invoicingProviderSecret.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

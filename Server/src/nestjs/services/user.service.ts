@@ -4,10 +4,14 @@ import { Model, Types  } from 'mongoose';
 import { User, UserDocument } from '../schemas/user.schema';
 import { CreateUserDto, UpdateUserDto } from '../dto/user.dto';
 import * as bcrypt from 'bcrypt';
+import { EmailService } from './email.service';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly emailService: EmailService
+  ) {}
 
   async findByEmail(email: string) {
     return this.userModel.findOne({ email: email.trim().toLowerCase() }).exec();
@@ -48,7 +52,29 @@ export class UserService {
 
     const userObject = createdUser.toObject();
     delete userObject.password;
+
+    // Send welcome email asynchronously (don't block user creation)
+    this.sendWelcomeEmail(createdUser).catch((err) => {
+      console.error('Error sending welcome email:', err);
+    });
+
     return userObject;
+  }
+
+  private async sendWelcomeEmail(user: UserDocument) {
+    try {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const loginUrl = `${frontendUrl}/login`;
+
+      await this.emailService.sendWelcomeEmail({
+        email: user.email,
+        name: user.name,
+        loginUrl,
+        language: 'he', // Default to Hebrew, can be made dynamic
+      });
+    } catch (err) {
+      console.error('Error in sendWelcomeEmail:', err);
+    }
   }
 
   async findById(id: string) {
@@ -84,6 +110,15 @@ export class UserService {
       })
       .select('-password')
       .lean()
+      .exec();
+  }
+
+  async findByPasswordResetToken(token: string) {
+    return this.userModel
+      .findOne({
+        passwordResetToken: token,
+        passwordResetExpires: { $gt: new Date() },
+      })
       .exec();
   }
 }

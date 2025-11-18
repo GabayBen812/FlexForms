@@ -87,6 +87,7 @@ export interface DataTableProps<TData> {
   entityType?: string;
   addButtonClassName?: string;
   addButtonWrapperClassName?: string;
+  prependNewItems?: boolean;
 }
 
 export interface TableAction<TData> {

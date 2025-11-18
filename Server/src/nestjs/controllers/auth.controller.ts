@@ -111,4 +111,40 @@ export class AuthController {
 
     return res.status(200).json({ status: 200, message: 'Switched organization successfully' });
   }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body() body: { email: string }) {
+    const { email } = body;
+    if (!email) {
+      throw new BadRequestException('Email is required');
+    }
+
+    await this.authService.requestPasswordReset(email);
+    
+    // Always return success to prevent email enumeration
+    return { 
+      status: 200, 
+      message: 'If an account exists with this email, a password reset link has been sent.' 
+    };
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() body: { token: string; password: string }) {
+    const { token, password } = body;
+    
+    if (!token || !password) {
+      throw new BadRequestException('Token and password are required');
+    }
+
+    if (password.length < 6) {
+      throw new BadRequestException('Password must be at least 6 characters long');
+    }
+
+    await this.authService.resetPassword(token, password);
+    
+    return { 
+      status: 200, 
+      message: 'Password has been reset successfully' 
+    };
+  }
 }

@@ -32,6 +32,15 @@ export enum VatType {
   EXCLUDED = 2,
 }
 
+export enum InvoiceStatus {
+  DRAFT = 'draft',
+  SENT = 'sent',
+  PAID = 'paid',
+  OVERDUE = 'overdue',
+  CANCELLED = 'cancelled',
+  REFUNDED = 'refunded',
+}
+
 export interface InvoiceClient {
   name: string;
   personalId: string;
@@ -72,7 +81,45 @@ export interface InvoiceResponse {
   success: boolean;
   data: {
     id: string;
+    invoiceNumber?: string;
+    greenInvoiceId?: string;
     documentUrl: string;
   };
+}
+
+export interface Invoice {
+  _id?: string;
+  id?: string;
+  organizationId: string;
+  formId?: string;
+  invoiceNumber: string;
+  invoiceDate: string | Date;
+  dueDate?: string | Date;
+  status: InvoiceStatus;
+  client: InvoiceClient;
+  items: InvoiceItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  paidAmount: number;
+  remainingAmount: number;
+  externalInvoiceNumber?: string;
+  greenInvoice?: {
+    id: string;
+    originalDocumentUrl: string;
+    documentType?: number;
+  };
+  icount?: {
+    id: string;
+    originalDocumentUrl: string;
+    documentType?: string;
+  };
+  subject?: string;
+  description?: string;
+  language?: Language;
+  currency?: Currency;
+  vatType?: number;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 }
 

@@ -51,6 +51,11 @@ export class Organization {
     secret: string;
   };
 
+  @Prop({ type: Object })
+  icountCredentials?: {
+    apiKey: string;
+  };
+
   @Prop({ type: Object, default: {} })
     requestDefinitions!: Record<
       string,

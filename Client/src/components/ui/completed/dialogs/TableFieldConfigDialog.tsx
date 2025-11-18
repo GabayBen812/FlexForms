@@ -27,6 +27,7 @@ import {
   DollarSign,
   Image,
   File,
+  Link as LinkIcon,
   Check,
   ChevronDown,
   LucideIcon
@@ -62,7 +63,7 @@ interface TableFieldConfigDialogProps {
 interface FieldInput {
   name: string;
   label: string;
-  type: "TEXT" | "SELECT" | "DATE" | "NUMBER" | "EMAIL" | "PHONE" | "MULTI_SELECT" | "TIME" | "CHECKBOX" | "ADDRESS" | "MONEY" | "IMAGE" | "FILE";
+  type: "TEXT" | "SELECT" | "DATE" | "NUMBER" | "EMAIL" | "PHONE" | "MULTI_SELECT" | "TIME" | "CHECKBOX" | "ADDRESS" | "MONEY" | "IMAGE" | "FILE" | "LINK";
   required: boolean;
   choices?: string[];
   rawChoices?: string;
@@ -190,6 +191,7 @@ function FieldTypeSelector({ value, onChange, t }: FieldTypeSelectorProps) {
     { value: "MONEY", label: t("money", "Money"), icon: DollarSign },
     { value: "IMAGE", label: t("image", "Image"), icon: Image },
     { value: "FILE", label: t("file", "File"), icon: File },
+    { value: "LINK", label: t("link", "Link"), icon: LinkIcon },
   ];
 
   const selectedField = fieldTypes.find((ft) => ft.value === value);
@@ -430,8 +432,9 @@ export function TableFieldConfigDialog({
       // Build field definitions object
       const fieldDefinitions: Record<string, DynamicFieldDefinition> = {};
       fields.forEach((field) => {
+        const fieldType = field.type as DynamicFieldDefinition["type"];
         const fieldDef: DynamicFieldDefinition = {
-          type: field.type,
+          type: fieldType,
           label: field.label,
           required: field.required,
         };

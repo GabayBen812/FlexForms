@@ -47,6 +47,12 @@ export class InvoicingProviderApiKeyDto {
   secret!: string;
 }
 
+export class ICountCredentialsDto {
+  @IsString()
+  @IsNotEmpty()
+  apiKey!: string;
+}
+
 export class UpdateOrganizationDto {
   @IsString()
   @IsOptional()
@@ -80,5 +86,11 @@ export class UpdateOrganizationDto {
   @ValidateNested()
   @Type(() => InvoicingProviderApiKeyDto)
   invoicingProviderApiKey?: InvoicingProviderApiKeyDto;
+
+  @IsObject()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ICountCredentialsDto)
+  icountCredentials?: ICountCredentialsDto;
 }
   

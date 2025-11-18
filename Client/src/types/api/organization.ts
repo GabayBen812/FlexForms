@@ -47,6 +47,9 @@ export interface Organization {
     apiKey: string;
     secret: string;
   };
+  icountCredentials?: {
+    apiKey: string;
+  };
 }
 
 export interface NewOrganizationPayload {

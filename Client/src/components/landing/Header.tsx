@@ -2,21 +2,9 @@ import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-const gradientClasses =
-  "pointer-events-none absolute inset-[3px] opacity-70 bg-gradient-to-r from-pink-400/80 via-orange-300/70 to-teal-300/80 blur-2xl";
-
 export default function Header() {
   const { t } = useTranslation();
   const logoSrc = "/paradize-logo.svg";
-
-  const navItems = [
-    { key: "product", href: "#product" },
-    { key: "industries", href: "#industries" },
-    { key: "workflow", href: "#workflow" },
-    { key: "automation", href: "#automation" },
-    { key: "partners", href: "#partners" },
-    { key: "support", href: "#support" },
-  ];
 
   return (
     <motion.header
@@ -25,39 +13,22 @@ export default function Header() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
     >
-      <div className="relative mx-auto max-w-6xl px-4 sm:px-6 mt-4">
-        <div className="relative overflow-hidden rounded-full border border-white/20 bg-black/70 backdrop-blur-xl">
-          <span className={gradientClasses} aria-hidden="true" />
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 mt-4">
+        <div className="relative overflow-hidden rounded-full border border-gray-200 bg-white/80 backdrop-blur-xl shadow-lg">
           <div className="relative flex items-center justify-between px-6 py-3 lg:px-8">
             <div className="flex items-center gap-3 md:gap-4">
               <Link to="/" className="relative inline-flex items-center">
                 <img
                   src={logoSrc}
-                  className="h-9 w-9 rounded-full shadow-[0_6px_18px_rgba(255,255,255,0.35)] ring-1 ring-white/50"
+                  className="h-9 w-9 rounded-full shadow-md ring-1 ring-gray-200"
                   alt="Paradize Logo"
                 />
               </Link>
             </div>
 
-            <nav className="hidden flex-1 justify-end lg:flex">
-              <ul className="flex items-center gap-6 text-sm font-medium text-white">
-                {navItems.map((item) => (
-                  <li key={item.key}>
-                    <a
-                      href={item.href}
-                      className="relative inline-flex items-center gap-1 transition hover:opacity-80"
-                    >
-                      <span className="hidden sm:inline-flex h-1 w-1 rounded-full bg-white/80 shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
-                      {t(`landing.nav.${item.key}`)}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-
             <Link
               to="/login"
-              className="ml-4 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-black via-slate-900 to-black px-5 py-2 text-sm font-semibold text-white shadow-[0_10px_35px_rgba(0,0,0,0.35)] hover:from-slate-900 hover:via-black hover:to-slate-900 transition"
+              className="ml-auto inline-flex items-center justify-center rounded-full bg-gradient-to-r from-peach-400 via-eduGreen-400 to-eduBlue-400 px-5 py-2 text-sm font-semibold text-white shadow-md transition-all hover:scale-105 hover:shadow-lg"
             >
               {t("landing.nav.login")}
             </Link>

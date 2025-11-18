@@ -3,6 +3,13 @@ import { Document, Types } from 'mongoose';
 
 export type PaymentDocument = Payment & Document;
 
+export enum PaymentMethod {
+  CREDIT_CARD = 'credit_card',
+  CHECK = 'check',
+  BANK_TRANSFER = 'bank_transfer',
+  CASH = 'cash',
+}
+
 @Schema({ timestamps: true })
 export class Payment {
 
@@ -33,11 +40,31 @@ export class Payment {
     expiryYear: string;
     token: string;
   };
+
+  @Prop({ type: Types.ObjectId, ref: 'Invoice' })
+  invoiceId?: Types.ObjectId;
+
+  @Prop({ type: Date, required: true })
+  paymentDate!: Date;
+
+  @Prop({ 
+    type: String, 
+    enum: Object.values(PaymentMethod),
+    required: false 
+  })
+  paymentMethod?: PaymentMethod;
+
+  @Prop({ type: Types.ObjectId, ref: 'Contact' })
+  payerContactId?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'Account' })
+  payerAccountId?: Types.ObjectId;
+
+  @Prop()
+  notes?: string;
+
   @Prop({ type: Object })
-  invoice?: {
-    id: string;
-    originalDocumentUrl: string;
-};
+  metadata?: Record<string, any>;
 }
 
 export const PaymentSchema = SchemaFactory.createForClass(Payment);

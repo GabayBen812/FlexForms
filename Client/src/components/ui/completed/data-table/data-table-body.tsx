@@ -484,6 +484,7 @@ function EditableCell<T>({
   // Detect email/phone fields (both static and dynamic)
   const isEmailField = accessorKey === "email" || fieldType === "EMAIL" || (isDynamic && fieldDefinition?.type === "EMAIL");
   const isPhoneField = accessorKey === "phone" || fieldType === "PHONE" || (isDynamic && fieldDefinition?.type === "PHONE");
+  const isLinkField = fieldType === "LINK" || (isDynamic && fieldDefinition?.type === "LINK");
 
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -542,6 +543,8 @@ function EditableCell<T>({
       ? cellValue.join(", ")
       : isPhoneField && cellValue
       ? formatPhoneNumber(cellValue)
+      : isLinkField && cellValue
+      ? String(cellValue)
       : safeStringify(cellValue));
 
   useEffect(() => {
@@ -562,6 +565,8 @@ function EditableCell<T>({
           ? cellValue 
           : parseFloat(String(cellValue).replace(/[^\d.]/g, '')) || 0;
         setValue(String(numericValue));
+      } else if (isLinkField && cellValue) {
+        setValue(String(cellValue));
       } else {
         // Safely convert cellValue to string, handling objects
         const stringValue = typeof cellValue === "object" && cellValue !== null && !Array.isArray(cellValue)
@@ -577,7 +582,7 @@ function EditableCell<T>({
         }
       }, 0);
     }
-  }, [isEditing, cellValue, isDate, fieldType, isPhoneField, isMoney]);
+  }, [isEditing, cellValue, isDate, fieldType, isPhoneField, isMoney, isLinkField]);
 
   // Sync optimistic checkbox value with server value when it updates
   useEffect(() => {
@@ -643,6 +648,24 @@ function EditableCell<T>({
     // Process phone values - unformat phone numbers (remove formatting, store as digits)
     if (isPhoneField && value) {
       processedValue = unformatPhoneNumber(value);
+    }
+    
+    // Process link values - ensure proper URL format
+    if (isLinkField) {
+      const trimmedValue = value?.toString().trim() ?? "";
+      if (!trimmedValue) {
+        processedValue = "";
+      } else {
+        const hasProtocol = /^https?:\/\//i.test(trimmedValue);
+        const normalizedValue = hasProtocol ? trimmedValue : `https://${trimmedValue}`;
+        try {
+          const url = new URL(normalizedValue);
+          processedValue = url.toString();
+        } catch {
+          showError(t("invalid_url", "כתובת URL לא תקינה"));
+          return;
+        }
+      }
     }
     
     // Process checkbox values - convert to boolean
@@ -1092,6 +1115,42 @@ function EditableCell<T>({
       );
     }
     
+    // Link field display with clickable anchor
+    if (isLinkField) {
+      const hasValue = cellValue && String(cellValue).trim() !== "";
+      const linkValue = hasValue ? String(cellValue) : "";
+      return (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+          className={cn(
+            "cursor-pointer group relative px-2 py-1 rounded min-h-[1.5rem] transition-all duration-200",
+            "hover:bg-indigo-100 hover:border hover:border-indigo-300 hover:shadow-sm",
+            hasValue ? "bg-indigo-50" : ""
+          )}
+        >
+          <div className="flex items-center justify-center gap-2">
+            {hasValue ? (
+              <a
+                href={linkValue}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-indigo-600 underline decoration-dotted underline-offset-4 hover:text-indigo-800"
+              >
+                {linkValue}
+              </a>
+            ) : (
+              <span className="text-gray-400">{t("no_link", "אין קישור")}</span>
+            )}
+            <Pencil className="w-3.5 h-3.5 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div
         onClick={(e) => {
@@ -1384,6 +1443,8 @@ function EditableCell<T>({
     inputType = "email";
   } else if (isPhoneField) {
     inputType = "tel";
+  } else if (isLinkField) {
+    inputType = "url";
   } else if (meta.fieldType === "NUMBER") {
     inputType = "number";
   }

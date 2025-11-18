@@ -15,3 +15,4 @@ export const switchOrganization = async (organizationId: string): Promise<Mutati
   };
 };
 
+

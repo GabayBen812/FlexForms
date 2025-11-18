@@ -246,6 +246,10 @@
   "users": "Users",
   "users_in_org": "Users in organization",
   "payments": "Payments",
+  "company_registration_number": "Company registration number (ח.פ)",
+  "company_id_required_for_invoice": "Company registration number is required to issue the invoice.",
+  "invoice_preview_not_available": "Invoice preview is not available",
+  "internal_invoice_number": "Internal invoice number",
   "total_payments_in_org": "Total payments in organization",
   "kids_count_in_org": "Number of kids in organization",
   "parents_count_in_org": "Number of parents in organization",
@@ -403,23 +407,245 @@
   "feature_flag_tags_placeholder": "Comma separated tags",
   "landing": {
     "nav": {
-      "product": "Product",
-      "industries": "Industries",
-      "workflow": "Operations Journey",
-      "automation": "Automation",
-      "partners": "Partners",
-      "support": "Support",
+      "hero": "Home",
+      "whoWeServe": "Who We Serve",
+      "features": "Features",
+      "howItWorks": "How It Works",
+      "benefits": "Benefits",
       "login": "Login"
     },
     "hero": {
       "badge": "Education ERP Platform",
-      "title": "The digital backbone for every education institute",
-      "subtitle": "Paradize unifies tuition, finances, schedules, communications and student records — in one futuristic workspace built for kindergartens, after-school programs, camps, private schools, colleges and courses.",
-      "highlight": "Paradize syncs billing, collection and daily operations into one transparent, secure flow.",
-      "primaryCta": "Personalized demo",
-      "secondaryCta": "Talk with an expert",
-      "secondaryCtaHint": "24/7 human support in Hebrew",
-      "stats": [
+      "title": "Educational Institution Management System",
+      "subtitle": "Advanced management system for kindergartens, after-school programs, private schools, and camps",
+      "description": "Everything you need to manage an educational institution in one place - simple, fast and efficient",
+      "support24": "24/7 Support - We're here for you",
+      "primaryCta": "Contact Us",
+      "contactDialog": {
+        "title": "We’ll call you back",
+        "description": "Leave your phone number and our team will reach out with all the details.",
+        "phoneLabel": "Phone number",
+        "phonePlaceholder": "050-1234567",
+        "submit": "Send"
+      }
+    },
+    "whoWeServe": {
+      "badge": "Who We Serve",
+      "title": "Specialized in Educational Institution Management",
+      "subtitle": "Advanced management system specifically designed for different educational institutions",
+      "items": [
+        {
+          "icon": "Baby",
+          "title": "Kindergartens",
+          "description": "Complete kindergarten management - registration, parent communication, payments and attendance",
+          "color": "peach"
+        },
+        {
+          "icon": "Sun",
+          "title": "After-School Programs",
+          "description": "After-school program management - shift planning, automatic payments and parent communication",
+          "color": "eduGreen"
+        },
+        {
+          "icon": "School",
+          "title": "Private Schools",
+          "description": "Complete management system for private schools - classes, payments and logistics",
+          "color": "eduBlue"
+        },
+        {
+          "icon": "Building2",
+          "title": "Camps",
+          "description": "Camp management - fast registrations, payments and smart occupancy display",
+          "color": "peach"
+        }
+      ]
+    },
+    "keyFeatures": {
+      "badge": "Key Features",
+      "title": "Everything You Need to Manage an Educational Institution",
+      "subtitle": "Comprehensive system with all the tools needed for efficient and simple management",
+      "items": [
+        {
+          "icon": "FileText",
+          "title": "Registration and Forms",
+          "description": "Digital registration form management with digital signatures and approvals",
+          "color": "peach",
+          "details": [
+            "Dynamic and customizable forms",
+            "Secure digital signatures",
+            "Automatic approvals and workflows"
+          ]
+        },
+        {
+          "icon": "CreditCard",
+          "title": "Payment Processing",
+          "description": "Full connection to all Israeli payment providers and secure payments",
+          "color": "eduGreen",
+          "details": [
+            "Integration with all payment providers",
+            "Secure and verified payments",
+            "Real-time payment tracking"
+          ]
+        },
+        {
+          "icon": "Calculator",
+          "title": "Accounting Management",
+          "description": "Complete accounting system with invoice generation and financial reports",
+          "color": "eduBlue",
+          "details": [
+            "Full and organized accounting",
+            "Automatic invoice and report generation",
+            "Sync with external systems"
+          ]
+        },
+        {
+          "icon": "FileCheck",
+          "title": "Document Generation",
+          "description": "Automatic generation of accounting documents, receipts and tax invoices",
+          "color": "peach",
+          "details": [
+            "Tax invoices and receipts generation",
+            "Documents in Hebrew and English",
+            "Automatic sending to customers"
+          ]
+        },
+        {
+          "icon": "Mail",
+          "title": "Mailing System",
+          "description": "Advanced mailing system with support for WhatsApp, SMS and email",
+          "color": "eduGreen",
+          "details": [
+            "Mailing via WhatsApp, SMS and email",
+            "Personalized messages",
+            "Tracking opens and responses"
+          ]
+        },
+        {
+          "icon": "User",
+          "title": "Student Card",
+          "description": "Complete student card management with all relevant information",
+          "color": "eduBlue",
+          "details": [
+            "Complete digital student file",
+            "Progress and achievements tracking",
+            "Full activity history"
+          ]
+        },
+        {
+          "icon": "Users",
+          "title": "Parent Connection",
+          "description": "Direct connection between student and parents with real-time updates",
+          "color": "peach",
+          "details": [
+            "Real-time updates to parents",
+            "Direct and convenient communication",
+            "Access to relevant information only"
+          ]
+        },
+        {
+          "icon": "Share2",
+          "title": "Distribution",
+          "description": "Advanced distribution system for sending messages and updates",
+          "color": "eduGreen",
+          "details": [
+            "Bulk message sending",
+            "Audience segmentation and groups",
+            "Message scheduling in advance"
+          ]
+        },
+        {
+          "icon": "Smartphone",
+          "title": "Parent App",
+          "description": "Dedicated app for parents with access to all relevant information",
+          "color": "eduBlue",
+          "details": [
+            "Convenient and easy-to-use app",
+            "Full access to children's information",
+            "Real-time updates and reminders"
+          ]
+        },
+        {
+          "icon": "Clock",
+          "title": "Attendance Clock",
+          "description": "Advanced attendance system with full reporting and hour tracking",
+          "color": "peach",
+          "details": [
+            "Digital attendance recording",
+            "Work hours tracking",
+            "Detailed attendance reports"
+          ]
+        },
+        {
+          "icon": "BookOpen",
+          "title": "Reporting Journal",
+          "description": "Complete reporting journal with tracking of all activities and events",
+          "color": "eduGreen",
+          "details": [
+            "Complete activity journal",
+            "Detailed event reports",
+            "Progress and results tracking"
+          ]
+        }
+      ]
+    },
+    "howItWorks": {
+      "badge": "How It Works",
+      "title": "Simple, Fast and Efficient",
+      "subtitle": "Simple workflow that delivers immediate results",
+      "steps": [
+        {
+          "number": "1",
+          "title": "Sign Up",
+          "description": "Quick registration and account setup"
+        },
+        {
+          "number": "2",
+          "title": "Setup",
+          "description": "Institution configuration and personalization"
+        },
+        {
+          "number": "3",
+          "title": "Start",
+          "description": "Start working immediately with all tools"
+        }
+      ]
+    },
+    "benefits": {
+      "badge": "Benefits",
+      "title": "Why Choose Us",
+      "subtitle": "Key benefits that set us apart",
+      "items": [
+        {
+          "icon": "CheckCircle2",
+          "title": "Easy to Use",
+          "description": "Simple and intuitive interface that anyone can use",
+          "color": "peach"
+        },
+        {
+          "icon": "Zap",
+          "title": "Fast and Efficient",
+          "description": "Save time with smart automations and tailored workflow",
+          "color": "eduGreen"
+        },
+        {
+          "icon": "Shield",
+          "title": "Secure",
+          "description": "Advanced data security with full encryption and privacy protection",
+          "color": "eduBlue"
+        },
+        {
+          "icon": "TrendingUp",
+          "title": "Growth",
+          "description": "System that grows with you and fits any institution size",
+          "color": "peach"
+        }
+      ]
+    },
+    "industries": {
+      "badge": "Who We Serve",
+      "title": "Built for every learning environment",
+      "subtitle": "Ready-to-launch modules that speak the language of each education format.",
+      "items": [
         {
           "value": "350+",
           "label": "Active education institutes"
@@ -728,16 +954,34 @@
       "rights": "© {{year}} Paradize. All rights reserved."
     },
     "login": {
-      "badge": "Secure access",
-      "title": "Sign in to Paradize",
-      "subtitle": "Use your institute credentials to step into the futuristic operations hub.",
-      "emailPlaceholder": "Work email",
+      "badge": "Secure Access",
+      "title": "Sign In to System",
+      "subtitle": "Sign in to your account to access all tools and features",
+      "emailPlaceholder": "Email address",
       "passwordPlaceholder": "Password",
-      "submit": "Sign in",
+      "submit": "Sign In",
       "support": "Need help? Our support team is available 24/7 via phone, WhatsApp and live chat.",
+      "backToHome": "Back to Home",
       "error": {
         "generic": "Something went wrong. Please try again."
       }
+    },
+    "cta": {
+      "title": "Ready to Get Started?",
+      "subtitle": "Join hundreds of educational institutions already using our system",
+      "primaryCta": "Get Started",
+      "secondaryCta": "Contact Us"
+    },
+    "footer": {
+      "title": "Paradize",
+      "tagline": "Advanced management system for educational institutions - simple, fast and efficient",
+      "contactTitle": "Contact",
+      "contact": "support@paradize.co | +972-72-900-9000",
+      "supportTitle": "Support",
+      "support": "24/7 Support",
+      "login": "Login",
+      "getStarted": "Get Started",
+      "rights": "© {{year}} Paradize. All rights reserved."
     }
   }
 }

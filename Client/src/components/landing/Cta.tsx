@@ -8,37 +8,70 @@ export default function Cta() {
   return (
     <section
       id="cta"
-      className="relative overflow-hidden bg-black py-24 text-right text-white"
+      className="relative overflow-hidden bg-gradient-to-br from-peach-50 via-eduGreen-50 to-eduBlue-50 py-24"
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(236,72,153,0.28),_transparent_55%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(14,165,233,0.22),_transparent_55%)]" />
-
-      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+      {/* Background Elements */}
+      <div className="pointer-events-none absolute inset-0">
         <motion.div
-          className="flex flex-col gap-10 rounded-4xl border border-white/10 bg-white/5 p-10 shadow-[0_45px_85px_rgba(0,0,0,0.45)] backdrop-blur-xl md:flex-row md:items-center md:justify-between"
+          className="absolute top-0 right-1/4 h-96 w-96 rounded-full bg-peach-200/30 blur-3xl"
+          animate={{
+            scale: [1, 1.2, 1],
+            x: [0, 30, 0],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute bottom-0 left-1/4 h-96 w-96 rounded-full bg-eduBlue-200/30 blur-3xl"
+          animate={{
+            scale: [1, 1.2, 1],
+            x: [0, -30, 0],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      </div>
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+        <motion.div
+          className="flex flex-col gap-10 rounded-4xl border-2 border-white bg-white/80 p-10 shadow-2xl backdrop-blur-xl md:flex-row md:items-center md:justify-between"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-120px" }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
-          <div className="max-w-3xl">
-            <h2 className="text-3xl font-black text-white md:text-5xl">
-              {t("landing.cta.title")}
+          <div className="max-w-3xl text-center md:text-right">
+            <h2 className="text-3xl font-black text-gray-900 md:text-5xl">
+              <span className="bg-gradient-to-r from-peach-500 via-eduGreen-500 to-eduBlue-500 bg-clip-text text-transparent">
+                {t("landing.cta.title")}
+              </span>
             </h2>
-            <p className="mt-4 text-lg text-white/70">
+            <p className="mt-4 text-lg text-gray-600">
               {t("landing.cta.subtitle")}
             </p>
           </div>
-          <div className="flex flex-col items-end gap-4 sm:flex-row">
+          <div className="flex flex-col items-center gap-4 sm:flex-row md:items-end">
             <Link
               to="/create-organization"
-              className="inline-flex items-center justify-center rounded-full bg-gradient-to-br from-pink-400 via-orange-300 to-emerald-300 px-8 py-3 text-base font-semibold text-black shadow-[0_25px_55px_rgba(236,72,153,0.35)] transition hover:scale-[1.02]"
+              className="group relative inline-flex items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-peach-400 via-eduGreen-400 to-eduBlue-400 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-peach-200/50 transition-all hover:scale-105 hover:shadow-xl hover:shadow-peach-300/50"
             >
-              {t("landing.cta.primaryCta")}
+              <span className="relative z-10">{t("landing.cta.primaryCta")}</span>
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-peach-500 via-eduGreen-500 to-eduBlue-500"
+                initial={{ x: "-100%" }}
+                whileHover={{ x: "100%" }}
+                transition={{ duration: 0.5 }}
+              />
             </Link>
             <a
-              href="#support"
-              className="inline-flex items-center justify-center rounded-full border border-white/30 bg-white/10 px-8 py-3 text-base font-semibold text-white transition hover:bg-white/20"
+              href="#hero"
+              className="inline-flex items-center justify-center rounded-full border-2 border-gray-300 bg-white px-8 py-4 text-base font-semibold text-gray-700 transition-all hover:border-peach-300 hover:bg-peach-50 hover:text-peach-600"
             >
               {t("landing.cta.secondaryCta")}
             </a>

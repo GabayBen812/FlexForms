@@ -162,6 +162,7 @@ export default function EmployeesAttendance() {
   return (
     <div>
       <DataTable<AttendanceShift>
+        data={attendanceData || []}
         initialData={attendanceData || []}
         fetchData={handleFetchData}
         updateData={undefined}

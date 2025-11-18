@@ -10,3 +10,4 @@ export async function fetchAttendanceByOrganization(
   return response.data;
 }
 
+

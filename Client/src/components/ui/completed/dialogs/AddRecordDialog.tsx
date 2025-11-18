@@ -229,6 +229,7 @@ export function AddRecordDialog({
   const { t } = useTranslation();
   const [form, setForm] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState(false);
+  const initializedRef = useRef(false);
 
   // Memoize dataColumns to prevent unnecessary re-renders
   const dataColumns = useMemo(() => {
@@ -272,6 +273,12 @@ export function AddRecordDialog({
 
   // Initialize form with edit data when dialog opens in edit mode
   useEffect(() => {
+    // Reset initialization flag when dialog closes
+    if (!open) {
+      initializedRef.current = false;
+      return;
+    }
+
     if (open && editMode && editData) {
       // Convert dates to DD/MM/YYYY format for editing
       const formattedData: Record<string, any> = {};
@@ -336,8 +343,8 @@ export function AddRecordDialog({
       }
       
       setForm(formattedData);
-    } else if (open && !editMode) {
-      // Initialize with defaultValues for relationship fields
+    } else if (open && !editMode && !initializedRef.current) {
+      // Initialize with defaultValues for all fields (only once when dialog opens)
       const initialForm: Record<string, any> = {};
       if (defaultValues) {
         Object.keys(defaultValues).forEach((key) => {
@@ -350,10 +357,14 @@ export function AddRecordDialog({
             } else if (Array.isArray(defaultValues[key])) {
               initialForm[key] = defaultValues[key];
             }
+          } else {
+            // Include non-relationship default values
+            initialForm[key] = defaultValues[key];
           }
         });
       }
       setForm(initialForm);
+      initializedRef.current = true;
     }
   }, [open, editMode, editData, dataColumns, defaultValues, relationshipFields]);
 

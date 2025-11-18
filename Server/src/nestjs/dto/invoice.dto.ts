@@ -154,5 +154,71 @@ export class CreateInvoiceDto {
   @IsEnum(VatType)
   @IsOptional()
   vatType?: VatType;
+
+  @IsString()
+  @IsOptional()
+  formId?: string;
+}
+
+export class UpdateInvoiceDto {
+  @ValidateNested()
+  @Type(() => InvoiceClientDto)
+  @IsOptional()
+  client?: InvoiceClientDto;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => InvoiceItemDto)
+  @IsOptional()
+  items?: InvoiceItemDto[];
+
+  @IsString()
+  @IsOptional()
+  subject?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsEnum(Language)
+  @IsOptional()
+  language?: Language;
+
+  @IsEnum(Currency)
+  @IsOptional()
+  currency?: Currency;
+
+  @IsEnum(VatType)
+  @IsOptional()
+  vatType?: VatType;
+
+  @IsDateString()
+  @IsOptional()
+  dueDate?: string;
+}
+
+export class InvoiceQueryDto {
+  @IsString()
+  @IsOptional()
+  organizationId?: string;
+
+  @IsString()
+  @IsOptional()
+  status?: string;
+
+  @IsDateString()
+  @IsOptional()
+  fromDate?: string;
+
+  @IsDateString()
+  @IsOptional()
+  toDate?: string;
+}
+
+export class InvoiceStatusDto {
+  @IsString()
+  @IsNotEmpty()
+  status!: string;
 }
 

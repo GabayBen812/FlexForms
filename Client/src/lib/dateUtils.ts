@@ -87,6 +87,24 @@ export function formatDateTimeForDisplay(value: string | Date | null | undefined
 }
 
 /**
+ * Formats a date value to DD/MM/YYYY HH:mm:ss format for UI display with time including seconds.
+ * 
+ * @param value - Date value (string, Date object, or null/undefined)
+ * @returns Formatted date string in DD/MM/YYYY HH:mm:ss format, or empty string if value is invalid
+ * 
+ * @example
+ * formatDateTimeWithSecondsForDisplay("2024-01-15T14:30:45.000Z") // Returns "15/01/2024 14:30:45"
+ */
+export function formatDateTimeWithSecondsForDisplay(value: string | Date | null | undefined): string {
+  if (!value) return "";
+  try {
+    return dayjs(value).format("DD/MM/YYYY HH:mm:ss");
+  } catch {
+    return String(value);
+  }
+}
+
+/**
  * Checks if a value appears to be a date string or Date object.
  * This function detects various date formats including ISO strings,
  * partial ISO strings, and common date patterns.

@@ -107,6 +107,10 @@ export class OrganizationService {
       updatePayload.invoicingProviderApiKey = update.invoicingProviderApiKey;
     }
 
+    if (update.icountCredentials !== undefined) {
+      updatePayload.icountCredentials = update.icountCredentials;
+    }
+
     if (Object.keys(updatePayload).length === 0) {
       throw new BadRequestException('No valid fields provided for update');
     }

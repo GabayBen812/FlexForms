@@ -443,7 +443,7 @@ export default function PaymentsSettings() {
         <div className="flex justify-center pt-4">
           <Button
             type="submit"
-            disabled={!form.formState.isDirty || mutation.isPending}
+            disabled={mutation.isPending}
             className="min-w-[120px]"
           >
             {mutation.isPending ? (

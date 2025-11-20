@@ -1655,6 +1655,8 @@ const RowComponent = React.memo(function RowComponent<T>({
           delete duplicateData.id;
           // @ts-ignore
           delete duplicateData._id;
+          // @ts-ignore
+          delete duplicateData.code; // Remove code so backend generates a new one
           duplicateMeta.handleAdd(duplicateData);
         }
         break;

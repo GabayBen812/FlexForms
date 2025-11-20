@@ -39,6 +39,8 @@ import {
   denamespaceDynamicFields,
   namespaceDynamicFields,
 } from "@/utils/contacts/dynamicFieldNamespaces";
+import { parseDateForSubmit } from "@/lib/dateUtils";
+import { isValidIsraeliID } from "@/lib/israeliIdValidator";
 
 const kidsApi = createApiService<Kid>("/kids", {
   includeOrgId: true,
@@ -277,6 +279,19 @@ export default function KidsPage() {
     );
   }, [visibleColumns, organization, t, parentsOptions]);
 
+  const excelColumns = useMemo(() => mergedColumns, [mergedColumns]);
+
+  const columnMetaMap = useMemo(() => {
+    const map = new Map<string, ColumnDef<Kid>>();
+    mergedColumns.forEach((column) => {
+      const accessorKey = ('accessorKey' in column ? column.accessorKey : column.id)?.toString();
+      if (accessorKey) {
+        map.set(accessorKey, column);
+      }
+    });
+    return map;
+  }, [mergedColumns]);
+
   const actions: TableAction<Kid>[] = [
     { label: t("edit"), type: "edit" },
     { label: t("delete"), type: "delete" },
@@ -348,8 +363,19 @@ export default function KidsPage() {
     [organization?._id, isUnifiedContacts, mapContactToKid],
   );
 
-  const handleAddKid = async (data: any) => {
-    try {
+  const createKidRecord = useCallback(
+    async (
+      data: any,
+      options: { skipIdValidation?: boolean } = {},
+    ): Promise<{ kid?: Kid; shouldRefresh?: boolean }> => {
+      const { skipIdValidation = false } = options;
+
+      if (!skipIdValidation && data.idNumber && data.idNumber.trim() !== "") {
+        if (!isValidIsraeliID(data.idNumber)) {
+          throw new Error(t("invalid_israeli_id") || "תעודת זהות לא תקינה");
+        }
+      }
+
       if (!isUnifiedContacts) {
         const newKid = {
           ...data,
@@ -361,23 +387,16 @@ export default function KidsPage() {
 
         if (res.error) {
           const errorMessage = res.error || t("error") || "Failed to create kid";
-          toast.error(errorMessage);
           throw new Error(errorMessage);
         }
 
         if (res.status === 200 || res.status === 201) {
           if (res.data) {
-            const createdKid = res.data;
-            toast.success(t("form_created_success"));
-            setIsAddDialogOpen(false);
-            tableMethods?.addItem(createdKid);
-          } else {
-            toast.success(t("form_created_success"));
-            setIsAddDialogOpen(false);
-            tableMethods?.refresh();
+            return { kid: res.data };
           }
+          return { shouldRefresh: true };
         }
-        return;
+        return { shouldRefresh: true };
       }
 
       if (!organization?._id) {
@@ -402,7 +421,6 @@ export default function KidsPage() {
       const contactResponse = await createContact(contactPayload);
       if (contactResponse.error || !contactResponse.data) {
         const errorMessage = contactResponse.error || t("error") || "Failed to create kid contact";
-        toast.error(errorMessage);
         throw new Error(errorMessage);
       }
 
@@ -414,9 +432,23 @@ export default function KidsPage() {
       const relationships = kidRelationshipsRef.current[createdContact._id] || [];
       const mappedKid = mapContactToKid(createdContact, relationships);
 
+      return { kid: mappedKid };
+    },
+    [isUnifiedContacts, organization?._id, t, syncKidRelationships, mapContactToKid],
+  );
+
+  const handleAddKid = async (data: any) => {
+    try {
+      const result = await createKidRecord(data);
       toast.success(t("form_created_success"));
-      setIsAddDialogOpen(false);
-      tableMethods?.addItem(mappedKid);
+      if (isAddDialogOpen) {
+        setIsAddDialogOpen(false);
+      }
+      if (result.kid) {
+        tableMethods?.addItem(result.kid);
+      } else {
+        tableMethods?.refresh();
+      }
     } catch (error) {
       console.error("Error creating kid:", error);
       console.error("Error details:", {
@@ -424,20 +456,115 @@ export default function KidsPage() {
         response: (error as any)?.response,
         error: (error as any)?.error,
       });
-      
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : (error as any)?.response?.data?.message 
-        || (error as any)?.response?.data?.error
-        || (error as any)?.error 
-        || JSON.stringify(error)
-        || t("error") || "An error occurred";
-      
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : (error as any)?.response?.data?.message ||
+            (error as any)?.response?.data?.error ||
+            (error as any)?.error ||
+            JSON.stringify(error) ||
+            t("error") ||
+            "An error occurred";
+
       console.error("Final error message:", errorMessage);
       toast.error(errorMessage);
       throw error;
     }
   };
+
+  const transformExcelRow = useCallback(
+    (row: Record<string, string>) => {
+      const transformed: Record<string, any> = {};
+      const dynamicFields: Record<string, any> = {};
+
+      Object.entries(row).forEach(([key, rawValue]) => {
+        const value = typeof rawValue === "string" ? rawValue.trim() : rawValue;
+        if (value === "" || value === undefined || value === null) {
+          return;
+        }
+
+        if (key.startsWith("dynamicFields.")) {
+          const fieldKey = key.replace("dynamicFields.", "");
+          dynamicFields[fieldKey] = value;
+          return;
+        }
+
+        const column = columnMetaMap.get(key);
+        if (column?.meta?.isDate) {
+          const parsedDate = parseDateForSubmit(value);
+          if (parsedDate) {
+            transformed[key] = parsedDate;
+            return;
+          }
+        }
+
+        transformed[key] = value;
+      });
+
+      if (Object.keys(dynamicFields).length) {
+        transformed.dynamicFields = dynamicFields;
+      }
+
+      return transformed;
+    },
+    [columnMetaMap],
+  );
+
+  const handleExcelImport = useCallback(
+    async (excelRows: Record<string, string>[]) => {
+      if (!excelRows.length) {
+        toast.error(t("excel_no_rows_to_save", "אין נתונים לשמירה"));
+        return;
+      }
+
+      const preparedRows = excelRows
+        .map(transformExcelRow)
+        .filter((row) => row && Object.keys(row).length > 0);
+
+      if (!preparedRows.length) {
+        toast.error(t("excel_no_rows_to_save", "אין נתונים לשמירה"));
+        return;
+      }
+
+      let successCount = 0;
+      const errorMessages: string[] = [];
+
+      for (let index = 0; index < preparedRows.length; index++) {
+        try {
+          await createKidRecord(preparedRows[index], { skipIdValidation: true });
+          successCount++;
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : t("error") || (typeof error === "string" ? error : "An error occurred");
+          errorMessages.push(`${index + 1}: ${errorMessage}`);
+        }
+      }
+
+      if (successCount) {
+        toast.success(
+          t("excel_import_success", {
+            count: successCount,
+            defaultValue: `ייבוא ${successCount} רשומות הושלם בהצלחה`,
+          }),
+        );
+        tableMethods?.refresh();
+      }
+
+      if (errorMessages.length) {
+        toast.error(
+          t("excel_import_partial_failure", {
+            defaultValue: `חלק מהרשומות נכשלו (${errorMessages.length}): ${errorMessages
+              .slice(0, 3)
+              .join("; ")}`,
+          }),
+        );
+      }
+    },
+    [createKidRecord, tableMethods, t, transformExcelRow],
+  );
 
   const handleEditKid = async (data: any) => {
     if (!editingKid?._id) return;
@@ -711,7 +838,11 @@ export default function KidsPage() {
             >
               <Settings className="w-4 h-4 mr-2" /> {t("configure_fields", "ערוך שדות דינאמיים")}
             </Button>
-            <SmartLoadFromExcel />
+            <SmartLoadFromExcel 
+              columns={excelColumns} 
+              onSaveRows={handleExcelImport}
+              excludeFields={["linked_parents"]}
+            />
           </div>
         }
         onBulkDelete={handleBulkDelete}

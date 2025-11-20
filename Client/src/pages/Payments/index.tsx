@@ -22,7 +22,7 @@ import PaymentsSettings from "./PaymentsSettings";
 import { createInvoice, getInvoice } from "@/api/invoices";
 import { CreateInvoiceDto, InvoiceDocumentType, InvoicePaymentType, Currency, Language } from "@/types/invoices/invoice";
 import { InvoiceModal } from "@/components/invoices/InvoiceModal";
-import { formatDateTimeWithSecondsForDisplay } from "@/lib/dateUtils";
+import { formatDateTimeWithSecondsForDisplay, formatDateForDisplay } from "@/lib/dateUtils";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { Contact } from "@/types/contacts/contact";
@@ -347,11 +347,23 @@ export default function Payments() {
 
   const columns: ColumnDef<Payment>[] = useMemo(() => [
     {
+      accessorKey: "createdAt",
+      header: t("created_at"),
+      cell: ({ row }) => {
+        const value = row.original.createdAt;
+        if (!value) {
+          return "-";
+        }
+        return formatDateTimeWithSecondsForDisplay(value);
+      },
+      meta: { isDate: true, editable: false },
+    },
+    {
       accessorKey: "paymentDate",
       header: t("payment_date_time") || "מועד תשלום",
       cell: ({ row }) => {
         const value = row.original.paymentDate;
-        return formatDateTimeWithSecondsForDisplay(value);
+        return formatDateForDisplay(value);
       },
       meta: { isDate: true, editable: false },
     },
@@ -447,34 +459,6 @@ export default function Payments() {
         return notes || "-";
       },
       meta: { editable: false },
-    },
-    {
-      accessorKey: "metadata",
-      header: "metadata",
-      cell: ({ row }) => {
-        const metadata = row.original.metadata;
-        if (metadata && Object.keys(metadata).length > 0) {
-          return (
-            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-              {t("has_metadata") || "יש metadata"}
-            </Badge>
-          );
-        }
-        return "-";
-      },
-      meta: { editable: false },
-    },
-    {
-      accessorKey: "createdAt",
-      header: t("created_at"),
-      cell: ({ row }) => {
-        const value = row.original.createdAt;
-        if (!value) {
-          return "-";
-        }
-        return formatDateTimeWithSecondsForDisplay(value);
-      },
-      meta: { hidden: true, isDate: true, editable: false },
     },
   ], [t, payerOptions]);
 

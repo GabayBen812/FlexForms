@@ -46,6 +46,9 @@ import FormSettings from "@/components/forms/FormSettings";
 import PaymentError from "@/pages/Payment/Error"
 import PaymentSuccess from "@/pages/Payment/Success"
 import Rooms from "@/pages/Rooms";
+import Courses from "@/pages/Courses";
+import CreateCourse from "@/pages/Courses/createPage";
+import CourseManagement from "@/pages/Courses/managePage";
 import { DoorOpen } from "lucide-react";
 
 export const router = createBrowserRouter([
@@ -105,6 +108,32 @@ export const router = createBrowserRouter([
           icon: DoorOpen,
           showInSidebar: true,
           featureFlag: "ff_is_show_rooms",
+        },
+      },
+      {
+        path: "courses",
+        element: <Courses />,
+        handle: {
+          title: "courses",
+          icon: DoorOpen,
+          showInSidebar: true,
+          featureFlag: "ff_is_show_courses",
+        },
+      },
+      {
+        path: "courses/create",
+        element: <CreateCourse />,
+        handle: {
+          title: "create_course",
+          showInSidebar: false,
+        },
+      },
+      {
+        path: "courses/:courseId/manage",
+        element: <CourseManagement />,
+        handle: {
+          title: "course_management",
+          showInSidebar: false,
         },
       },
       {

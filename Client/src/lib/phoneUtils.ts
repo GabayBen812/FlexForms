@@ -59,3 +59,37 @@ export function unformatPhoneNumber(phone: string | number | null | undefined): 
   return String(phone).replace(/\D/g, "");
 }
 
+/**
+ * Validates Israeli phone numbers.
+ * Accepts:
+ * - 0501234567 (10 digits starting with 05)
+ * - 501234567 (missing leading 0)
+ * - 972501234567 (with country code)
+ */
+export function isValidIsraeliPhone(phone: string | number | null | undefined): boolean {
+  if (phone === null || phone === undefined) return false;
+  const digitsOnly = unformatPhoneNumber(phone);
+
+  if (digitsOnly.length === 0) return false;
+
+  // 10 digits starting with 05
+  if (digitsOnly.length === 10 && digitsOnly.startsWith("05")) {
+    return true;
+  }
+
+  // 9 digits starting with 5 (missing leading 0)
+  if (digitsOnly.length === 9 && digitsOnly.startsWith("5")) {
+    return true;
+  }
+
+  // With country code 972 + 9 digits (without 0)
+  if (digitsOnly.length === 12 && digitsOnly.startsWith("972")) {
+    const withoutCountryCode = digitsOnly.slice(3);
+    if (withoutCountryCode.length === 9 && withoutCountryCode.startsWith("5")) {
+      return true;
+    }
+  }
+
+  return false;
+}
+

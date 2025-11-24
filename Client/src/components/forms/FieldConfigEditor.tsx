@@ -17,12 +17,16 @@ export default function FieldConfigEditor({ field, onChange }: Props) {
   const [useRichEditor, setUseRichEditor] = useState(false);
   const editorKeyRef = useRef(0);
   const [editorError, setEditorError] = useState(false);
+  const [freeTextEditorError, setFreeTextEditorError] = useState(false);
 
   // Force re-render when field changes (only for terms field)
   useEffect(() => {
     if (field.type === "terms") {
       editorKeyRef.current += 1;
       setEditorError(false);
+    }
+    if (field.type === "freeText") {
+      setFreeTextEditorError(false);
     }
   }, [field.name, field.type]);
 
@@ -58,6 +62,17 @@ export default function FieldConfigEditor({ field, onChange }: Props) {
     );
     onChange({ ...field, config: { ...field.config, options: newOptions } });
   };
+
+  if (field.type === "separator") {
+    // Separator fields don't need configuration - they're just visual lines
+    return (
+      <div className="mt-2">
+        <p className="text-sm text-muted-foreground">
+          {t("separator_field_info") || "Separator fields are visual dividers and don't require configuration."}
+        </p>
+      </div>
+    );
+  }
 
   if (field.type === "select" || field.type === "multiselect") {
     return (
@@ -215,6 +230,58 @@ export default function FieldConfigEditor({ field, onChange }: Props) {
             {t("required_field")}
           </label>
         </div>
+      </div>
+    );
+  }
+
+  if (field.type === "freeText") {
+    return (
+      <div className="mt-2 space-y-2 min-h-[150px]">
+        <label className="font-semibold">{t("free_text_content") || "Free text content"}</label>
+        {freeTextEditorError ? (
+          <textarea
+            value={field.config?.text || ""}
+            onChange={(e) =>
+              onChange({ ...field, config: { ...field.config, text: e.target.value } })
+            }
+            className="w-full min-h-[200px] p-3 border rounded-md resize-y font-sans text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            placeholder={t("free_text_placeholder") || "Type content to display..."}
+            rows={10}
+          />
+        ) : (
+          <div className="border rounded overflow-hidden min-h-[200px]">
+            <CKEditor
+              key={`freeText-${field.name}-${editorKeyRef.current}`}
+              editor={ClassicEditor}
+              data={field.config?.text || ""}
+              onChange={(_, editor) => {
+                const data = editor.getData();
+                onChange({ ...field, config: { ...field.config, text: data } });
+              }}
+              onError={(error) => {
+                console.error("CKEditor error (freeText):", error);
+                setFreeTextEditorError(true);
+              }}
+              config={{
+                toolbar: [
+                  "heading",
+                  "|",
+                  "bold",
+                  "italic",
+                  "link",
+                  "bulletedList",
+                  "numberedList",
+                  "|",
+                  "blockQuote",
+                  "insertTable",
+                  "undo",
+                  "redo",
+                ],
+                placeholder: t("free_text_placeholder") || "Type content to display...",
+              }}
+            />
+          </div>
+        )}
       </div>
     );
   }

@@ -61,6 +61,7 @@ export interface DataTableProps<TData> {
   onAdvancedSearchChange?: (filters: Record<string, any>) => void;
   initialAdvancedFilters?: Record<string, any>;
   isPagination?: boolean;
+  showPageSizeSelector?: boolean;
   isLazyLoading?: boolean;
   showAddButton?: boolean | Array<{ name: string; defaultValue: string }>;
   customAddButton?: React.ReactNode;
@@ -88,6 +89,7 @@ export interface DataTableProps<TData> {
   addButtonClassName?: string;
   addButtonWrapperClassName?: string;
   prependNewItems?: boolean;
+  contentHeight?: string | number;
 }
 
 export interface TableAction<TData> {

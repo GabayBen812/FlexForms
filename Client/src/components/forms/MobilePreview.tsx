@@ -6,6 +6,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Smartphone } from "lucide-react";
+import { isValidIsraeliID } from "@/lib/israeliIdValidator";
+import { isValidIsraeliPhone } from "@/lib/phoneUtils";
 
 interface MobilePreviewProps {
   fields: FieldConfig[];
@@ -30,11 +32,30 @@ export default function MobilePreview({
   }, [fields]);
 
   // Create validation schema similar to external page
+  const invalidPhoneMessage =
+    t("invalid_phone") || "Invalid phone number. Please enter a valid Israeli phone number.";
+  const invalidIdMessage =
+    t("invalid_israeli_id") || "Invalid Israeli ID number.";
+
   const getFieldValidation = (field: FieldConfig) => {
     if (field.isRequired) {
       switch (field.type) {
         case "email":
           return z.string().email({ message: t("invalid_email") });
+        case "phone":
+          return z
+            .string()
+            .min(1, { message: t("required_field") })
+            .refine((value) => isValidIsraeliPhone(value), {
+              message: invalidPhoneMessage,
+            });
+        case "idNumber":
+          return z
+            .string()
+            .min(1, { message: t("required_field") })
+            .refine((value) => isValidIsraeliID(value), {
+              message: invalidIdMessage,
+            });
         case "text":
         case "date":
         case "image":
@@ -53,6 +74,22 @@ export default function MobilePreview({
       }
     } else {
       switch (field.type) {
+        case "phone":
+          return z
+            .string()
+            .optional()
+            .refine(
+              (value) => !value || isValidIsraeliPhone(value),
+              { message: invalidPhoneMessage }
+            );
+        case "idNumber":
+          return z
+            .string()
+            .optional()
+            .refine(
+              (value) => !value || isValidIsraeliID(value),
+              { message: invalidIdMessage }
+            );
         case "multiselect":
           return z.array(z.string()).optional();
         case "image":
@@ -65,9 +102,13 @@ export default function MobilePreview({
   };
 
   const validationSchema = useMemo(() => {
+    // Exclude visual-only fields from validation schema
+    const fieldsToValidate = displayFields.filter(
+      (field) => field.type !== "separator" && field.type !== "freeText"
+    );
     return z.object(
       Object.fromEntries(
-        displayFields.map((field) => [field.name, getFieldValidation(field)])
+        fieldsToValidate.map((field) => [field.name, getFieldValidation(field)])
       )
     );
   }, [displayFields, t]);

@@ -18,6 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchAllAccounts } from "@/api/accounts";
 import { Account } from "@/types/accounts/account";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
+import { ProfileAvatar, getProfileImageUrl } from "@/components/ProfileAvatar";
 
 const usersApi = createApiService<Contact>("/contacts");
 
@@ -110,6 +111,24 @@ export default function ContactsPage() {
   const baseColumns: ColumnDef<Contact>[] = useMemo(
     () => [
       selectionColumn,
+      {
+        id: "profilePicture",
+        header: t("profile_picture", "תמונת פרופיל"),
+        enableSorting: false,
+        size: 90,
+        meta: { editable: false, excludeFromSearch: true },
+        cell: ({ row }) => {
+          const contact = row.original;
+          const imageUrl = getProfileImageUrl(contact);
+          const name = [contact.firstname, contact.lastname].filter(Boolean).join(" ");
+
+          return (
+            <div className="flex justify-center">
+              <ProfileAvatar name={name} imageUrl={imageUrl} size="sm" />
+            </div>
+          );
+        },
+      },
       {
         accessorKey: "firstname",
         header: t("firstname"),

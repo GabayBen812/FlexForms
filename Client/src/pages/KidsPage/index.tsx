@@ -20,6 +20,7 @@ import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDial
 import { TableFieldConfigDialog } from "@/components/ui/completed/dialogs/TableFieldConfigDialog";
 import { SmartLoadFromExcel } from "@/components/ui/completed/dialogs/SmartLoadFromExcel";
 import { AdvancedUpdateDialog } from "@/components/AdvancedUpdateDialog";
+import { ProfileAvatar, getProfileImageUrl } from "@/components/ProfileAvatar";
 import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
 import { toast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -236,6 +237,24 @@ export default function KidsPage() {
 
   const columns: ColumnDef<Kid>[] = [
     selectionColumn,
+    {
+      id: "profilePicture",
+      header: t("profile_picture", "תמונת פרופיל"),
+      enableSorting: false,
+      meta: { editable: false, excludeFromSearch: true },
+      cell: ({ row }) => {
+        const kid = row.original;
+        const imageUrl = getProfileImageUrl(kid);
+        const name = [kid.firstname, kid.lastname].filter(Boolean).join(" ");
+
+        return (
+          <div className="flex justify-center">
+            <ProfileAvatar name={name} imageUrl={imageUrl} size="sm" />
+          </div>
+        );
+      },
+      size: 90,
+    },
     { accessorKey: "firstname", header: t("firstname"), meta: { editable: true } },
     { accessorKey: "lastname", header: t("lastname"), meta: { editable: true } },
     { accessorKey: "idNumber", header: t("id_number"), meta: { editable: true } },

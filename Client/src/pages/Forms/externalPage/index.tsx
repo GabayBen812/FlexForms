@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { Helmet } from "react-helmet-async";
 import { createApiService } from "@/api/utils/apiFactory";
 import { Form } from "@/types/forms/Form";
 import { UserRegistration } from "@/types/forms/UserRegistration";
@@ -13,6 +14,8 @@ import { PageLoader } from "@/components/ui/page-loader";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Separator } from "@/components/ui/separator";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { isValidIsraeliID } from "@/lib/israeliIdValidator";
+import { isValidIsraeliPhone, unformatPhoneNumber } from "@/lib/phoneUtils";
 
 const formsApi = createApiService<Form>("/forms", {
   customRoutes: {
@@ -43,30 +46,77 @@ export default function FormRegistration() {
     }
   }, [code]);
 
-  if (!form) {
-    return <PageLoader />;
-  }
+  const dynamicFields: FieldConfig[] = useMemo(() => {
+    if (!form) {
+      return [];
+    }
 
-  const dynamicFields: FieldConfig[] = [
-    // { name: "fullName", label: t("full_name"), type: "text", isRequired: true },
-    // { name: "email", label: t("email"), type: "email", isRequired: true },
-    // { name: "phone", label: t("phone"), type: "text", isRequired: true },
-    ...(form.fields || [])
-      .filter((f): f is FieldConfig => !!f.name && !!f.label)
-      .map((f) => ({
-        name: f.name,
-        label: f.label,
-        type: f.type || "text",
-        config: f.config,
-        isRequired: f.isRequired ?? false,
-      })),
-  ];
+    return [
+      ...(form.fields || [])
+        .filter((f): f is FieldConfig => !!f.name && !!f.label)
+        .map((f) => ({
+          name: f.name,
+          label: f.label,
+          type: f.type || "text",
+          config: f.config,
+          isRequired: f.isRequired ?? false,
+        })),
+    ];
+  }, [form]);
+
+  const fieldDefinitionsByName = useMemo(
+    () =>
+      dynamicFields.reduce<Record<string, FieldConfig>>((acc, field) => {
+        acc[field.name] = field;
+        return acc;
+      }, {}),
+    [dynamicFields]
+  );
+
+  const normalizeFieldValue = (
+    field: FieldConfig | undefined,
+    value: any
+  ): any => {
+    if (!field) {
+      return value;
+    }
+
+    if (typeof value === "string") {
+      if (field.type === "phone") {
+        return unformatPhoneNumber(value);
+      }
+      if (field.type === "idNumber") {
+        return value.trim();
+      }
+    }
+
+    return value;
+  };
+
+  const invalidPhoneMessage =
+    t("invalid_phone") || "Invalid phone number. Please enter a valid Israeli phone number.";
+  const invalidIdMessage =
+    t("invalid_israeli_id") || "Invalid Israeli ID number.";
 
   const getFieldValidation = (field: FieldConfig) => {
     if (field.isRequired) {
       switch (field.type) {
         case "email":
           return z.string().email({ message: t("invalid_email") });
+        case "phone":
+          return z
+            .string()
+            .min(1, { message: t("required_field") })
+            .refine((value) => isValidIsraeliPhone(value), {
+              message: invalidPhoneMessage,
+            });
+        case "idNumber":
+          return z
+            .string()
+            .min(1, { message: t("required_field") })
+            .refine((value) => isValidIsraeliID(value), {
+              message: invalidIdMessage,
+            });
         case "text":
         case "date":
         case "image":
@@ -85,6 +135,22 @@ export default function FormRegistration() {
       }
     } else {
       switch (field.type) {
+        case "phone":
+          return z
+            .string()
+            .optional()
+            .refine(
+              (value) => !value || isValidIsraeliPhone(value),
+              { message: invalidPhoneMessage }
+            );
+        case "idNumber":
+          return z
+            .string()
+            .optional()
+            .refine(
+              (value) => !value || isValidIsraeliID(value),
+              { message: invalidIdMessage }
+            );
         case "multiselect":
           return z.array(z.string()).optional();
         case "image":
@@ -96,19 +162,43 @@ export default function FormRegistration() {
     }
   };
 
-  const validationSchema = z.object(
-    Object.fromEntries(
-      dynamicFields.map((field) => [field.name, getFieldValidation(field)])
-    )
+  const validationSchema = useMemo(
+    () =>
+      z.object(
+        Object.fromEntries(
+          dynamicFields
+            .filter((field) => field.type !== "separator" && field.type !== "freeText")
+            .map((field) => [field.name, getFieldValidation(field)])
+        )
+      ),
+    [dynamicFields, invalidIdMessage, invalidPhoneMessage, t]
   );
 
+  if (!form) {
+    return <PageLoader />;
+  }
+
+  const pageUrl = typeof window !== "undefined" ? window.location.href : "";
+
   return (
-    <div 
-      className="min-h-screen py-6 sm:py-8 px-4 sm:px-6 lg:px-8"
-      style={{
-        backgroundColor: form.backgroundColor || "#FFFFFF",
-      }}
-    >
+    <>
+      <Helmet>
+        <title>{form.title}</title>
+        {form.description && <meta name="description" content={form.description} />}
+        <meta property="og:title" content={form.title} />
+        {form.description && <meta property="og:description" content={form.description} />}
+        <meta property="og:url" content={pageUrl} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={form.title} />
+        {form.description && <meta name="twitter:description" content={form.description} />}
+      </Helmet>
+      <div 
+        className="min-h-screen py-6 sm:py-8 px-4 sm:px-6 lg:px-8"
+        style={{
+          backgroundColor: form.backgroundColor || "#FFFFFF",
+        }}
+      >
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Form Header Card */}
         <Card className="shadow-lg border-0">
@@ -170,8 +260,11 @@ export default function FormRegistration() {
                     dynamicFieldNames.forEach((fieldName) => {
                       const value = data[fieldName];
                       if (value !== undefined) {
+                        const fieldDefinition = fieldDefinitionsByName[fieldName];
+                        const normalizedValue = normalizeFieldValue(fieldDefinition, value);
                         // Convert empty strings to null for optional fields, but keep actual values
-                        additionalData[fieldName] = value === "" ? null : value;
+                        additionalData[fieldName] =
+                          normalizedValue === "" ? null : normalizedValue;
                       }
                     });
                     
@@ -193,7 +286,8 @@ export default function FormRegistration() {
                     }
                     
                     if (!dynamicFieldNames.includes("phone") && data.phone !== undefined) {
-                      formData.phone = data.phone || undefined;
+                      const normalizedPhone = unformatPhoneNumber(data.phone);
+                      formData.phone = normalizedPhone ? normalizedPhone : undefined;
                     }
                     
                     if (form.paymentSum) {
@@ -273,6 +367,7 @@ export default function FormRegistration() {
           </Card>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -24,6 +24,9 @@ import {
   ChevronDown,
   ArrowUp,
   ArrowDown,
+  Minus,
+  Phone,
+  IdCard,
 } from "lucide-react";
 import FieldConfigEditor from "./FieldConfigEditor";
 import MobilePreview from "./MobilePreview";
@@ -75,6 +78,15 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Props {
   initialFields: FieldConfig[];
@@ -90,20 +102,26 @@ const fieldTypeIcons = {
   text: Type,
   date: Calendar,
   email: Mail,
+  phone: Phone,
+  idNumber: IdCard,
   checkbox: CheckSquare,
   terms: FileText,
+  freeText: FileText,
   select: ListFilter,
   multiselect: ListIcon,
   signature: PenLine,
   image: Image,
   file: File,
+  separator: Minus,
 };
+
+type FieldType = keyof typeof fieldTypeIcons;
 
 // Group field types by category
 const fieldTypeCategories = {
   text: {
     label: "Text Fields",
-    types: ["text", "email", "date"] as const,
+    types: ["text", "email", "phone", "idNumber", "date", "freeText"] as const,
   },
   selection: {
     label: "Selection Fields",
@@ -115,8 +133,91 @@ const fieldTypeCategories = {
   },
   other: {
     label: "Other",
-    types: ["terms"] as const,
+    types: ["terms", "separator"] as const,
   },
+};
+
+type TranslateFn = (key: string, options?: { defaultValue?: string }) => string;
+
+const categoryTranslationKeys: Record<
+  keyof typeof fieldTypeCategories,
+  string
+> = {
+  text: "text_fields",
+  selection: "selection_fields",
+  media: "media_files",
+  other: "other",
+};
+
+const getCategoryLabel = (
+  categoryKey: keyof typeof fieldTypeCategories,
+  t: TranslateFn
+) =>
+  t(categoryTranslationKeys[categoryKey], {
+    defaultValue: fieldTypeCategories[categoryKey].label,
+  });
+
+const getFieldTypeLabel = (type: string, t: TranslateFn) =>
+  t(`field_type_${type}`, {
+    defaultValue: t(`add_${type}_field`, { defaultValue: type }),
+  });
+
+const fieldTypesWithoutRequired: FieldType[] = ["separator", "freeText"];
+
+const typeAllowsRequired = (type: FieldType) =>
+  !fieldTypesWithoutRequired.includes(type);
+
+const configCompatibilityKeys: Partial<
+  Record<FieldType, "options" | "text">
+> = {
+  select: "options",
+  multiselect: "options",
+  terms: "text",
+  freeText: "text",
+};
+
+const getConfigCompatibilityKey = (type: string) =>
+  configCompatibilityKeys[type as FieldType];
+
+const getDefaultConfigForType = (
+  type: FieldType
+): FieldConfig["config"] | undefined => {
+  switch (type) {
+    case "select":
+    case "multiselect":
+      return { options: [] };
+    case "terms":
+    case "freeText":
+      return { text: "" };
+    default:
+      return undefined;
+  }
+};
+
+const sanitizeFieldForType = (
+  field: FieldConfig,
+  nextType: FieldType
+): FieldConfig => {
+  const currentCompatKey = getConfigCompatibilityKey(field.type);
+  const nextCompatKey = getConfigCompatibilityKey(nextType);
+  const shouldPreserveConfig =
+    currentCompatKey && nextCompatKey && currentCompatKey === nextCompatKey;
+
+  const nextConfig = shouldPreserveConfig
+    ? field.config
+    : getDefaultConfigForType(nextType);
+
+  const updatedField: FieldConfig = {
+    ...field,
+    type: nextType,
+    config: nextConfig,
+  };
+
+  if (!typeAllowsRequired(nextType)) {
+    updatedField.isRequired = false;
+  }
+
+  return updatedField;
 };
 
 // Sortable Field Card Component
@@ -129,6 +230,7 @@ function SortableFieldCard({
   onMoveUp,
   onMoveDown,
   onFieldChange,
+  onTypeChange,
 }: {
   field: FieldConfig;
   index: number;
@@ -138,6 +240,7 @@ function SortableFieldCard({
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;
   onFieldChange: (updated: FieldConfig) => void;
+  onTypeChange: (index: number, type: FieldType) => void;
 }) {
   const { t } = useTranslation();
   const {
@@ -251,34 +354,66 @@ function SortableFieldCard({
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
+        <CardContent className="space-y-3 sm:space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {t("field_label")}
               </label>
               <Input
                 value={field.label}
                 onChange={(e) => onUpdate(index, "label", e.target.value)}
-                className="w-full"
+                className="w-full h-9 text-sm"
                 placeholder={t("field_label_placeholder") || "Enter field label"}
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {t("field_type")}
               </label>
-              <div className="flex items-center gap-2">
-                {FieldIcon && <FieldIcon className="w-4 h-4 text-muted-foreground" />}
-                <Input
-                  value={field.type}
-                  disabled
-                  className="opacity-70 bg-muted"
-                />
-              </div>
+              <Select
+                value={field.type}
+                onValueChange={(value) => onTypeChange(index, value as FieldType)}
+              >
+                <SelectTrigger className="h-9 text-sm bg-muted/70 focus:ring-offset-0">
+                  <div className="flex items-center gap-2 w-full">
+                    {FieldIcon && (
+                      <FieldIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                    )}
+                    <SelectValue placeholder={t("field_type")} />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="max-h-[320px]">
+                  {Object.entries(fieldTypeCategories).map(
+                    ([categoryKey, category]) => (
+                      <SelectGroup key={categoryKey}>
+                        <SelectLabel className="text-xs uppercase text-muted-foreground">
+                          {getCategoryLabel(
+                            categoryKey as keyof typeof fieldTypeCategories,
+                            t
+                          )}
+                        </SelectLabel>
+                        {category.types.map((type) => {
+                          const Icon = fieldTypeIcons[type];
+                          return (
+                            <SelectItem key={type} value={type} className="capitalize">
+                              <div className="flex items-center gap-2">
+                                {Icon && (
+                                  <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+                                )}
+                                <span>{getFieldTypeLabel(type, t)}</span>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectGroup>
+                    )
+                  )}
+                </SelectContent>
+              </Select>
             </div>
           </div>
-          <Separator />
+          <Separator className="my-1.5 sm:my-2" />
           <FieldConfigEditor
             field={field}
             onChange={onFieldChange}
@@ -371,12 +506,17 @@ export default function FormEditor({
   );
 
   const handleAddField = (type: string) => {
+    const typedFieldType = type as FieldType;
+    const defaultConfig = getDefaultConfigForType(typedFieldType);
     const newField: FieldConfig = {
       name: `${type}_${Date.now()}`,
       label: `${t("new_field")}`,
       type,
-      config: {},
+      config: defaultConfig,
     };
+    if (!typeAllowsRequired(typedFieldType)) {
+      newField.isRequired = false;
+    }
     // Add field at the top (beginning) of the array
     setFields([newField, ...fields]);
     setAddFieldOpen(false);
@@ -457,6 +597,18 @@ export default function FormEditor({
     }
   };
 
+  const handleChangeFieldType = (index: number, nextType: FieldType) => {
+    setFields((prev) => {
+      const updated = [...prev];
+      const currentField = updated[index];
+      if (!currentField) {
+        return prev;
+      }
+      updated[index] = sanitizeFieldForType(currentField, nextType);
+      return updated;
+    });
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left Column - Form Editor (2/3) */}
@@ -529,36 +681,37 @@ export default function FormEditor({
                 </CommandEmpty>
                 {Object.entries(fieldTypeCategories).map(
                   ([categoryKey, category], catIndex) => {
-                    const categoryLabelKey = categoryKey === "text" ? "text_fields" 
-                      : categoryKey === "selection" ? "selection_fields"
-                      : categoryKey === "media" ? "media_files"
-                      : "other";
-                    const translatedLabel = t(categoryLabelKey) || category.label;
+                    const translatedLabel = getCategoryLabel(
+                      categoryKey as keyof typeof fieldTypeCategories,
+                      t
+                    );
                     return (
-                    <React.Fragment key={categoryKey}>
-                      {catIndex > 0 && <CommandSeparator />}
-                      <CommandGroup heading={translatedLabel}>
-                        {category.types.map((type) => {
-                          const Icon = fieldTypeIcons[type];
-                          const label = t(`add_${type}_field`) || type;
-                          return (
-                            <CommandItem
-                              key={type}
-                              value={`${translatedLabel} ${label} ${type}`}
-                              onSelect={() => handleAddField(type)}
-                              className="cursor-pointer py-3.5 px-4 text-base hover:bg-accent/50"
-                            >
-                              <div className="flex items-center gap-3 w-full">
-                                {Icon && (
-                                  <Icon className="w-5 h-5 text-primary shrink-0" />
-                                )}
-                                <span className="flex-1 font-medium">{label}</span>
-                              </div>
-                            </CommandItem>
-                          );
-                        })}
-                      </CommandGroup>
-                    </React.Fragment>
+                      <React.Fragment key={categoryKey}>
+                        {catIndex > 0 && <CommandSeparator />}
+                        <CommandGroup heading={translatedLabel}>
+                          {category.types.map((type) => {
+                            const Icon = fieldTypeIcons[type];
+                            const label = getFieldTypeLabel(type, t);
+                            return (
+                              <CommandItem
+                                key={type}
+                                value={`${translatedLabel} ${label} ${type}`}
+                                onSelect={() => handleAddField(type)}
+                                className="cursor-pointer py-3.5 px-4 text-base hover:bg-accent/50"
+                              >
+                                <div className="flex items-center gap-3 w-full">
+                                  {Icon && (
+                                    <Icon className="w-5 h-5 text-primary shrink-0" />
+                                  )}
+                                  <span className="flex-1 font-medium">
+                                    {label}
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </React.Fragment>
                     );
                   }
                 )}
@@ -604,6 +757,7 @@ export default function FormEditor({
                           return copy;
                         });
                       }}
+                      onTypeChange={handleChangeFieldType}
                     />
                   </motion.div>
                 ))}

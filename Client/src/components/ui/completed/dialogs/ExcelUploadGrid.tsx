@@ -7,6 +7,8 @@ import * as XLSX from "xlsx";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
+import { Progress } from "@/components/ui/progress";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { toast } from "@/hooks/use-toast";
 
 type GridRow = Record<string, string>;
@@ -18,6 +20,15 @@ interface ExcelUploadGridProps {
   excludeFields?: string[];
 }
 
+type ProgressStage = "reading" | "parsing" | "processing" | "done";
+
+interface ProgressState {
+  current: number;
+  total: number;
+  stage: ProgressStage;
+  fileName?: string;
+}
+
 const normalizeHeader = (header?: string | number | null) =>
   header?.toString().trim().toLowerCase() || "";
 
@@ -27,6 +38,11 @@ export function ExcelUploadGrid({ columns, onSave, excludeFields = [] }: ExcelUp
   const [rows, setRows] = useState<GridRow[]>(() => [createEmptyRow(filteredColumns)]);
   const [isSaving, setIsSaving] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
+  const [progress, setProgress] = useState<ProgressState>({
+    current: 0,
+    total: 0,
+    stage: "done",
+  });
 
   const visibleColumns = useMemo(() => filteredColumns, [filteredColumns]);
 
@@ -73,6 +89,11 @@ export function ExcelUploadGrid({ columns, onSave, excludeFields = [] }: ExcelUp
     });
   }, [visibleColumns]);
 
+  // Pre-create empty row template for optimization
+  const emptyRowTemplate = useMemo(() => {
+    return createEmptyRow(visibleColumns);
+  }, [visibleColumns]);
+
   const handleAddRow = useCallback(() => {
     setRows((prev) => [...prev, createEmptyRow(visibleColumns)]);
   }, [visibleColumns]);
@@ -84,8 +105,20 @@ export function ExcelUploadGrid({ columns, onSave, excludeFields = [] }: ExcelUp
   const handleParseExcel = useCallback(
     async (file: File) => {
       setIsParsing(true);
+      setProgress({
+        current: 0,
+        total: 0,
+        stage: "reading",
+        fileName: file.name,
+      });
+
       try {
+        // Stage 1: Reading file (0-10%)
+        setProgress((prev) => ({ ...prev, current: 5, stage: "reading" }));
+
         const data = await file.arrayBuffer();
+        setProgress((prev) => ({ ...prev, current: 10, stage: "parsing" }));
+
         const workbook = XLSX.read(data, { cellDates: true });
         const firstSheet = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheet];
@@ -97,54 +130,120 @@ export function ExcelUploadGrid({ columns, onSave, excludeFields = [] }: ExcelUp
 
         if (!sheetRows.length) {
           toast.error(t("excel_empty_file", "הקובץ ריק"));
+          setProgress({ current: 0, total: 0, stage: "done" });
           return;
         }
 
         const [headerRow, ...dataRows] = sheetRows;
         if (!headerRow || headerRow.length === 0) {
           toast.error(t("excel_missing_headers", "לא נמצאו כותרות בקובץ"));
+          setProgress({ current: 0, total: 0, stage: "done" });
           return;
         }
 
-        const columnKeys = headerRow
-          .map((headerCell) => headerMap.get(normalizeHeader(headerCell)))
-          .filter((key): key is string => !!key);
+        // Map Excel column indexes to accessor keys, preserving original column positions
+        const columnMappings: Array<{ index: number; key: string }> = [];
+        headerRow.forEach((headerCell, excelIndex) => {
+          const accessorKey = headerMap.get(normalizeHeader(headerCell));
+          if (accessorKey) {
+            columnMappings.push({ index: excelIndex, key: accessorKey });
+          }
+        });
 
-        if (!columnKeys.length) {
+        if (!columnMappings.length) {
           toast.error(
             t("excel_no_matching_headers", "לא נמצאו כותרות תואמות בין הקובץ לטבלה"),
           );
+          setProgress({ current: 0, total: 0, stage: "done" });
           return;
         }
 
-        const parsedRows: GridRow[] = dataRows
-          .map((row) => {
-            const baseRow = createEmptyRow(visibleColumns);
-            columnKeys.forEach((key, index) => {
-              const value = row[index];
-              if (value !== undefined && value !== null) {
-                baseRow[key] = value.toString();
+        // Stage 2: Processing rows in chunks (10-100%)
+        const totalRows = dataRows.length;
+        const CHUNK_SIZE = 15; // Process 15 rows at a time for smooth progress
+        const parsedRows: GridRow[] = [];
+
+        setProgress({
+          current: 10,
+          total: totalRows,
+          stage: "processing",
+          fileName: file.name,
+        });
+
+        // Process rows in chunks to avoid blocking the main thread
+        const processChunk = async (startIndex: number): Promise<void> => {
+          return new Promise<void>((resolve) => {
+            // Use setTimeout to yield to the browser and keep UI responsive
+            setTimeout(() => {
+              const endIndex = Math.min(startIndex + CHUNK_SIZE, totalRows);
+              const chunk = dataRows.slice(startIndex, endIndex);
+
+              for (const row of chunk) {
+                // Use pre-created template for better performance
+                const baseRow: GridRow = { ...emptyRowTemplate };
+                columnMappings.forEach(({ index, key }) => {
+                  const value = row[index];
+                  if (value !== undefined && value !== null) {
+                    baseRow[key] = value.toString();
+                  }
+                });
+                
+                // Only add non-empty rows
+                if (Object.values(baseRow).some((value) => value && value.trim() !== "")) {
+                  parsedRows.push(baseRow);
+                }
               }
-            });
-            return baseRow;
-          })
-          .filter((row) => Object.values(row).some((value) => value && value.trim() !== ""));
+
+              // Update progress
+              const processedCount = Math.min(endIndex, totalRows);
+              const progressPercent = 10 + (processedCount / totalRows) * 90;
+              setProgress({
+                current: processedCount,
+                total: totalRows,
+                stage: "processing",
+                fileName: file.name,
+              });
+
+              resolve();
+            }, 0);
+          });
+        };
+
+        // Process all chunks sequentially
+        for (let i = 0; i < totalRows; i += CHUNK_SIZE) {
+          await processChunk(i);
+        }
 
         if (!parsedRows.length) {
           toast.error(t("excel_no_data_rows", "לא נמצאו נתונים בקובץ"));
+          setProgress({ current: 0, total: 0, stage: "done" });
           return;
         }
 
+        // Stage 3: Done (100%)
+        setProgress({
+          current: totalRows,
+          total: totalRows,
+          stage: "done",
+          fileName: file.name,
+        });
+
         setRows(parsedRows);
         toast.success(t("excel_loaded_successfully", "הקובץ נטען בהצלחה"));
+        
+        // Reset progress after a short delay to show completion
+        setTimeout(() => {
+          setProgress({ current: 0, total: 0, stage: "done" });
+        }, 500);
       } catch (error) {
         console.error("Failed to parse Excel file", error);
         toast.error(t("excel_parse_failed", "נכשל בטעינת הקובץ"));
+        setProgress({ current: 0, total: 0, stage: "done" });
       } finally {
         setIsParsing(false);
       }
     },
-    [headerMap, t, visibleColumns],
+    [headerMap, t, visibleColumns, emptyRowTemplate],
   );
 
   const handleFileChange = useCallback(
@@ -157,27 +256,127 @@ export function ExcelUploadGrid({ columns, onSave, excludeFields = [] }: ExcelUp
     [handleParseExcel],
   );
 
+  // Get list of required field keys
+  const requiredFields = useMemo(() => {
+    const required: string[] = [];
+    visibleColumns.forEach((column) => {
+      const accessorKey = ('accessorKey' in column ? column.accessorKey : column.id)?.toString();
+      if (!accessorKey) return;
+
+      // Check if field is required via fieldDefinition
+      const meta = column.meta as Record<string, any> | undefined;
+      if (meta?.fieldDefinition?.required === true) {
+        required.push(accessorKey);
+      }
+
+      // Hardcoded required fields (firstname, lastname are typically required)
+      if (accessorKey === "firstname" || accessorKey === "lastname") {
+        if (!required.includes(accessorKey)) {
+          required.push(accessorKey);
+        }
+      }
+    });
+    return required;
+  }, [visibleColumns]);
+
   const handleSave = useCallback(async () => {
-    const filteredRows = rows.filter((row) =>
+    // Filter out completely empty rows
+    const nonEmptyRows = rows.filter((row) =>
       Object.values(row).some((value) => (value || "").trim() !== ""),
     );
 
-    if (!filteredRows.length) {
+    if (!nonEmptyRows.length) {
       toast.error(t("excel_no_rows_to_save", "אין נתונים לשמירה"));
+      return;
+    }
+
+    // Filter out rows missing required fields
+    const validRows: GridRow[] = [];
+    const skippedRows: number[] = [];
+
+    nonEmptyRows.forEach((row, index) => {
+      const missingRequired = requiredFields.filter(
+        (fieldKey) => !row[fieldKey] || (row[fieldKey] || "").trim() === "",
+      );
+
+      if (missingRequired.length === 0) {
+        validRows.push(row);
+      } else {
+        skippedRows.push(index + 1);
+      }
+    });
+
+    if (!validRows.length) {
+      const missingFields = requiredFields.join(", ");
+      toast.error(
+        t("excel_no_valid_rows", {
+          defaultValue: `אין רשומות תקינות לשמירה. שדות חובה: ${missingFields}`,
+        }) || `אין רשומות תקינות לשמירה. שדות חובה: ${missingFields}`,
+      );
       return;
     }
 
     setIsSaving(true);
     try {
-      await onSave(filteredRows);
+      await onSave(validRows);
       setRows([createEmptyRow(visibleColumns)]);
+      
+      // Show success message with info about skipped rows if any
+      if (skippedRows.length > 0) {
+        toast.error(
+          t("excel_some_rows_skipped", {
+            defaultValue: `${validRows.length} רשומות נשמרו. ${skippedRows.length} רשומות דולגו עקב שדות חובה חסרים`,
+          }) ||
+            `${validRows.length} רשומות נשמרו. ${skippedRows.length} רשומות דולגו עקב שדות חובה חסרים`,
+        );
+      } else if (validRows.length > 0) {
+        toast.success(
+          t("excel_save_success", {
+            defaultValue: `${validRows.length} רשומות נשמרו בהצלחה`,
+          }) || `${validRows.length} רשומות נשמרו בהצלחה`,
+        );
+      }
     } catch (error) {
       console.error("Failed to save rows", error);
       toast.error(t("excel_save_failed", "נכשל בשמירת הנתונים"));
     } finally {
       setIsSaving(false);
     }
-  }, [onSave, rows, t, visibleColumns]);
+  }, [onSave, rows, t, visibleColumns, requiredFields]);
+
+  // Calculate progress percentage
+  const progressPercentage = useMemo(() => {
+    if (progress.stage === "reading") {
+      return progress.current > 0 ? 5 : 0;
+    }
+    if (progress.stage === "parsing") {
+      return 10;
+    }
+    if (progress.stage === "processing" && progress.total > 0) {
+      // 10% for reading + (90% * progress ratio)
+      return Math.min(100, 10 + (progress.current / progress.total) * 90);
+    }
+    if (progress.stage === "done") {
+      return 100;
+    }
+    return 0;
+  }, [progress]);
+
+  // Get stage text for display
+  const stageText = useMemo(() => {
+    switch (progress.stage) {
+      case "reading":
+        return t("excel_reading_file", "קורא קובץ...");
+      case "parsing":
+        return t("excel_parsing_file", "מעבד קובץ...");
+      case "processing":
+        return t("excel_processing_rows", "מעבד שורות...");
+      case "done":
+        return t("excel_ready", "מוכן");
+      default:
+        return "";
+    }
+  }, [progress.stage, t]);
 
   return (
     <div className="space-y-4">
@@ -196,7 +395,60 @@ export function ExcelUploadGrid({ columns, onSave, excludeFields = [] }: ExcelUp
           {t("clear_rows", "נקה הכל")}
         </Button>
       </div>
-      <div className="rounded-lg border bg-card">
+
+      {/* Progress UI */}
+      {isParsing && (
+        <div className="space-y-3 rounded-lg border bg-card p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <LoadingSpinner size="md" />
+            <div className="flex-1 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground transition-all duration-300">
+                  {stageText}
+                </span>
+                <span className="text-xs text-muted-foreground transition-all duration-300">
+                  {Math.round(progressPercentage)}%
+                </span>
+              </div>
+              <Progress
+                value={progressPercentage}
+                className="h-2 transition-all duration-300"
+              />
+              {progress.stage === "processing" && progress.total > 0 && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="transition-all duration-300">
+                    {t("excel_processing_row_x_of_y", {
+                      current: progress.current,
+                      total: progress.total,
+                      defaultValue: `מעבד שורה ${progress.current} מתוך ${progress.total}`,
+                    })}
+                  </span>
+                  {progress.fileName && (
+                    <span className="truncate max-w-[200px] transition-all duration-300">
+                      {progress.fileName}
+                    </span>
+                  )}
+                </div>
+              )}
+              {progress.stage === "reading" && progress.fileName && (
+                <div className="text-xs text-muted-foreground transition-all duration-300">
+                  {progress.fileName}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="rounded-lg border bg-card relative">
+        {isParsing && (
+          <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 rounded-lg flex items-center justify-center">
+            <div className="text-center space-y-2">
+              <LoadingSpinner size="lg" />
+              <p className="text-sm text-muted-foreground">{stageText}</p>
+            </div>
+          </div>
+        )}
         <DataSheetGrid
           value={rows}
           onChange={setRows}

@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 export interface FieldConfig {
   name: string;
@@ -83,12 +84,17 @@ export default function DynamicForm({
 
   // Function to check if a field value is empty based on field type
   const isFieldEmpty = (field: FieldConfig, value: any): boolean => {
+    // Separator & free text fields are visual-only, never "empty"
+    if (field.type === "separator" || field.type === "freeText") return false;
+    
     if (value === null || value === undefined) return true;
     
     switch (field.type) {
       case "text":
       case "date":
       case "email":
+      case "phone":
+      case "idNumber":
       case "select":
       case "signature":
       case "image":
@@ -107,6 +113,8 @@ export default function DynamicForm({
   // Get missing required fields
   const getMissingRequiredFields = (): FieldConfig[] => {
     return fields.filter((field) => {
+      // Separator and free text fields cannot be required
+      if (field.type === "separator" || field.type === "freeText") return false;
       if (!field.isRequired) return false;
       const value = formValues[field.name];
       return isFieldEmpty(field, value);
@@ -322,9 +330,25 @@ export default function DynamicForm({
         );
       case "text":
       case "email":
+      case "phone":
+      case "idNumber":
         return (
           <Input
-            type={field.type}
+            type={
+              field.type === "email"
+                ? "email"
+                : field.type === "phone"
+                ? "tel"
+                : "text"
+            }
+            inputMode={
+              field.type === "phone"
+                ? "tel"
+                : field.type === "idNumber"
+                ? "numeric"
+                : undefined
+            }
+            pattern={field.type === "idNumber" ? "[0-9]*" : undefined}
             {...register(field.name)}
             disabled={mode !== "registration"}
             data-cy={`field-input-${field.name}`}
@@ -428,7 +452,7 @@ export default function DynamicForm({
         return (
           <div data-cy={`field-terms-container-${field.name}`}>
             <div
-              className="text-sm bg-gray-100 p-2 rounded whitespace-pre-line"
+              className="text-sm bg-gray-100 p-2 rounded whitespace-pre-line max-h-48 overflow-y-auto"
               data-cy={`field-terms-text-${field.name}`}
             >
               {field.config?.text || ""}
@@ -556,6 +580,51 @@ export default function DynamicForm({
 
       {fields.map((field, i) => {
         if (field.name === "title" || field.name === "description" || field.name === "paymentSum") return null;
+
+        // Render separator fields differently - just a line, no container
+        if (field.type === "separator") {
+          return (
+            <div
+              key={field.name}
+              className="my-6"
+              data-cy={`field-separator-${field.name}`}
+            >
+              {field.label && (
+                <p className="text-sm font-medium text-muted-foreground mb-2">
+                  {field.label}
+                </p>
+              )}
+              <Separator className="bg-border h-[2px]" />
+            </div>
+          );
+        }
+
+        if (field.type === "freeText") {
+          const hasContent = Boolean(field.config?.text);
+          return (
+            <div
+              key={field.name}
+              className="my-6 bg-muted/30 rounded-lg p-4 border border-muted/60"
+              data-cy={`field-freetext-${field.name}`}
+            >
+              {field.label && (
+                <p className="text-base font-semibold text-foreground mb-2">
+                  {field.label}
+                </p>
+              )}
+              {hasContent ? (
+                <div
+                  className="prose prose-sm max-w-none text-foreground [&_*]:text-foreground"
+                  dangerouslySetInnerHTML={{ __html: field.config?.text || "" }}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground italic">
+                  {t("free_text_empty_placeholder", "אין תוכן להצגה")}
+                </p>
+              )}
+            </div>
+          );
+        }
 
         return (
           <div
@@ -732,7 +801,7 @@ export default function DynamicForm({
               ) : field.type === "terms" ? (
                 <div data-cy={`field-terms-container-${field.name}`}>
                   <div
-                    className="text-sm bg-gray-100 p-2 rounded whitespace-pre-line"
+                    className="text-sm bg-gray-100 p-2 rounded whitespace-pre-line max-h-48 overflow-y-auto"
                     data-cy={`field-terms-text-${field.name}`}
                   >
                     {field.config?.text || ""}

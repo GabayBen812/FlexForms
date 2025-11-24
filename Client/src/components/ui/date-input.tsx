@@ -1,27 +1,10 @@
 import * as React from "react";
-import dayjs from "dayjs";
 import { cn } from "@/lib/utils";
+import { formatDateForDisplay, parseDateForSubmit } from "@/lib/dateUtils";
 
-// Helper function to convert value to YYYY-MM-DD format for input
+// Helper function to format value to DD/MM/YYYY for display
 const formatValueForInput = (value: string | Date | null | undefined): string => {
-  if (!value) return "";
-  
-  let date: dayjs.Dayjs | null = null;
-  
-  if (value instanceof Date) {
-    date = dayjs(value);
-  } else if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (trimmed) {
-      date = dayjs(trimmed);
-    }
-  }
-  
-  if (date && date.isValid()) {
-    return date.format("YYYY-MM-DD");
-  }
-  
-  return "";
+  return formatDateForDisplay(value);
 };
 
 export interface DateInputProps extends Omit<React.ComponentProps<"input">, "value" | "onChange" | "onBlur" | "type"> {
@@ -50,34 +33,65 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
     },
     ref
   ) => {
-    const inputValue = React.useMemo(() => formatValueForInput(value), [value]);
+    // Format the prop value to DD/MM/YYYY for display
+    const formattedValue = React.useMemo(() => formatValueForInput(value), [value]);
+    
+    // Local state to track what user is typing (allows free typing)
+    const [localValue, setLocalValue] = React.useState<string>(formattedValue);
+    
+    // Update local value when prop value changes (from parent)
+    React.useEffect(() => {
+      setLocalValue(formattedValue);
+    }, [formattedValue]);
 
     const handleChange = React.useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = e.target.value;
-        // Convert to ISO format (YYYY-MM-DD) - already in correct format from input
-        onChange(newValue);
+        setLocalValue(newValue);
+        
+        // Try to convert from DD/MM/YYYY format to ISO format (YYYY-MM-DD) for API
+        const isoDate = parseDateForSubmit(newValue);
+        
+        // Only call onChange if we have a valid date
+        // This allows users to type freely without clearing the input
+        if (isoDate) {
+          onChange(isoDate);
+        } else if (!newValue.trim()) {
+          // Allow clearing the input
+          onChange("");
+        }
       },
       [onChange]
     );
 
     const handleBlur = React.useCallback(() => {
+      // On blur, validate and normalize the date
+      const isoDate = parseDateForSubmit(localValue);
+      if (isoDate) {
+        // Update to formatted version for consistent display
+        setLocalValue(formatValueForInput(isoDate));
+        onChange(isoDate);
+      } else if (localValue.trim()) {
+        // Invalid date - revert to formatted value from prop
+        setLocalValue(formattedValue);
+      }
+      
       if (onBlur) {
         onBlur();
       }
-    }, [onBlur]);
+    }, [localValue, formattedValue, onChange, onBlur]);
 
     return (
       <input
         ref={ref}
-        type="date"
+        type="text"
         name={name}
-        value={inputValue}
+        value={localValue}
         onChange={handleChange}
         onBlur={handleBlur}
         disabled={disabled}
         required={required}
-        placeholder={placeholder}
+        placeholder={placeholder || "DD/MM/YYYY"}
         className={cn(
           "bg-white border border-border rounded-md placeholder:text-muted-foreground font-normal rtl:text-right ltr:text-left w-full focus:outline-border outline-none px-3 py-2",
           disabled && "opacity-50 cursor-not-allowed",

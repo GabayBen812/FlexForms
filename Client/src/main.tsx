@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/app/providers/AuthProvider";
 import { AnalyticsProvider } from "@/app/providers/AnalyticsProvider";
 import { OrganizationsProvider } from "@/app/providers/OrganizationsProvider";
@@ -15,17 +16,19 @@ const queryClient = new QueryClient();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <OrganizationsProvider>
-          <AuthProvider>
-            <AnalyticsProvider>
-              <Router />
-              <Toaster />
-            </AnalyticsProvider>
-          </AuthProvider>
-        </OrganizationsProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <OrganizationsProvider>
+            <AuthProvider>
+              <AnalyticsProvider>
+                <Router />
+                <Toaster />
+              </AnalyticsProvider>
+            </AuthProvider>
+          </OrganizationsProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
   </StrictMode>
 );

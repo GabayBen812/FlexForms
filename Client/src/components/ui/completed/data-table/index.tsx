@@ -86,6 +86,7 @@ export function DataTable<TData>({
   onColumnOrderChange,
   visibleRows,
   isLazyLoading = false,
+  showPageSizeSelector = true,
   organazitionId,
   onRefreshReady,
   refreshTrigger,
@@ -744,7 +745,11 @@ export function DataTable<TData>({
         </div>
       </div>
       {isPagination && !isLazyLoading && (
-        <DataTablePaginationControls table={table} />
+        <DataTablePaginationControls 
+          table={table} 
+          isPagination={isPagination}
+          showPageSizeSelector={showPageSizeSelector}
+        />
       )}
       {hasSelectionActions && (
         <DataTableSelectionBar selectedRowCount={selectedRowCount}>

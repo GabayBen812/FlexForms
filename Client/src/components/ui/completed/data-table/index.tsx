@@ -125,6 +125,10 @@ export function DataTable<TData>({
     showLeftShadow: false,
     showRightShadow: false,
   });
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const [scrollContentWidth, setScrollContentWidth] = useState(0);
+  const [isHorizontalScrollable, setIsHorizontalScrollable] = useState(false);
+  const isSyncingScrollRef = useRef(false);
   
   // Internal state for column order - persist it even if parent doesn't manage it
   // Use a ref to track column keys to prevent unnecessary recalculations
@@ -632,15 +636,56 @@ export function DataTable<TData>({
     [isRTL],
   );
 
-  useEffect(() => {
-    updateScrollShadow();
-  }, [tableData, internalColumnOrder, updateScrollShadow]);
+  const updateScrollMetrics = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) {
+      return;
+    }
+    setScrollContentWidth(container.scrollWidth);
+    setIsHorizontalScrollable(container.scrollWidth - container.clientWidth > 2);
+    updateScrollShadow(container);
+  }, [updateScrollShadow]);
 
   useEffect(() => {
-    const handleResize = () => updateScrollShadow();
+    updateScrollMetrics();
+  }, [tableData, internalColumnOrder, updateScrollMetrics]);
+
+  useEffect(() => {
+    const handleResize = () => updateScrollMetrics();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [updateScrollShadow]);
+  }, [updateScrollMetrics]);
+
+  const syncScrollPositions = useCallback(
+    (source: "main" | "top") => {
+      const main = scrollContainerRef.current;
+      const top = topScrollRef.current;
+      if (!main || !top) {
+        return;
+      }
+
+      if (source === "main") {
+        if (Math.abs(top.scrollLeft - main.scrollLeft) > 1) {
+          isSyncingScrollRef.current = true;
+          top.scrollLeft = main.scrollLeft;
+        }
+      } else {
+        if (Math.abs(main.scrollLeft - top.scrollLeft) > 1) {
+          isSyncingScrollRef.current = true;
+          main.scrollLeft = top.scrollLeft;
+        }
+      }
+    },
+    [],
+  );
+
+  const handleTopScroll = useCallback(() => {
+    if (isSyncingScrollRef.current) {
+      isSyncingScrollRef.current = false;
+      return;
+    }
+    syncScrollPositions("top");
+  }, [syncScrollPositions]);
 
   const enhancedActions = actions
     ? actions.map((action) => {
@@ -739,6 +784,15 @@ export function DataTable<TData>({
       )}
 
       <div className="relative rounded-lg border border-border bg-white shadow-sm">
+        {isHorizontalScrollable && (
+          <div
+            ref={topScrollRef}
+            className="mb-2 h-4 w-full overflow-x-auto rounded-md border border-dashed border-border/80 bg-muted/40 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+            onScroll={handleTopScroll}
+          >
+            <div style={{ width: scrollContentWidth || "100%", height: 1 }} />
+          </div>
+        )}
         <div
           ref={scrollContainerRef}
           className={cn(
@@ -748,6 +802,11 @@ export function DataTable<TData>({
           style={{ height: "calc(100vh - 250px)" }}
           onScroll={(e) => {
             const target = e.target as HTMLElement;
+            if (isSyncingScrollRef.current) {
+              isSyncingScrollRef.current = false;
+            } else {
+              syncScrollPositions("main");
+            }
             updateScrollShadow(target);
             const scrollPosition = target.scrollTop + target.clientHeight;
             const scrollThreshold = target.scrollHeight - 50;

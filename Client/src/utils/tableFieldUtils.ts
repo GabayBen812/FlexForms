@@ -1,12 +1,72 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Organization } from "@/types/api/organization";
 
+export type DynamicFieldChoice =
+  | string
+  | {
+      value?: string;
+      label?: string;
+      color?: string;
+    };
+
+export interface DynamicFieldChoiceOption {
+  value: string;
+  label: string;
+  color?: string;
+}
+
 export interface DynamicFieldDefinition {
-  type: "TEXT" | "SELECT" | "DATE" | "NUMBER" | "EMAIL" | "PHONE" | "MULTI_SELECT" | "TIME" | "CHECKBOX" | "ADDRESS" | "MONEY" | "IMAGE" | "FILE" | "LINK";
+  type:
+    | "TEXT"
+    | "SELECT"
+    | "DATE"
+    | "NUMBER"
+    | "EMAIL"
+    | "PHONE"
+    | "MULTI_SELECT"
+    | "TIME"
+    | "CHECKBOX"
+    | "ADDRESS"
+    | "MONEY"
+    | "IMAGE"
+    | "FILE"
+    | "LINK";
   label: string;
   required?: boolean;
-  choices?: string[];
+  choices?: DynamicFieldChoice[];
   defaultValue?: any;
+}
+
+export function normalizeDynamicFieldChoices(
+  choices?: DynamicFieldDefinition["choices"]
+): DynamicFieldChoiceOption[] {
+  if (!Array.isArray(choices)) {
+    return [];
+  }
+
+  return choices
+    .map((choice) => {
+      if (typeof choice === "string") {
+        return {
+          value: choice,
+          label: choice,
+        };
+      }
+
+      const label = choice?.label ?? choice?.value ?? "";
+      const value = choice?.value ?? choice?.label ?? "";
+
+      if (!label || !value) {
+        return null;
+      }
+
+      return {
+        label,
+        value,
+        color: choice?.color,
+      };
+    })
+    .filter((opt): opt is DynamicFieldChoiceOption => Boolean(opt?.value && opt?.label));
 }
 
 /**
@@ -52,7 +112,7 @@ export function mergeColumnsWithDynamicFields<T>(
                    fieldDef.type === "FILE" ? "FILE" :
                    fieldDef.type === "LINK" ? "LINK" :
                    undefined,
-        options: fieldDef.choices?.map(choice => ({ value: choice, label: choice })),
+        options: normalizeDynamicFieldChoices(fieldDef.choices),
         isDate: fieldDef.type === "DATE",
         isTime: fieldDef.type === "TIME",
         isMoney: fieldDef.type === "MONEY",

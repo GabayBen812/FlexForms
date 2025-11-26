@@ -42,6 +42,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import "./data-table-row.css";
+import { getBadgeColors } from "@/lib/colorUtils";
+import { normalizeDynamicFieldChoices } from "@/utils/tableFieldUtils";
 
 interface BaseData {
   id?: string | number;
@@ -98,21 +100,49 @@ const relationshipChipClass =
 const multiSelectChipClass =
   "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-800";
 
-// Component to display relationship chips
-function RelationshipChipsDisplay({ 
-  values, 
-  options, 
-  onClick 
-}: { 
-  values: string[]; 
-  options: { value: string; label: string }[];
-  onClick?: (e?: React.MouseEvent) => void;
-}) {
-  const labels = values
-    .map((value) => options.find((opt) => opt.value === value)?.label)
-    .filter(Boolean);
+type RelationshipOption = {
+  value: string;
+  label: string;
+  color?: string;
+  [key: string]: unknown;
+};
 
-  if (labels.length === 0) {
+type RelationshipChipRendererArgs = {
+  value: string;
+  label: string;
+  option?: RelationshipOption;
+  DefaultChip: (props?: React.HTMLAttributes<HTMLDivElement>) => React.ReactNode;
+};
+
+type RelationshipChipRenderer = (args: RelationshipChipRendererArgs) => React.ReactNode;
+
+// Component to display relationship chips
+function RelationshipChipsDisplay({
+  values,
+  options,
+  onClick,
+  renderChip,
+}: {
+  values: string[];
+  options: RelationshipOption[];
+  onClick?: (e?: React.MouseEvent) => void;
+  renderChip?: RelationshipChipRenderer;
+}) {
+  const resolvedValues = values
+    .map((value) => {
+      const option = options.find((opt) => opt.value === value);
+      if (!option) {
+        return null;
+      }
+      return {
+        value,
+        option,
+        label: option.label,
+      };
+    })
+    .filter((item): item is { value: string; option: RelationshipOption; label: string } => !!item?.label);
+
+  if (!resolvedValues.length) {
     return (
       <div
         onClick={onClick}
@@ -126,17 +156,34 @@ function RelationshipChipsDisplay({
       onClick={onClick}
       className="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded min-h-[1.5rem] transition-colors flex flex-wrap gap-1 justify-center items-center"
     >
-      {labels.map((label, index) => (
-        <div
-          key={values[index]}
-          className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium border",
-            relationshipChipClass
-          )}
-        >
-          <span>{label}</span>
-        </div>
-      ))}
+      {resolvedValues.map(({ value, option, label }) => {
+        const DefaultChip = ({
+          className,
+          ...chipProps
+        }: React.HTMLAttributes<HTMLDivElement> = {}) => (
+          <div
+            className={cn(
+              "flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium border",
+              relationshipChipClass,
+              className,
+            )}
+            {...chipProps}
+          >
+            <span>{label}</span>
+          </div>
+        );
+
+        const chipNode = renderChip
+          ? renderChip({
+              value,
+              label,
+              option,
+              DefaultChip,
+            })
+          : DefaultChip();
+
+        return <React.Fragment key={value}>{chipNode}</React.Fragment>;
+      })}
     </div>
   );
 }
@@ -146,11 +193,11 @@ function MultiSelectChipsDisplay({
   options,
 }: {
   values: unknown[];
-  options?: { value: string; label: string }[];
+  options?: { value: string; label: string; color?: string }[];
 }) {
   const normalizedValues = Array.isArray(values) ? values : [];
 
-  const labels = normalizedValues
+  const chips = normalizedValues
     .map((value) => {
       if (typeof value === "object" && value !== null) {
         const objectValue = value as Record<string, unknown>;
@@ -161,38 +208,54 @@ function MultiSelectChipsDisplay({
           (typeof objectValue._id === "string" && objectValue._id);
 
         if (candidate) {
-          const optionLabel = options?.find((opt) => opt.value === candidate)?.label;
-          return optionLabel ?? candidate;
+          const matchedOption = options?.find((opt) => opt.value === candidate);
+          return {
+            label: matchedOption?.label ?? candidate,
+            value: candidate,
+            color: matchedOption?.color,
+          };
         }
       }
 
       if (value == null) {
-        return "";
+        return null;
       }
 
       const stringValue = String(value);
-      const optionLabel = options?.find((opt) => opt.value === stringValue)?.label;
-      return optionLabel ?? stringValue;
+      const matchedOption = options?.find((opt) => opt.value === stringValue);
+      return {
+        label: matchedOption?.label ?? stringValue,
+        value: stringValue,
+        color: matchedOption?.color,
+      };
     })
-    .filter((label) => typeof label === "string" && label.trim().length > 0);
+    .filter(
+      (chip): chip is { label: string; value: string; color?: string } =>
+        Boolean(chip?.label && chip.label.trim().length > 0)
+    );
 
-  if (!labels.length) {
+  if (!chips.length) {
     return <div className="px-2 py-1 rounded min-h-[1.5rem]" />;
   }
 
   return (
     <div className="px-2 py-1 rounded min-h-[1.5rem] flex flex-wrap gap-1 justify-center items-center">
-      {labels.map((label, index) => (
-        <div
-          key={`${label}-${index}`}
-          className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium border",
-            multiSelectChipClass
-          )}
-        >
-          <span>{label}</span>
-        </div>
-      ))}
+      {chips.map((chip, index) => {
+        const { background, text } = getBadgeColors(chip.color);
+        return (
+          <div
+            key={`${chip.value}-${index}`}
+            className="flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium border"
+            style={{
+              backgroundColor: background,
+              color: text,
+              borderColor: background,
+            }}
+          >
+            <span>{chip.label}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -209,7 +272,10 @@ function RelationshipEditableCell<T>({
   const columnDef = cell.column.columnDef;
   const accessorKey = (columnDef as any).accessorKey as string;
   const meta = (columnDef as any).meta || {};
-  const relationshipOptions = meta.relationshipOptions || [];
+  const relationshipOptions: RelationshipOption[] = meta.relationshipOptions || [];
+  const relationshipChipRenderer = meta.relationshipChipRenderer as
+    | RelationshipChipRenderer
+    | undefined;
   
   const cellValue = cell.getValue();
   const currentValues = Array.isArray(cellValue) 
@@ -253,6 +319,7 @@ function RelationshipEditableCell<T>({
         <RelationshipChipsDisplay
           values={currentValues}
           options={relationshipOptions}
+          renderChip={relationshipChipRenderer}
         />
         <Pencil className="w-3.5 h-3.5 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute top-1 right-1" />
       </div>
@@ -306,7 +373,7 @@ function SingleRelationshipChipsDisplay({
   onClick,
 }: {
   value: string | null | undefined;
-  options: { value: string; label: string }[];
+  options: RelationshipOption[];
   onClick?: (e?: React.MouseEvent) => void;
 }) {
   const label = value
@@ -480,6 +547,11 @@ function EditableCell<T>({
   const isFile = meta.isFile;
   const isDynamic = accessorKey?.startsWith("dynamicFields.");
   const fieldDefinition = meta.fieldDefinition;
+  const fallbackFieldOptions = fieldDefinition?.choices
+    ? normalizeDynamicFieldChoices(fieldDefinition.choices)
+    : undefined;
+  const resolvedOptions =
+    Array.isArray(options) && options.length > 0 ? options : fallbackFieldOptions;
   
   // Detect email/phone fields (both static and dynamic)
   const isEmailField = accessorKey === "email" || fieldType === "EMAIL" || (isDynamic && fieldDefinition?.type === "EMAIL");
@@ -517,10 +589,11 @@ function EditableCell<T>({
   };
   
   // Pre-calculate display label for select fields
-  const selectDisplayValue =
-    fieldType === "SELECT" && Array.isArray(options)
-      ? options.find((opt: any) => opt.value === cellValue)?.label
+  const selectDisplayOption =
+    fieldType === "SELECT" && Array.isArray(resolvedOptions)
+      ? resolvedOptions.find((opt: any) => opt.value === cellValue)
       : undefined;
+  const selectDisplayValue = selectDisplayOption?.label;
 
   // For IMAGE type, we'll handle it separately in the render
   const displayValue = selectDisplayValue ??
@@ -574,6 +647,19 @@ function EditableCell<T>({
           : String(cellValue ?? "");
         setValue(stringValue);
       }
+
+      if (
+        fieldType === "SELECT" &&
+        (!cellValue || String(cellValue).trim() === "") &&
+        Array.isArray(resolvedOptions) &&
+        resolvedOptions.length > 0
+      ) {
+        const defaultOptionValue = resolvedOptions[0]?.value;
+        if (defaultOptionValue !== undefined && defaultOptionValue !== null) {
+          setValue(String(defaultOptionValue));
+        }
+      }
+
       // Focus the input
       setTimeout(() => {
         inputRef.current?.focus();
@@ -582,7 +668,7 @@ function EditableCell<T>({
         }
       }, 0);
     }
-  }, [isEditing, cellValue, isDate, fieldType, isPhoneField, isMoney, isLinkField]);
+  }, [isEditing, cellValue, isDate, fieldType, isPhoneField, isMoney, isLinkField, resolvedOptions]);
 
   // Sync optimistic checkbox value with server value when it updates
   useEffect(() => {
@@ -1028,11 +1114,7 @@ function EditableCell<T>({
           ? cellValue.split(",").map((value) => value.trim()).filter(Boolean)
           : [];
 
-      const multiSelectOptions =
-        options ??
-        (Array.isArray(fieldDefinition?.choices)
-          ? fieldDefinition.choices.map((choice) => ({ value: choice, label: choice }))
-          : undefined);
+      const multiSelectOptions = Array.isArray(resolvedOptions) ? resolvedOptions : undefined;
 
       return (
         <div
@@ -1047,6 +1129,36 @@ function EditableCell<T>({
         >
           <MultiSelectChipsDisplay values={rawValues} options={multiSelectOptions} />
           <Pencil className="w-3.5 h-3.5 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute top-1 right-1" />
+        </div>
+      );
+    }
+    
+    if (fieldType === "SELECT" && selectDisplayOption) {
+      const { background, text } = getBadgeColors(selectDisplayOption.color);
+      return (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+          className={cn(
+            "cursor-pointer group relative px-2 py-1 rounded min-h-[1.5rem] transition-all duration-200",
+            "hover:bg-blue-50 hover:border hover:border-blue-200 hover:shadow-sm"
+          )}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <span
+              className="inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold shadow-sm"
+              style={{
+                backgroundColor: background,
+                color: text,
+                borderColor: background,
+              }}
+            >
+              {selectDisplayOption.label}
+            </span>
+            <Pencil className="w-3.5 h-3.5 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+          </div>
         </div>
       );
     }
@@ -1174,7 +1286,7 @@ function EditableCell<T>({
     );
   }
 
-  if (fieldType === "SELECT" && options) {
+  if (fieldType === "SELECT" && resolvedOptions) {
     return (
       <select
         ref={inputRef as React.RefObject<HTMLSelectElement>}
@@ -1185,7 +1297,7 @@ function EditableCell<T>({
         className="w-full border border-primary rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary text-center"
         onClick={(e) => e.stopPropagation()}
       >
-        {options.map((opt: any) => (
+        {resolvedOptions.map((opt: any) => (
           <option key={opt.value} value={opt.value}>
             {opt.label}
           </option>
@@ -1194,7 +1306,7 @@ function EditableCell<T>({
     );
   }
 
-  if (fieldType === "MULTI_SELECT" && options) {
+  if (fieldType === "MULTI_SELECT" && resolvedOptions) {
     const selectedValues = Array.isArray(value) ? value : (typeof value === "string" && value ? value.split(',').map(v => v.trim()) : []);
     return (
       <div
@@ -1202,7 +1314,7 @@ function EditableCell<T>({
         className="w-full flex flex-col gap-2 items-stretch"
       >
         <MultiSelect
-          options={options}
+          options={resolvedOptions}
           selected={selectedValues}
           onSelect={(values) => {
             setValue(values.join(","));

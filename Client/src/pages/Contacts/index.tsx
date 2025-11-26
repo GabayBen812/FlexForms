@@ -19,6 +19,7 @@ import { fetchAllAccounts } from "@/api/accounts";
 import { Account } from "@/types/accounts/account";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
 import { ProfileAvatar, getProfileImageUrl } from "@/components/ProfileAvatar";
+import { DataTablePageLayout } from "@/components/layout/DataTablePageLayout";
 
 const usersApi = createApiService<Contact>("/contacts");
 
@@ -404,166 +405,176 @@ export default function ContactsPage() {
   }, [tableMethods]);
 
   return (
-    <div className="mx-auto">
-      <h1 className="text-2xl font-semibold text-primary mb-6">{t("contacts")}</h1>
-      <DataTable<Contact>
-        data={[]}
-        fetchData={fetchData}
-        addData={handleCreateContact}
-        updateData={usersApi.update}
-        deleteData={usersApi.delete}
-        columns={mergedColumns}
-        searchable
-        showAdvancedSearch
-        onAdvancedSearchChange={setAdvancedFilters}
-        initialAdvancedFilters={advancedFilters}
-        isPagination={false}
-        defaultPageSize={10}
-        //@ts-ignore
-        idField="_id"
-        extraFilters={advancedFilters}
-        organazitionId={organization?._id}
-        entityType="contacts"
-        rowSelection={rowSelection}
-        onRowSelectionChange={handleRowSelectionChange}
-        visibleRows={handleVisibleRows}
-        onRefreshReady={handleRefreshReady}
-        customLeftButtons={
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsAddDialogOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600 hover:border-green-700"
-            >
-              {t("add")}
-            </Button>
-            <SmartLoadFromExcel />
-            <Button
-              variant="outline"
-              onClick={() => setIsFieldConfigDialogOpen(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white hover:text-white border-purple-600 hover:border-purple-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              {t("configure_fields", "ערוך שדות דינאמיים")}
-            </Button>
-          </div>
-        }
-        onBulkDelete={handleBulkDelete}
-        onBulkAdvancedUpdate={handleBulkAdvancedUpdate}
-      />
-      <AddRecordDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        columns={mergedColumns}
-        onAdd={handleCreateContact}
-        excludeFields={["organizationId", "type", "status"]}
-        relationshipFields={{
-          accountId: {
-            options: accountsOptions,
-          },
-        }}
-        defaultValues={{
-          organizationId: organization?._id || "",
-          type: "contact",
-          status: "active",
-        }}
-      />
-      <AddRecordDialog
-        open={isEditDialogOpen}
-        onOpenChange={(open) => {
-          setIsEditDialogOpen(open);
-          if (!open) {
-            setEditingContact(null);
+    <DataTablePageLayout title={t("contacts")}>
+      <>
+        <DataTable<Contact>
+          data={[]}
+          fetchData={fetchData}
+          addData={handleCreateContact}
+          updateData={usersApi.update}
+          deleteData={usersApi.delete}
+          columns={mergedColumns}
+          searchable
+          showAdvancedSearch
+          onAdvancedSearchChange={setAdvancedFilters}
+          initialAdvancedFilters={advancedFilters}
+          isPagination={false}
+          defaultPageSize={10}
+          //@ts-ignore
+          idField="_id"
+          extraFilters={advancedFilters}
+          organazitionId={organization?._id}
+          entityType="contacts"
+          rowSelection={rowSelection}
+          onRowSelectionChange={handleRowSelectionChange}
+          visibleRows={handleVisibleRows}
+          onRefreshReady={handleRefreshReady}
+          customLeftButtons={
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsAddDialogOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600 hover:border-green-700"
+              >
+                {t("add")}
+              </Button>
+              <SmartLoadFromExcel />
+              <Button
+                variant="outline"
+                onClick={() => setIsFieldConfigDialogOpen(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white hover:text-white border-purple-600 hover:border-purple-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                {t("configure_fields", "ערוך שדות דינאמיים")}
+              </Button>
+            </div>
           }
-        }}
-        columns={mergedColumns}
-        onAdd={handleCreateContact}
-        onEdit={async (data) => {
-          if (!editingContact?._id) return;
-          try {
-            const { firstname, lastname, email, phone, accountId, ...rest } = data;
+          onBulkDelete={handleBulkDelete}
+          onBulkAdvancedUpdate={handleBulkAdvancedUpdate}
+        />
+        <AddRecordDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          columns={mergedColumns}
+          onAdd={handleCreateContact}
+          excludeFields={["organizationId", "type", "status"]}
+          relationshipFields={{
+            accountId: {
+              options: accountsOptions,
+            },
+          }}
+          defaultValues={{
+            organizationId: organization?._id || "",
+            type: "contact",
+            status: "active",
+          }}
+        />
+        <AddRecordDialog
+          open={isEditDialogOpen}
+          onOpenChange={(open) => {
+            setIsEditDialogOpen(open);
+            if (!open) {
+              setEditingContact(null);
+            }
+          }}
+          columns={mergedColumns}
+          onAdd={handleCreateContact}
+          onEdit={async (data) => {
+            if (!editingContact?._id) return;
+            try {
+              const { firstname, lastname, email, phone, accountId, ...rest } = data;
 
-            const dynamicFieldEntries = Object.entries(rest).filter(([key]) =>
-              key.startsWith("dynamicFields.")
-            );
+              const dynamicFieldEntries = Object.entries(rest).filter(([key]) =>
+                key.startsWith("dynamicFields.")
+              );
 
-            const dynamicFields =
-              dynamicFieldEntries.length > 0
-                ? dynamicFieldEntries.reduce<Record<string, unknown>>((acc, [key, value]) => {
-                    const fieldKey = key.replace("dynamicFields.", "");
-                    acc[fieldKey] = value;
-                    return acc;
-                  }, {})
-                : undefined;
+              const dynamicFields =
+                dynamicFieldEntries.length > 0
+                  ? dynamicFieldEntries.reduce<Record<string, unknown>>((acc, [key, value]) => {
+                      const fieldKey = key.replace("dynamicFields.", "");
+                      acc[fieldKey] = value;
+                      return acc;
+                    }, {})
+                  : undefined;
 
-            const cleanedRest = Object.fromEntries(
-              Object.entries(rest).filter(([key]) => !key.startsWith("dynamicFields."))
-            );
+              const cleanedRest = Object.fromEntries(
+                Object.entries(rest).filter(([key]) => !key.startsWith("dynamicFields."))
+              );
 
-            const normalizedEmail = email?.toString().trim();
-            const normalizedPhone = phone?.toString().trim();
-            const normalizedAccountId = accountId && accountId.toString().trim() !== "" ? accountId.toString().trim() : undefined;
+              const normalizedEmail = email?.toString().trim();
+              const normalizedPhone = phone?.toString().trim();
+              const normalizedAccountId =
+                accountId && accountId.toString().trim() !== ""
+                  ? accountId.toString().trim()
+                  : undefined;
 
-            await usersApi.update({
-              id: editingContact._id,
-              ...cleanedRest,
-              firstname: firstname?.toString().trim() ?? "",
-              lastname: lastname?.toString().trim() ?? "",
-              email: normalizedEmail ? normalizedEmail : undefined,
-              phone: normalizedPhone ? normalizedPhone : undefined,
-              accountId: normalizedAccountId,
-              ...(dynamicFields ? { dynamicFields } : {}),
-            });
-            toast.success(t("updated_successfully", "Record updated successfully"));
-            tableMethods?.refresh();
-            setIsEditDialogOpen(false);
-            setEditingContact(null);
-          } catch (error) {
-            console.error("Failed to update contact:", error);
-            toast.error(t("error", "An error occurred"));
-            throw error;
+              await usersApi.update({
+                id: editingContact._id,
+                ...cleanedRest,
+                firstname: firstname?.toString().trim() ?? "",
+                lastname: lastname?.toString().trim() ?? "",
+                email: normalizedEmail ? normalizedEmail : undefined,
+                phone: normalizedPhone ? normalizedPhone : undefined,
+                accountId: normalizedAccountId,
+                ...(dynamicFields ? { dynamicFields } : {}),
+              });
+              toast.success(t("updated_successfully", "Record updated successfully"));
+              tableMethods?.refresh();
+              setIsEditDialogOpen(false);
+              setEditingContact(null);
+            } catch (error) {
+              console.error("Failed to update contact:", error);
+              toast.error(t("error", "An error occurred"));
+              throw error;
+            }
+          }}
+          editMode
+          editData={
+            editingContact
+              ? {
+                  firstname: editingContact.firstname,
+                  lastname: editingContact.lastname,
+                  email: editingContact.email || "",
+                  phone: editingContact.phone || "",
+                  accountId: editingContact.accountId || "",
+                  ...(editingContact.dynamicFields
+                    ? { dynamicFields: editingContact.dynamicFields }
+                    : {}),
+                }
+              : undefined
           }
-        }}
-        editMode
-        editData={editingContact ? {
-          firstname: editingContact.firstname,
-          lastname: editingContact.lastname,
-          email: editingContact.email || "",
-          phone: editingContact.phone || "",
-          accountId: editingContact.accountId || "",
-          ...(editingContact.dynamicFields ? { dynamicFields: editingContact.dynamicFields } : {}),
-        } : undefined}
-        relationshipFields={{
-          accountId: {
-            options: accountsOptions,
-          },
-        }}
-        excludeFields={["organizationId", "type", "status"]}
-        defaultValues={{
-          organizationId: organization?._id || "",
-          type: "contact",
-          status: "active",
-        }}
-      />
-      <TableFieldConfigDialog
-        open={isFieldConfigDialogOpen}
-        onOpenChange={setIsFieldConfigDialogOpen}
-        entityType="contacts"
-        organizationId={organization?._id || ""}
-        onSave={handleFieldConfigSave}
-      />
-      <AdvancedUpdateDialog<Contact>
-        open={isAdvancedUpdateOpen}
-        onOpenChange={(open) => {
-          setIsAdvancedUpdateOpen(open);
-          if (!open) {
-            setAdvancedUpdateRows([]);
-          }
-        }}
-        columns={mergedColumns}
-        onUpdate={handleAdvancedUpdateConfirm}
-        selectedRowCount={selectedRowCount}
-      />
-    </div>
+          relationshipFields={{
+            accountId: {
+              options: accountsOptions,
+            },
+          }}
+          excludeFields={["organizationId", "type", "status"]}
+          defaultValues={{
+            organizationId: organization?._id || "",
+            type: "contact",
+            status: "active",
+          }}
+        />
+        <TableFieldConfigDialog
+          open={isFieldConfigDialogOpen}
+          onOpenChange={setIsFieldConfigDialogOpen}
+          entityType="contacts"
+          organizationId={organization?._id || ""}
+          onSave={handleFieldConfigSave}
+        />
+        <AdvancedUpdateDialog<Contact>
+          open={isAdvancedUpdateOpen}
+          onOpenChange={(open) => {
+            setIsAdvancedUpdateOpen(open);
+            if (!open) {
+              setAdvancedUpdateRows([]);
+            }
+          }}
+          columns={mergedColumns}
+          onUpdate={handleAdvancedUpdateConfirm}
+          selectedRowCount={selectedRowCount}
+        />
+      </>
+    </DataTablePageLayout>
   );
 }

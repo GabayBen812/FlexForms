@@ -8,9 +8,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { getBadgeColors } from "@/lib/colorUtils";
+
+interface MultiSelectOption {
+  value: string;
+  label: string;
+  color?: string;
+}
 
 interface MultiSelectProps {
-  options: { value: string; label: string }[];
+  options: MultiSelectOption[];
   selected: string[];
   onSelect: (values: string[]) => void;
   placeholder?: string;
@@ -43,10 +50,10 @@ export function MultiSelect({
     onSelect(selected.filter((item) => item !== value));
   };
 
-  const getSelectedLabels = () => {
+  const getSelectedOptions = () => {
     return selected
-      .map((value) => options.find((opt) => opt.value === value)?.label)
-      .filter(Boolean);
+      .map((value) => options.find((opt) => opt.value === value))
+      .filter((option): option is MultiSelectOption => Boolean(option));
   };
 
   return (
@@ -65,24 +72,32 @@ export function MultiSelect({
             {selected.length === 0 ? (
               <span className="text-muted-foreground">{placeholder}</span>
             ) : (
-              getSelectedLabels().map((label, index) => (
-                <div
-                  key={selected[index]}
-                  className={cn(
-                    "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border",
-                    chipClassName
-                  )}
-                >
-                  <span>{label}</span>
-                  <button
-                    type="button"
-                    onClick={(e) => handleRemove(selected[index], e)}
-                    className="ml-1 hover:opacity-80 rounded-full hover:bg-white/20 p-0.5"
+              getSelectedOptions().map((option) => {
+                const { background, text } = getBadgeColors(option.color);
+                return (
+                  <div
+                    key={option.value}
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border",
+                      chipClassName
+                    )}
+                    style={{
+                      backgroundColor: background,
+                      color: text,
+                      borderColor: background,
+                    }}
                   >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))
+                    <span>{option.label}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleRemove(option.value, e)}
+                      className="ml-1 hover:opacity-80 rounded-full hover:bg-white/20 p-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })
             )}
           </div>
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

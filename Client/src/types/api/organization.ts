@@ -25,13 +25,23 @@ export interface Organization {
   tableFieldDefinitions?: Record<
     string, // entity type: "kids", "parents", etc.
     {
-      fields: Record<string, {
-        type: string; // "TEXT" | "SELECT" | "DATE" | "NUMBER" | "EMAIL" | "PHONE"
-        label: string;
-        required?: boolean;
-        choices?: string[]; // for SELECT type
-        defaultValue?: any;
-      }>;
+      fields: Record<
+        string,
+        {
+          type: string; // "TEXT" | "SELECT" | "DATE" | "NUMBER" | "EMAIL" | "PHONE"
+          label: string;
+          required?: boolean;
+          choices?: Array<
+            | string
+            | {
+                value?: string;
+                label?: string;
+                color?: string;
+              }
+          >; // for SELECT type
+          defaultValue?: any;
+        }
+      >;
       fieldOrder?: string[]; // Array of field names in the desired order
     }
   >;

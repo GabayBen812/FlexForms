@@ -11,6 +11,7 @@ import { User } from "@/types/users/user";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
+import { DataTablePageLayout } from "@/components/layout/DataTablePageLayout";
 import { toast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TableAction } from "@/types/ui/data-table-types";
@@ -302,98 +303,99 @@ export default function Users() {
   };
 
   return (
-    <div className="mx-auto">
-      <h1 className="text-2xl font-semibold text-primary mb-6">{t("users")}</h1>
-      <DataTable<User>
-        data={users}
-        updateData={usersApi.update}
-        fetchData={useCallback(async (params) => {
-          if (!organization?._id) return { status: 200, data: [] };
-          const result = await usersApi.fetchAll(
-            params,
-            false,
-            organization._id
-          );
-          if ("data" in result && Array.isArray(result.data)) {
-            const sanitizedUsers = result.data.map((user) => ({
-              ...user,
-              password: "*****",
-            }));
-            setUsers(sanitizedUsers);
-          }
-          return result;
-        }, [organization?._id])}
-        addData={usersApi.create}
-        deleteData={usersApi.delete}
-        columns={visibleColumns}
-        actions={actions}
-        searchable
-        showAdvancedSearch
-        onAdvancedSearchChange={setAdvancedFilters}
-        initialAdvancedFilters={advancedFilters}
-        isPagination={false}
-        defaultPageSize={10}
-        idField="_id"
-        extraFilters={advancedFilters}
-        organazitionId={organization?._id}
-        onRefreshReady={useCallback((methods) => setTableMethods(methods), [])}
-        rowSelection={rowSelection}
-        onRowSelectionChange={useCallback((updater: any) => {
-          setRowSelection((prev) => {
-            if (typeof updater === 'function') {
-              return updater(prev);
-            } else {
-              return updater;
+    <DataTablePageLayout title={t("users")}>
+      <>
+        <DataTable<User>
+          data={users}
+          updateData={usersApi.update}
+          fetchData={useCallback(async (params) => {
+            if (!organization?._id) return { status: 200, data: [] };
+            const result = await usersApi.fetchAll(params, false, organization._id);
+            if ("data" in result && Array.isArray(result.data)) {
+              const sanitizedUsers = result.data.map((user) => ({
+                ...user,
+                password: "*****",
+              }));
+              setUsers(sanitizedUsers);
             }
-          });
-        }, [])}
-        visibleRows={useCallback((rows) => setTableRows(rows), [])}
-        customLeftButtons={
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsAddDialogOpen(true)}
-              className="bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600 hover:border-green-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
-            >
-              <Plus className="w-4 h-4 mr-2" /> {t("add")}
-            </Button>
-          </div>
-        }
-        onBulkDelete={handleBulkDelete}
-        onRowClick={(user) => {}}
-      />
-      <AddRecordDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        columns={visibleColumns}
-        onAdd={handleAddUser}
-        excludeFields={["organizationId"]}
-        defaultValues={{
-          organizationId: organization?._id || "",
-        }}
-      />
-      <AddRecordDialog
-        open={isEditDialogOpen}
-        onOpenChange={(open) => {
-          setIsEditDialogOpen(open);
-          if (!open) {
-            setEditingUser(null);
+            return result;
+          }, [organization?._id])}
+          addData={usersApi.create}
+          deleteData={usersApi.delete}
+          columns={visibleColumns}
+          actions={actions}
+          searchable
+          showAdvancedSearch
+          onAdvancedSearchChange={setAdvancedFilters}
+          initialAdvancedFilters={advancedFilters}
+          isPagination={false}
+          defaultPageSize={10}
+          idField="_id"
+          extraFilters={advancedFilters}
+          organazitionId={organization?._id}
+          onRefreshReady={useCallback((methods) => setTableMethods(methods), [])}
+          rowSelection={rowSelection}
+          onRowSelectionChange={useCallback((updater: any) => {
+            setRowSelection((prev) => {
+              if (typeof updater === "function") {
+                return updater(prev);
+              } else {
+                return updater;
+              }
+            });
+          }, [])}
+          visibleRows={useCallback((rows) => setTableRows(rows), [])}
+          customLeftButtons={
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsAddDialogOpen(true)}
+                className="bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600 hover:border-green-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+              >
+                <Plus className="mr-2 h-4 w-4" /> {t("add")}
+              </Button>
+            </div>
           }
-        }}
-        columns={visibleColumns}
-        onAdd={handleAddUser}
-        onEdit={handleEditUser}
-        editMode={true}
-        editData={editingUser ? {
-          name: editingUser.name,
-          email: editingUser.email,
-          role: editingUser.role,
-        } : undefined}
-        excludeFields={["organizationId", "password"]}
-        defaultValues={{
-          organizationId: organization?._id || "",
-        }}
-      />
-    </div>
+          onBulkDelete={handleBulkDelete}
+          onRowClick={() => {}}
+        />
+        <AddRecordDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          columns={visibleColumns}
+          onAdd={handleAddUser}
+          excludeFields={["organizationId"]}
+          defaultValues={{
+            organizationId: organization?._id || "",
+          }}
+        />
+        <AddRecordDialog
+          open={isEditDialogOpen}
+          onOpenChange={(open) => {
+            setIsEditDialogOpen(open);
+            if (!open) {
+              setEditingUser(null);
+            }
+          }}
+          columns={visibleColumns}
+          onAdd={handleAddUser}
+          onEdit={handleEditUser}
+          editMode={true}
+          editData={
+            editingUser
+              ? {
+                  name: editingUser.name,
+                  email: editingUser.email,
+                  role: editingUser.role,
+                }
+              : undefined
+          }
+          excludeFields={["organizationId", "password"]}
+          defaultValues={{
+            organizationId: organization?._id || "",
+          }}
+        />
+      </>
+    </DataTablePageLayout>
   );
 }

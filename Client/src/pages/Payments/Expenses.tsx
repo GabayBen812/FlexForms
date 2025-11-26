@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
 import { TableFieldConfigDialog } from "@/components/ui/completed/dialogs/TableFieldConfigDialog";
 import { AdvancedUpdateDialog } from "@/components/AdvancedUpdateDialog";
-import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
+import { mergeColumnsWithDynamicFields, normalizeDynamicFieldChoices } from "@/utils/tableFieldUtils";
 import { toast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { showConfirm } from "@/utils/swal";
@@ -60,11 +60,22 @@ export default function Expenses() {
   const categoryOptions = useMemo(() => {
     const dynamicFields = organization?.tableFieldDefinitions?.expenses?.fields;
     const categoryField = dynamicFields?.category;
-    const customChoices = categoryField?.choices || [];
-    const allCategories = [...DEFAULT_CATEGORIES, ...customChoices];
-    // Remove duplicates
-    const uniqueCategories = Array.from(new Set(allCategories));
-    return uniqueCategories.map((cat) => ({ value: cat, label: cat }));
+    const normalizedCustomChoices = normalizeDynamicFieldChoices(
+      categoryField?.choices
+    );
+    const defaultOptions = DEFAULT_CATEGORIES.map((cat) => ({
+      value: cat,
+      label: cat,
+    }));
+
+    const uniqueByValue = new Map<string, { value: string; label: string }>();
+    [...defaultOptions, ...normalizedCustomChoices].forEach((option) => {
+      if (!uniqueByValue.has(option.value)) {
+        uniqueByValue.set(option.value, { value: option.value, label: option.label });
+      }
+    });
+
+    return Array.from(uniqueByValue.values());
   }, [organization]);
 
   // Hebrew translated payment methods for display

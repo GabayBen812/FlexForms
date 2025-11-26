@@ -399,6 +399,8 @@ export function AddRecordDialog({
       
       Object.keys(form).forEach((key) => {
         const value = form[key];
+        const column = dataColumns.find((col) => (col as any).accessorKey === key);
+        const allowEmptyValue = !!(column && (column.meta as any)?.allowEmpty);
         
         if (isDynamicField(key)) {
           const fieldName = getDynamicFieldName(key);
@@ -418,6 +420,9 @@ export function AddRecordDialog({
           if (Array.isArray(value)) {
             processedData[key] = value;
           } else if (value === "" || value === null || value === undefined) {
+            if (allowEmptyValue) {
+              processedData[key] = null;
+            }
             return;
           } else if (isDateField(key) && value && typeof value === "string") {
             // Convert DD/MM/YYYY or YYYY-MM-DD to YYYY-MM-DD for API
@@ -523,7 +528,7 @@ export function AddRecordDialog({
   const handleImageFieldChange = async (accessorKey: string, file: File | null) => {
     // Handle file removal
     if (!file) {
-      setForm({ ...form, [accessorKey]: "" });
+      setForm({ ...form, [accessorKey]: null });
       return;
     }
 
@@ -561,10 +566,22 @@ export function AddRecordDialog({
     }
 
     try {
-      const fieldName = getDynamicFieldName(accessorKey);
+      const column = dataColumns.find((col) => (col as any).accessorKey === accessorKey);
+      const uploadPathMeta = column ? (column.meta as any)?.uploadPath : undefined;
       const timestamp = Date.now();
       const uuid = crypto.randomUUID();
-      const path = `uploads/dynamic-fields/${fieldName}/${timestamp}_${uuid}`;
+      let basePath: string;
+
+      if (uploadPathMeta) {
+        basePath = uploadPathMeta;
+      } else if (isDynamicField(accessorKey)) {
+        const fieldName = getDynamicFieldName(accessorKey);
+        basePath = `uploads/dynamic-fields/${fieldName}`;
+      } else {
+        basePath = `uploads/static-fields/${accessorKey}`;
+      }
+
+      const path = `${basePath}/${timestamp}_${uuid}`;
       const fileUrl = await uploadFile(file, path);
       setForm({ ...form, [accessorKey]: fileUrl });
       toast.success(t("file_uploaded_successfully", "קובץ הועלה בהצלחה") || "File uploaded successfully");
@@ -596,7 +613,9 @@ export function AddRecordDialog({
             const isRequiredField = !isDynamic && (accessorKey === "firstname" || accessorKey === "lastname" || accessorKey === "password");
             
             // Get field value - handle dynamic fields differently
-            const fieldValue = form[accessorKey] !== undefined ? form[accessorKey] : (defaultValues[accessorKey] || "");
+            const fieldValue = Object.prototype.hasOwnProperty.call(form, accessorKey)
+              ? form[accessorKey]
+              : (defaultValues[accessorKey] ?? "");
             const dynamicFieldName = isDynamic ? getDynamicFieldName(accessorKey) : null;
             const isRelationshipField = relationshipFields?.[accessorKey];
             const relationshipOptions = isRelationshipField?.options || [];

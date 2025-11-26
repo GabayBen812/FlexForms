@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { z } from "zod";
+import type { HTMLAttributes, ReactElement } from "react";
 import { useState, useCallback, useMemo, useRef } from "react";
 import { Plus, Settings } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -16,16 +18,23 @@ import { Parent } from "@/types/parents/parent";
 import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
 import { TableFieldConfigDialog } from "@/components/ui/completed/dialogs/TableFieldConfigDialog";
 import { SmartLoadFromExcel } from "@/components/ui/completed/dialogs/SmartLoadFromExcel";
 import { AdvancedUpdateDialog } from "@/components/AdvancedUpdateDialog";
 import { ProfileAvatar, getProfileImageUrl } from "@/components/ProfileAvatar";
-import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
+import {
+  getDynamicFieldDefinitions,
+  mergeColumnsWithDynamicFields,
+  normalizeDynamicFieldChoices,
+  type DynamicFieldDefinition,
+} from "@/utils/tableFieldUtils";
 import { toast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { showConfirm } from "@/utils/swal";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { DataTablePageLayout } from "@/components/layout/DataTablePageLayout";
 import {
   fetchContacts,
   createContact,
@@ -40,8 +49,10 @@ import {
   denamespaceDynamicFields,
   namespaceDynamicFields,
 } from "@/utils/contacts/dynamicFieldNamespaces";
-import { parseDateForSubmit } from "@/lib/dateUtils";
+import { formatDateForDisplay, parseDateForSubmit } from "@/lib/dateUtils";
 import { isValidIsraeliID } from "@/lib/israeliIdValidator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { formatPhoneNumber } from "@/lib/phoneUtils";
 
 const kidsApi = createApiService<Kid>("/kids", {
   includeOrgId: true,
@@ -52,6 +63,345 @@ const parentsApi = createApiService<Parent>("/parents", {
 });
 
 const KID_PROFILE_UPLOAD_PATH = "uploads/kids/profile-images";
+
+interface ParentDetailsPopoverProps {
+  parent: Parent;
+  trigger: ReactElement;
+  t: TFunction;
+  dynamicFieldDefinitions: Record<string, DynamicFieldDefinition>;
+  dynamicFieldOrder: string[];
+}
+
+interface ParentFieldRow {
+  key: string;
+  label: string;
+  value: string;
+  href?: string;
+}
+
+const hasRenderableValue = (value: unknown): boolean => {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (typeof value === "number") return true;
+  if (typeof value === "boolean") return true;
+  if (Array.isArray(value)) {
+    return value.some(hasRenderableValue);
+  }
+  if (typeof value === "object") {
+    return Object.values(value as Record<string, unknown>).some(hasRenderableValue);
+  }
+  return false;
+};
+
+const stringifyFieldValue = (value: unknown): string => {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => stringifyFieldValue(entry))
+      .filter(Boolean)
+      .join(", ");
+  }
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    if (typeof record.label === "string" && record.label.trim().length > 0) {
+      return record.label;
+    }
+    if (
+      typeof record.value === "string" ||
+      typeof record.value === "number" ||
+      typeof record.value === "boolean"
+    ) {
+      return String(record.value);
+    }
+    return Object.values(record)
+      .map((entry) => stringifyFieldValue(entry))
+      .filter(Boolean)
+      .join(" • ");
+  }
+  return "";
+};
+
+const extractSingleValue = (value: unknown): string => {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    if (
+      typeof record.value === "string" ||
+      typeof record.value === "number" ||
+      typeof record.value === "boolean"
+    ) {
+      return String(record.value);
+    }
+    if (typeof record.label === "string") {
+      return record.label;
+    }
+  }
+  return "";
+};
+
+const normalizeValueArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.map((entry) => extractSingleValue(entry)).filter(Boolean);
+  }
+  const single = extractSingleValue(value);
+  if (!single) return [];
+  if (single.includes(",")) {
+    return single
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+  return [single];
+};
+
+function formatDynamicFieldValue(
+  definition: DynamicFieldDefinition,
+  rawValue: unknown,
+  t: TFunction,
+): { display: string; href?: string } {
+  const baseDisplay = stringifyFieldValue(rawValue).trim();
+
+  switch (definition.type) {
+    case "SELECT": {
+      const value = extractSingleValue(rawValue);
+      const choices = normalizeDynamicFieldChoices(definition.choices);
+      const label = value
+        ? (choices.find((choice) => choice.value === value)?.label ?? baseDisplay) || value
+        : baseDisplay;
+      return { display: label };
+    }
+    case "MULTI_SELECT": {
+      const values = normalizeValueArray(rawValue);
+      const choices = normalizeDynamicFieldChoices(definition.choices);
+      const labels = values.map(
+        (value) => choices.find((choice) => choice.value === value)?.label ?? value,
+      );
+      return { display: labels.join(", ") || baseDisplay };
+    }
+    case "CHECKBOX":
+      return {
+        display: Boolean(rawValue) ? t("common:yes", "כן") : t("common:no", "לא"),
+      };
+    case "DATE":
+      return { display: formatDateForDisplay(baseDisplay || undefined) };
+    case "PHONE": {
+      const value = extractSingleValue(rawValue) || baseDisplay;
+      return {
+        display: formatPhoneNumber(value),
+        href: value ? `tel:${value}` : undefined,
+      };
+    }
+    case "EMAIL": {
+      const value = extractSingleValue(rawValue) || baseDisplay;
+      return {
+        display: value,
+        href: value ? `mailto:${value}` : undefined,
+      };
+    }
+    case "LINK": {
+      const value = extractSingleValue(rawValue) || baseDisplay;
+      const hasProtocol = /^https?:\/\//i.test(value);
+      return {
+        display: value,
+        href: value ? (hasProtocol ? value : `https://${value}`) : undefined,
+      };
+    }
+    case "NUMBER":
+    case "MONEY": {
+      const numericValue =
+        typeof rawValue === "number"
+          ? rawValue
+          : typeof rawValue === "string" &&
+              rawValue.trim() !== "" &&
+              !Number.isNaN(Number(rawValue))
+            ? Number(rawValue)
+            : null;
+      if (numericValue !== null) {
+        return {
+          display:
+            definition.type === "MONEY"
+              ? numericValue.toLocaleString("he-IL", {
+                  style: "currency",
+                  currency: "ILS",
+                })
+              : numericValue.toLocaleString("he-IL"),
+        };
+      }
+      return { display: baseDisplay };
+    }
+    default:
+      return { display: baseDisplay };
+  }
+}
+
+function ParentDetailsPopover({
+  parent,
+  trigger,
+  t,
+  dynamicFieldDefinitions,
+  dynamicFieldOrder,
+}: ParentDetailsPopoverProps) {
+  const linkedKidsCount = parent.linked_kids?.length ?? 0;
+  const fullName = [parent.firstname, parent.lastname].filter(Boolean).join(" ");
+  const parentStatus = parent.status?.trim() || "";
+
+  const formattedPhone = formatPhoneNumber(parent.phone);
+
+  const staticRows: ParentFieldRow[] = [
+    {
+      key: "phone",
+      label: t("phone", "טלפון"),
+      value: formattedPhone || parent.phone?.trim() || "",
+      href: parent.phone ? `tel:${parent.phone}` : undefined,
+    },
+    {
+      key: "email",
+      label: t("email", "אימייל"),
+      value: parent.email?.trim() || "",
+      href: parent.email ? `mailto:${parent.email}` : undefined,
+    },
+    {
+      key: "address",
+      label: t("address", "כתובת"),
+      value: parent.address?.trim() || "",
+    },
+    {
+      key: "idNumber",
+      label: t("id_number", "תעודת זהות"),
+      value: parent.idNumber?.trim() || "",
+    },
+    {
+      key: "status",
+      label: t("status", "סטטוס"),
+      value: parentStatus,
+    },
+  ].filter((row) => row.value);
+
+  const orderedDynamicKeys =
+    dynamicFieldOrder.length > 0
+      ? dynamicFieldOrder
+      : Object.keys(dynamicFieldDefinitions);
+
+  const dynamicRows: ParentFieldRow[] = orderedDynamicKeys
+    .map((fieldKey) => {
+      const definition = dynamicFieldDefinitions[fieldKey];
+      if (!definition) {
+        return null;
+      }
+
+      const rawValue = parent.dynamicFields?.[fieldKey];
+      if (!hasRenderableValue(rawValue)) {
+        return null;
+      }
+
+      const formatted = formatDynamicFieldValue(definition, rawValue, t);
+      if (!formatted.display.trim()) {
+        return null;
+      }
+
+      return {
+        key: fieldKey,
+        label: definition.label || fieldKey,
+        value: formatted.display,
+        href: formatted.href,
+      };
+    })
+    .filter((row): row is ParentFieldRow => Boolean(row));
+
+  const renderFieldGrid = (rows: ParentFieldRow[], prefix: string) => (
+    <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+      {rows.map(({ key, label, value, href }) => (
+        <div key={`${prefix}-${key}`} className="space-y-1">
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
+          <dd className="text-sm font-semibold break-words text-right">
+            {href ? (
+              <a
+                href={href}
+                className="text-primary hover:underline"
+                onClick={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                {value}
+              </a>
+            ) : (
+              value
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+
+  const showEmptyState = staticRows.length === 0 && dynamicRows.length === 0;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+      <PopoverContent
+        align="end"
+        side="left"
+        className="w-[480px] max-w-[90vw] p-0 text-sm shadow-lg border bg-card max-h-[80vh] overflow-hidden"
+      >
+        <div className="max-h-[80vh] overflow-y-auto">
+          <div className="flex items-start justify-between gap-4 px-4 py-4 bg-muted/60">
+            <div className="space-y-1">
+              <p className="text-lg font-semibold">{fullName || t("parents:unknown_name", "ללא שם")}</p>
+              {linkedKidsCount > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {t("linked_kids_count", {
+                    count: linkedKidsCount,
+                    defaultValue:
+                      linkedKidsCount === 1
+                        ? "מקושר לילד אחד"
+                        : `מקושר ל-${linkedKidsCount} ילדים`,
+                  })}
+                </p>
+              )}
+            </div>
+            {parentStatus && (
+              <Badge variant="secondary" className="text-xs font-medium">
+                {parentStatus}
+              </Badge>
+            )}
+          </div>
+
+          <div className="px-4 py-5 space-y-6">
+            {staticRows.length > 0 && (
+              <section>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t("parents:contact_information", "פרטי קשר")}
+                </p>
+                {renderFieldGrid(staticRows, "static")}
+              </section>
+            )}
+
+            {dynamicRows.length > 0 && (
+              <section>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t("parents:custom_fields", "שדות דינאמיים")}
+                </p>
+                {renderFieldGrid(dynamicRows, "dynamic")}
+              </section>
+            )}
+
+            {showEmptyState && (
+              <p className="text-sm text-muted-foreground text-center">
+                {t("parents:no_parent_details", "אין נתונים להצגה")}
+              </p>
+            )}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export default function KidsPage() {
   const { t } = useTranslation();
@@ -92,8 +442,9 @@ export default function KidsPage() {
     () =>
       parentsData.map((parent) => ({
         value: parent._id || "",
-        label: `${parent.firstname} ${parent.lastname}`,
+        label: `${parent.firstname} ${parent.lastname}`.trim(),
         contactId: parent.contactId,
+        parent,
       })),
     [parentsData],
   );
@@ -115,6 +466,69 @@ export default function KidsPage() {
       return acc;
     }, {});
   }, [parentsData]);
+
+  const parentDynamicFieldDefinitions = useMemo(
+    () => getDynamicFieldDefinitions(organization, "parents"),
+    [organization],
+  );
+
+  const parentDynamicFieldOrder = useMemo(() => {
+    const config = organization?.tableFieldDefinitions?.parents;
+    const definedKeys = Object.keys(parentDynamicFieldDefinitions);
+
+    if (!config) {
+      return definedKeys;
+    }
+
+    const ordered: string[] = [];
+    const seen = new Set<string>();
+
+    (config.fieldOrder || []).forEach((fieldName) => {
+      if (parentDynamicFieldDefinitions[fieldName]) {
+        ordered.push(fieldName);
+        seen.add(fieldName);
+      }
+    });
+
+    definedKeys.forEach((fieldName) => {
+      if (!seen.has(fieldName)) {
+        ordered.push(fieldName);
+      }
+    });
+
+    return ordered;
+  }, [organization, parentDynamicFieldDefinitions]);
+
+  const renderParentChip = useCallback(
+    ({
+      value,
+      DefaultChip,
+    }: {
+      value: string;
+      DefaultChip: (props?: HTMLAttributes<HTMLDivElement>) => React.ReactNode;
+    }) => {
+      const parent = parentById[value];
+      if (!parent) {
+        return DefaultChip();
+      }
+
+      const triggerElement = DefaultChip({
+        onClick: (event) => event.stopPropagation(),
+        onPointerDown: (event) => event.stopPropagation(),
+      }) as ReactElement;
+
+      return (
+        <ParentDetailsPopover
+          parent={parent}
+          trigger={triggerElement}
+          t={t}
+          dynamicFieldDefinitions={parentDynamicFieldDefinitions}
+          dynamicFieldOrder={parentDynamicFieldOrder}
+        />
+      );
+    },
+    [parentById, parentDynamicFieldDefinitions, parentDynamicFieldOrder, t],
+  );
 
   const mapContactToKid = useCallback(
     (contact: Contact, relationships: ContactRelationship[] = []): Kid => {
@@ -250,6 +664,7 @@ export default function KidsPage() {
         isImage: true,
         fieldType: "IMAGE",
         uploadPath: KID_PROFILE_UPLOAD_PATH,
+        allowEmpty: true,
       },
       cell: ({ row }) => {
         const kid = row.original;
@@ -273,6 +688,7 @@ export default function KidsPage() {
       meta: { 
         editable: true,
         relationshipOptions: parentsOptions,
+        relationshipChipRenderer: renderParentChip,
       } 
     },
     { accessorKey: "organizationId", header: "", meta: { hidden: true, editable: false } },
@@ -409,6 +825,7 @@ export default function KidsPage() {
           ...data,
           organizationId: organization?._id || "",
           linked_parents: Array.isArray(data.linked_parents) ? data.linked_parents : [],
+          profileImageUrl: data.profileImageUrl ?? undefined,
           ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
         };
         const res = await kidsApi.create(newKid);
@@ -509,17 +926,24 @@ export default function KidsPage() {
 
       Object.entries(row).forEach(([key, rawValue]) => {
         const value = typeof rawValue === "string" ? rawValue.trim() : rawValue;
+        const column = columnMetaMap.get(key);
         if (value === "" || value === undefined || value === null) {
           return;
         }
 
         if (key.startsWith("dynamicFields.")) {
           const fieldKey = key.replace("dynamicFields.", "");
+          if (column?.meta?.isDate) {
+            const parsedDate = parseDateForSubmit(value);
+            if (parsedDate) {
+              dynamicFields[fieldKey] = parsedDate;
+              return;
+            }
+          }
           dynamicFields[fieldKey] = value;
           return;
         }
 
-        const column = columnMetaMap.get(key);
         if (column?.meta?.isDate) {
           const parsedDate = parseDateForSubmit(value);
           if (parsedDate) {
@@ -603,6 +1027,8 @@ export default function KidsPage() {
           ...data,
           id: editingKid._id,
           organizationId: organization?._id || "",
+          profileImageUrl:
+            data.profileImageUrl ?? (data.profileImageUrl === null ? null : editingKid.profileImageUrl),
           linked_parents: Array.isArray(data.linked_parents)
             ? data.linked_parents
             : Array.isArray(editingKid.linked_parents)
@@ -817,68 +1243,66 @@ export default function KidsPage() {
   };
 
   return (
-    <div className="mx-auto">
-      <h1 className="text-2xl font-semibold text-primary mb-6">
-        {t("kids")}
-      </h1>
-      <DataTable<Kid>
-        data={[]}
-        fetchData={fetchKidsData}
-        addData={kidsApi.create}
-        updateData={kidsApi.update}
-        deleteData={kidsApi.delete}
-        columns={mergedColumns}
-        actions={actions}
-        searchable
-        showAdvancedSearch
-        onAdvancedSearchChange={setAdvancedFilters}
-        initialAdvancedFilters={advancedFilters}
-        isPagination={false}
-        defaultPageSize={10}
-        //@ts-ignore
-        idField="_id"
-        extraFilters={advancedFilters}
-        organazitionId={organization?._id}
-        entityType="kids"
-        onRefreshReady={useCallback((methods) => setTableMethods(methods), [])}
-        rowSelection={rowSelection}
-        onRowSelectionChange={useCallback((updater: any) => {
-          setRowSelection((prev) => {
-            if (typeof updater === 'function') {
-              return updater(prev);
-            } else {
-              return updater;
-            }
-          });
-        }, [])}
-        visibleRows={useCallback((rows) => setTableRows(rows), [])}
-        customLeftButtons={
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsAddDialogOpen(true)}
-              className="flex items-center gap-2 rounded-full border-transparent bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-200/40 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:from-emerald-500 hover:via-green-500 hover:to-teal-400 hover:text-white hover:shadow-xl hover:shadow-emerald-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2"
-            >
-              <Plus className="w-4 h-4 mr-2" /> {t("add")}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setIsFieldConfigDialogOpen(true)}
-              className="flex items-center gap-2 rounded-full border-transparent bg-gradient-to-r from-purple-500 via-violet-500 to-fuchsia-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-purple-200/40 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:from-purple-500 hover:via-violet-500 hover:to-fuchsia-400 hover:text-white hover:shadow-xl hover:shadow-purple-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-200 focus-visible:ring-offset-2"
-            >
-              <Settings className="w-4 h-4 mr-2" /> {t("configure_fields", "ערוך שדות דינאמיים")}
-            </Button>
-            <SmartLoadFromExcel 
-              columns={excelColumns} 
-              onSaveRows={handleExcelImport}
-              excludeFields={["linked_parents"]}
-            />
-          </div>
-        }
-        onBulkDelete={handleBulkDelete}
-        onBulkAdvancedUpdate={handleBulkAdvancedUpdate}
-      />
-      <AddRecordDialog
+    <DataTablePageLayout title={t("kids")}>
+      <>
+        <DataTable<Kid>
+          data={[]}
+          fetchData={fetchKidsData}
+          addData={kidsApi.create}
+          updateData={kidsApi.update}
+          deleteData={kidsApi.delete}
+          columns={mergedColumns}
+          actions={actions}
+          searchable
+          showAdvancedSearch
+          onAdvancedSearchChange={setAdvancedFilters}
+          initialAdvancedFilters={advancedFilters}
+          isPagination={false}
+          defaultPageSize={10}
+          //@ts-ignore
+          idField="_id"
+          extraFilters={advancedFilters}
+          organazitionId={organization?._id}
+          entityType="kids"
+          onRefreshReady={useCallback((methods) => setTableMethods(methods), [])}
+          rowSelection={rowSelection}
+          onRowSelectionChange={useCallback((updater: any) => {
+            setRowSelection((prev) => {
+              if (typeof updater === 'function') {
+                return updater(prev);
+              } else {
+                return updater;
+              }
+            });
+          }, [])}
+          visibleRows={useCallback((rows) => setTableRows(rows), [])}
+          customLeftButtons={
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsAddDialogOpen(true)}
+                className="flex items-center gap-2 rounded-full border-transparent bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-200/40 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:from-emerald-500 hover:via-green-500 hover:to-teal-400 hover:text-white hover:shadow-xl hover:shadow-emerald-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2"
+              >
+                <Plus className="w-4 h-4 mr-2" /> {t("add")}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsFieldConfigDialogOpen(true)}
+                className="flex items-center gap-2 rounded-full border-transparent bg-gradient-to-r from-purple-500 via-violet-500 to-fuchsia-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-purple-200/40 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:from-purple-500 hover:via-violet-500 hover:to-fuchsia-400 hover:text-white hover:shadow-xl hover:shadow-purple-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-200 focus-visible:ring-offset-2"
+              >
+                <Settings className="w-4 h-4 mr-2" /> {t("configure_fields", "ערוך שדות דינאמיים")}
+              </Button>
+              <SmartLoadFromExcel 
+                columns={excelColumns} 
+                onSaveRows={handleExcelImport}
+                excludeFields={["linked_parents"]}
+              />
+            </div>
+          }
+          onBulkDelete={handleBulkDelete}
+          onBulkAdvancedUpdate={handleBulkAdvancedUpdate}
+        />
+        <AddRecordDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         columns={mergedColumns}
@@ -894,7 +1318,7 @@ export default function KidsPage() {
           linked_parents: [],
         }}
       />
-      <AddRecordDialog
+        <AddRecordDialog
         open={isEditDialogOpen}
         onOpenChange={(open) => {
           setIsEditDialogOpen(open);
@@ -927,7 +1351,7 @@ export default function KidsPage() {
           linked_parents: editingKid?.linked_parents || [],
         }}
       />
-      <TableFieldConfigDialog
+        <TableFieldConfigDialog
         open={isFieldConfigDialogOpen}
         onOpenChange={setIsFieldConfigDialogOpen}
         entityType="kids"
@@ -936,7 +1360,7 @@ export default function KidsPage() {
           tableMethods?.refresh();
         }}
       />
-      <AdvancedUpdateDialog
+        <AdvancedUpdateDialog
         open={isAdvancedUpdateOpen}
         onOpenChange={(open) => {
           if (!open && isAdvancedUpdating) {
@@ -952,7 +1376,8 @@ export default function KidsPage() {
         selectedRowCount={advancedUpdateCount}
         onUpdate={handleAdvancedUpdateConfirm}
       />
-    </div>
+      </>
+    </DataTablePageLayout>
   );
 }
 

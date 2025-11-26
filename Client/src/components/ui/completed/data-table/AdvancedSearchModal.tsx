@@ -105,7 +105,7 @@ export function AdvancedSearchModal<T = any>({ open, onClose, columns, onApply, 
           }
           const value = option?.value ?? option?.id ?? option;
           const label = option?.label ?? option?.name ?? String(value ?? "");
-          return { value: String(value ?? ""), label: String(label) };
+          return { value: String(value ?? ""), label: String(label), color: option?.color };
         })
       : [];
     const inputClasses =

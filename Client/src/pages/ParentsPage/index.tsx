@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
 import { TableFieldConfigDialog } from "@/components/ui/completed/dialogs/TableFieldConfigDialog";
 import { SmartLoadFromExcel } from "@/components/ui/completed/dialogs/SmartLoadFromExcel";
+import { DataTablePageLayout } from "@/components/layout/DataTablePageLayout";
 import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
 import { toast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -687,124 +688,131 @@ export default function ParentsPage() {
   };
 
   return (
-    <div className="mx-auto">
-      <h1 className="text-2xl font-semibold text-primary mb-6">
-        {t("parents")}
-      </h1>
-      <DataTable<Parent>
-        data={[]}
-        fetchData={fetchParentsData}
-        addData={parentsApi.create}
-        updateData={parentsApi.update}
-        deleteData={parentsApi.delete}
-        columns={mergedColumns}
-        actions={actions}
-        searchable
-        showAdvancedSearch
-        onAdvancedSearchChange={setAdvancedFilters}
-        initialAdvancedFilters={advancedFilters}
-        isPagination={false}
-        defaultPageSize={10}
-        //@ts-ignore
-        idField="_id"
-        extraFilters={advancedFilters}
-        organazitionId={organization?._id}
-        entityType="parents"
-        onRefreshReady={useCallback((methods) => setTableMethods(methods), [])}
-        rowSelection={rowSelection}
-        onRowSelectionChange={useCallback((updater: any) => {
-          setRowSelection((prev) => {
-            if (typeof updater === 'function') {
-              return updater(prev);
-            } else {
-              return updater;
-            }
-          });
-        }, [])}
-        visibleRows={useCallback((rows) => setTableRows(rows), [])}
-        customLeftButtons={
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsAddDialogOpen(true)}
-              className="bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600 hover:border-green-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
-            >
-              <Plus className="w-4 h-4 mr-2" /> {t("add")}
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsFieldConfigDialogOpen(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white hover:text-white border-purple-600 hover:border-purple-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
-            >
-              <Settings className="w-4 h-4 mr-2" /> {t("configure_fields", "ערוך שדות דינאמיים")}
-            </Button>
-            <SmartLoadFromExcel 
-              columns={excelColumns} 
-              onSaveRows={handleExcelImport}
-              excludeFields={["linked_kids"]}
-            />
-          </div>
-        }
-        onBulkDelete={handleBulkDelete}
-      />
-      <AddRecordDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        columns={mergedColumns}
-        onAdd={handleAddParent}
-        excludeFields={["organizationId"]}
-        relationshipFields={{
-          linked_kids: {
-            options: kidsOptions,
-          },
-        }}
-        defaultValues={{
-          organizationId: organization?._id || "",
-          linked_kids: [],
-        }}
-      />
-      <AddRecordDialog
-        open={isEditDialogOpen}
-        onOpenChange={(open) => {
-          setIsEditDialogOpen(open);
-          if (!open) {
-            setEditingParent(null);
+    <DataTablePageLayout title={t("parents")}>
+      <>
+        <DataTable<Parent>
+          data={[]}
+          fetchData={fetchParentsData}
+          addData={parentsApi.create}
+          updateData={parentsApi.update}
+          deleteData={parentsApi.delete}
+          columns={mergedColumns}
+          actions={actions}
+          searchable
+          showAdvancedSearch
+          onAdvancedSearchChange={setAdvancedFilters}
+          initialAdvancedFilters={advancedFilters}
+          isPagination={false}
+          defaultPageSize={10}
+          //@ts-ignore
+          idField="_id"
+          extraFilters={advancedFilters}
+          organazitionId={organization?._id}
+          entityType="parents"
+          onRefreshReady={useCallback((methods) => setTableMethods(methods), [])}
+          rowSelection={rowSelection}
+          onRowSelectionChange={useCallback((updater: any) => {
+            setRowSelection((prev) => {
+              if (typeof updater === "function") {
+                return updater(prev);
+              } else {
+                return updater;
+              }
+            });
+          }, [])}
+          visibleRows={useCallback((rows) => setTableRows(rows), [])}
+          customLeftButtons={
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsAddDialogOpen(true)}
+                className="bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600 hover:border-green-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+              >
+                <Plus className="w-4 h-4 mr-2" /> {t("add")}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsFieldConfigDialogOpen(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white hover:text-white border-purple-600 hover:border-purple-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+              >
+                <Settings className="w-4 h-4 mr-2" /> {t("configure_fields", "ערוך שדות דינאמיים")}
+              </Button>
+              <SmartLoadFromExcel
+                columns={excelColumns}
+                onSaveRows={handleExcelImport}
+                excludeFields={["linked_kids"]}
+              />
+            </div>
           }
-        }}
-        columns={mergedColumns}
-        onAdd={handleAddParent}
-        onEdit={handleEditParent}
-        editMode={true}
-        editData={editingParent ? {
-          firstname: editingParent.firstname,
-          lastname: editingParent.lastname,
-          idNumber: editingParent.idNumber || "",
-          linked_kids: Array.isArray(editingParent.linked_kids) 
-            ? editingParent.linked_kids.map((k: any) => typeof k === 'string' ? k : (k?._id || k?.toString() || k))
-            : [],
-          ...(editingParent.dynamicFields ? { dynamicFields: editingParent.dynamicFields } : {}),
-        } : undefined}
-        relationshipFields={{
-          linked_kids: {
-            options: kidsOptions,
-          },
-        }}
-        excludeFields={["organizationId"]}
-        defaultValues={{
-          organizationId: organization?._id || "",
-          linked_kids: editingParent?.linked_kids || [],
-        }}
-      />
-      <TableFieldConfigDialog
-        open={isFieldConfigDialogOpen}
-        onOpenChange={setIsFieldConfigDialogOpen}
-        entityType="parents"
-        organizationId={organization?._id || ""}
-        onSave={() => {
-          tableMethods?.refresh();
-        }}
-      />
-    </div>
+          onBulkDelete={handleBulkDelete}
+        />
+        <AddRecordDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          columns={mergedColumns}
+          onAdd={handleAddParent}
+          excludeFields={["organizationId"]}
+          relationshipFields={{
+            linked_kids: {
+              options: kidsOptions,
+            },
+          }}
+          defaultValues={{
+            organizationId: organization?._id || "",
+            linked_kids: [],
+          }}
+        />
+        <AddRecordDialog
+          open={isEditDialogOpen}
+          onOpenChange={(open) => {
+            setIsEditDialogOpen(open);
+            if (!open) {
+              setEditingParent(null);
+            }
+          }}
+          columns={mergedColumns}
+          onAdd={handleAddParent}
+          onEdit={handleEditParent}
+          editMode={true}
+          editData={
+            editingParent
+              ? {
+                  firstname: editingParent.firstname,
+                  lastname: editingParent.lastname,
+                  idNumber: editingParent.idNumber || "",
+                  linked_kids: Array.isArray(editingParent.linked_kids)
+                    ? editingParent.linked_kids.map((k: any) =>
+                        typeof k === "string" ? k : k?._id || k?.toString() || k,
+                      )
+                    : [],
+                  ...(editingParent.dynamicFields
+                    ? { dynamicFields: editingParent.dynamicFields }
+                    : {}),
+                }
+              : undefined
+          }
+          relationshipFields={{
+            linked_kids: {
+              options: kidsOptions,
+            },
+          }}
+          excludeFields={["organizationId"]}
+          defaultValues={{
+            organizationId: organization?._id || "",
+            linked_kids: editingParent?.linked_kids || [],
+          }}
+        />
+        <TableFieldConfigDialog
+          open={isFieldConfigDialogOpen}
+          onOpenChange={setIsFieldConfigDialogOpen}
+          entityType="parents"
+          organizationId={organization?._id || ""}
+          onSave={() => {
+            tableMethods?.refresh();
+          }}
+        />
+      </>
+    </DataTablePageLayout>
   );
 }
 

@@ -197,8 +197,107 @@ export class PaymentService {
       .exec();
   }
 
-  findAll() {
-    return this.paymentModel.find().populate('invoiceId').exec();
+  async findAll(organizationId: string, query: any = {}) {
+    const filter: any = {
+      organizationId: new Types.ObjectId(organizationId),
+    };
+
+    // Global search (search input) - search across multiple fields
+    if (query.search) {
+      filter.$or = [
+        { service: { $regex: query.search, $options: "i" } },
+        { notes: { $regex: query.search, $options: "i" } },
+        { lowProfileCode: { $regex: query.search, $options: "i" } },
+      ];
+    }
+
+    // Advanced search (field-specific)
+    if (query.service) {
+      filter.service = { $regex: query.service, $options: "i" };
+    }
+    if (query.amount) {
+      const amountValue = parseFloat(query.amount);
+      if (!isNaN(amountValue)) {
+        filter.amount = amountValue;
+      }
+    }
+    if (query.paymentMethod) {
+      filter.paymentMethod = query.paymentMethod;
+    }
+    if (query.status) {
+      filter.status = query.status;
+    }
+    if (query.notes) {
+      filter.notes = { $regex: query.notes, $options: "i" };
+    }
+    if (query.formId && Types.ObjectId.isValid(query.formId)) {
+      filter.formId = new Types.ObjectId(query.formId);
+    }
+    if (query.invoiceId && Types.ObjectId.isValid(query.invoiceId)) {
+      filter.invoiceId = new Types.ObjectId(query.invoiceId);
+    }
+    if (query.payerContactId && Types.ObjectId.isValid(query.payerContactId)) {
+      filter.payerContactId = new Types.ObjectId(query.payerContactId);
+    }
+    if (query.payerAccountId && Types.ObjectId.isValid(query.payerAccountId)) {
+      filter.payerAccountId = new Types.ObjectId(query.payerAccountId);
+    }
+    if (query.paymentDate) {
+      // Support date range queries if needed
+      if (typeof query.paymentDate === 'object' && query.paymentDate.gte) {
+        filter.paymentDate = { $gte: new Date(query.paymentDate.gte) };
+        if (query.paymentDate.lte) {
+          filter.paymentDate.$lte = new Date(query.paymentDate.lte);
+        }
+      } else {
+        // Simple date match
+        filter.paymentDate = { $regex: query.paymentDate, $options: "i" };
+      }
+    }
+    if (query.createdAt) {
+      if (typeof query.createdAt === 'object' && query.createdAt.gte) {
+        filter.createdAt = { $gte: new Date(query.createdAt.gte) };
+        if (query.createdAt.lte) {
+          filter.createdAt.$lte = new Date(query.createdAt.lte);
+        }
+      } else {
+        filter.createdAt = { $regex: query.createdAt, $options: "i" };
+      }
+    }
+
+    // Only add filters if value is not undefined or empty string
+    Object.keys(filter).forEach((key) => {
+      if (filter[key] === undefined || filter[key] === "") {
+        delete filter[key];
+      }
+    });
+
+    // Handle pagination
+    const page = parseInt(query.page as string) || 1;
+    const pageSize = parseInt(query.pageSize as string) || 10;
+    const skip = (page - 1) * pageSize;
+
+    // Handle sorting
+    const sortBy = query.sortBy || "createdAt";
+    const sortOrder = query.sortOrder === "asc" ? 1 : -1;
+    const sort: any = { [sortBy]: sortOrder };
+
+    const [results, total] = await Promise.all([
+      this.paymentModel
+        .find(filter)
+        .populate('invoiceId')
+        .sort(sort)
+        .skip(skip)
+        .limit(pageSize)
+        .exec(),
+      this.paymentModel.countDocuments(filter),
+    ]);
+
+    return {
+      data: results,
+      totalCount: total,
+      totalPages: Math.ceil(total / pageSize),
+    };
   }
   async getInvoiceServiceCredentials(organizationId: string): Promise<{ provider: string; credentials: any } | null> {
     const organization = await this.organizationModel.findById(organizationId);

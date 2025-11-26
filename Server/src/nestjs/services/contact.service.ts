@@ -41,6 +41,7 @@ export class ContactService {
       email: createContactDto.email,
       phone: createContactDto.phone,
       address: createContactDto.address,
+      profileImageUrl: createContactDto.profileImageUrl,
       status: createContactDto.status,
       dynamicFields: dynamicFields ?? {},
     };
@@ -111,6 +112,9 @@ export class ContactService {
 
     if (updateContactDto.address !== undefined) {
       updatePayload.address = updateContactDto.address;
+    }
+    if (updateContactDto.profileImageUrl !== undefined) {
+      updatePayload.profileImageUrl = updateContactDto.profileImageUrl;
     }
 
     if (updateContactDto.status !== undefined) {

@@ -48,6 +48,10 @@ export class CreateContactDto {
   @IsOptional()
   address?: string;
 
+  @IsString()
+  @IsOptional()
+  profileImageUrl?: string;
+
   @IsEnum(ContactStatus)
   @IsOptional()
   status?: ContactStatus;
@@ -90,6 +94,10 @@ export class UpdateContactDto {
   @IsString()
   @IsOptional()
   address?: string;
+
+  @IsString()
+  @IsOptional()
+  profileImageUrl?: string;
 
   @IsEnum(ContactStatus)
   @IsOptional()

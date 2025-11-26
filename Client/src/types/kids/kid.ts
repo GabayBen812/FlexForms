@@ -4,6 +4,7 @@ export interface Kid {
   contactId?: string;
   firstname: string;
   lastname: string;
+  profileImageUrl?: string;
   linked_parents?: string[];
   address?: string;
   idNumber?: string;

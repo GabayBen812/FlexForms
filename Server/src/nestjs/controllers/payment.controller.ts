@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Query, Inject, forwardRef, Put } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Query, Inject, forwardRef, Put, UseGuards, Req, BadRequestException } from '@nestjs/common';
 import { PaymentService } from '../services/payment.service';
 import { RegistrationService } from '../services/registration.service';
 import { InvoiceService } from '../services/invoice.service';
@@ -9,6 +9,8 @@ import {
 import { ICountService } from '../services/icount.service';
 import { CreatePaymentDto, UpdatePaymentDto } from '../dto/payment.dto';
 import { Types } from 'mongoose';
+import { JwtAuthGuard } from '../middlewares/jwt-auth.guard';
+import { Request } from 'express';
 
 interface CreateIframeDto {
   amount: number;
@@ -228,7 +230,12 @@ export class PaymentController {
   }
 
   @Get()
-  async getAll() {
-    return this.service.findAll();
+  @UseGuards(JwtAuthGuard)
+  async getAll(@Req() req: Request, @Query() query: any) {
+    const user = req.user as { organizationId?: string };
+    if (!user || !user.organizationId) {
+      throw new BadRequestException('User organizationId not found');
+    }
+    return this.service.findAll(user.organizationId, query);
   }
 }

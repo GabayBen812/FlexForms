@@ -12,6 +12,7 @@ export interface Contact {
   email?: string;
   phone?: string;
   address?: string;
+  profileImageUrl?: string;
   status: ContactStatus;
   accountId?: string;
   dynamicFields?: Record<string, unknown>;

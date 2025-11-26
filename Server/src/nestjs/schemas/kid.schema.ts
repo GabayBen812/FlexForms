@@ -11,6 +11,9 @@ export class Kid {
   @Prop({ required: true })
   lastname!: string;
 
+  @Prop()
+  profileImageUrl?: string;
+
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Parent' }], default: [] })
   linked_parents!: Types.ObjectId[];
 

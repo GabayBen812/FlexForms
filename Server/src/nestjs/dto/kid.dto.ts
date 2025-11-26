@@ -10,6 +10,10 @@ export class CreateKidDto {
   @IsNotEmpty()
   lastname!: string;
 
+  @IsString()
+  @IsOptional()
+  profileImageUrl?: string;
+
   @IsArray()
   @IsOptional()
   linked_parents?: string[];
@@ -39,6 +43,10 @@ export class UpdateKidDto {
   @IsString()
   @IsOptional()
   lastname?: string;
+
+  @IsString()
+  @IsOptional()
+  profileImageUrl?: string;
 
   @IsArray()
   @IsOptional()

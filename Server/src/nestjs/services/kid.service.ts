@@ -34,6 +34,7 @@ export class KidService {
             organizationId: createKidDto.organizationId,
             idNumber: createKidDto.idNumber,
             address: createKidDto.address,
+            profileImageUrl: createKidDto.profileImageUrl,
             dynamicFields: this.mapKidDynamicFields(createKidDto.dynamicFields),
           },
           session,
@@ -46,6 +47,10 @@ export class KidService {
         organizationId: new Types.ObjectId(createKidDto.organizationId),
         linked_parents: [],
       };
+
+      if (createKidDto.profileImageUrl) {
+        kidData.profileImageUrl = createKidDto.profileImageUrl;
+      }
 
       if (createKidDto.address) {
         kidData.address = createKidDto.address;
@@ -163,6 +168,9 @@ export class KidService {
       if (updateKidDto.idNumber !== undefined) {
         updateData.idNumber = updateKidDto.idNumber;
       }
+      if (updateKidDto.profileImageUrl !== undefined) {
+        updateData.profileImageUrl = updateKidDto.profileImageUrl;
+      }
 
       if (updateKidDto.dynamicFields && typeof updateKidDto.dynamicFields === 'object') {
         const dynamicFieldsUpdate: Record<string, unknown> = {};
@@ -190,6 +198,7 @@ export class KidService {
               organizationId: existingKid.organizationId.toString(),
               idNumber: updateKidDto.idNumber ?? existingKid.idNumber,
               address: updateKidDto.address ?? existingKid.address,
+              profileImageUrl: updateKidDto.profileImageUrl ?? existingKid.profileImageUrl,
               dynamicFields: namespacedDynamicFields ?? this.mapKidDynamicFields(existingKid.dynamicFields as Record<string, unknown>),
             },
             session,
@@ -204,6 +213,7 @@ export class KidService {
               lastname: updateKidDto.lastname,
               idNumber: updateKidDto.idNumber,
               address: updateKidDto.address,
+              profileImageUrl: updateKidDto.profileImageUrl,
               dynamicFields: namespacedDynamicFields,
             },
             session,
@@ -357,6 +367,7 @@ export class KidService {
       organizationId: string;
       idNumber?: string;
       address?: string;
+      profileImageUrl?: string;
       dynamicFields?: Record<string, unknown>;
     },
     session?: ClientSession,
@@ -369,6 +380,7 @@ export class KidService {
         organizationId: payload.organizationId,
         idNumber: payload.idNumber,
         address: payload.address,
+        profileImageUrl: payload.profileImageUrl,
         dynamicFields: payload.dynamicFields,
       },
       session,

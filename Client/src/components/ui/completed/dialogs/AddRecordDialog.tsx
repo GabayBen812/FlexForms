@@ -528,10 +528,22 @@ export function AddRecordDialog({
     }
 
     try {
-      const fieldName = getDynamicFieldName(accessorKey);
+      const column = dataColumns.find((col) => (col as any).accessorKey === accessorKey);
+      const uploadPathMeta = column ? (column.meta as any)?.uploadPath : undefined;
       const timestamp = Date.now();
       const uuid = crypto.randomUUID();
-      const path = `uploads/dynamic-fields/${fieldName}/${timestamp}_${uuid}`;
+      let basePath: string;
+
+      if (uploadPathMeta) {
+        basePath = uploadPathMeta;
+      } else if (isDynamicField(accessorKey)) {
+        const fieldName = getDynamicFieldName(accessorKey);
+        basePath = `uploads/dynamic-fields/${fieldName}`;
+      } else {
+        basePath = `uploads/static-fields/${accessorKey}`;
+      }
+
+      const path = `${basePath}/${timestamp}_${uuid}`;
       const imageUrl = await uploadFile(file, path);
       setForm({ ...form, [accessorKey]: imageUrl });
       toast.success(t("image_uploaded_successfully", "תמונה הועלתה בהצלחה") || "Image uploaded successfully");

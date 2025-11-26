@@ -33,6 +33,7 @@ import { DataTableLoading } from "./data-table-loading";
 import { DataTableSelectionBar } from "./data-table-selection-bar";
 import { DataTableBulkDeleteBtn } from "./data-table-bulk-delete-btn";
 import { cn } from "@/lib/utils";
+import { GetDirection } from "@/lib/i18n";
 
 const globalFilterFn: FilterFn<any> = (row, columnId, filterValue) => {
   const search = String(filterValue).toLowerCase();
@@ -118,6 +119,12 @@ export function DataTable<TData>({
     pageSize: defaultPageSize,
   });
   const [specialRow, setSpecialRow] = useState<"add" | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isRTL = GetDirection();
+  const [scrollShadow, setScrollShadow] = useState({
+    showLeftShadow: false,
+    showRightShadow: false,
+  });
   
   // Internal state for column order - persist it even if parent doesn't manage it
   // Use a ref to track column keys to prevent unnecessary recalculations
@@ -305,6 +312,10 @@ export function DataTable<TData>({
     setInternalColumnOrder(newOrder);
     onColumnOrderChange?.(newOrder);
   };
+
+  const resolvedStickyColumnCount =
+    stickyColumnCount ??
+    ((onRowSelectionChange ? 1 : 0) + (showActionColumn ? 1 : 0));
 
   const table = useReactTable({
     data: tableData,
@@ -592,6 +603,45 @@ export function DataTable<TData>({
     setSpecialRow((prev) => (prev === "add" ? null : "add"));
   };
 
+  const updateScrollShadow = useCallback(
+    (target?: HTMLElement) => {
+      const container = target ?? scrollContainerRef.current;
+      if (!container) {
+        return;
+      }
+
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      if (maxScroll <= 0) {
+        setScrollShadow({
+          showLeftShadow: false,
+          showRightShadow: false,
+        });
+        return;
+      }
+
+      const threshold = 4;
+      const distanceFromStart = Math.abs(container.scrollLeft);
+      const isPastStart = distanceFromStart > threshold;
+      const isBeforeEnd = distanceFromStart < maxScroll - threshold;
+
+      setScrollShadow({
+        showLeftShadow: isRTL ? isBeforeEnd : isPastStart,
+        showRightShadow: isRTL ? isPastStart : isBeforeEnd,
+      });
+    },
+    [isRTL],
+  );
+
+  useEffect(() => {
+    updateScrollShadow();
+  }, [tableData, internalColumnOrder, updateScrollShadow]);
+
+  useEffect(() => {
+    const handleResize = () => updateScrollShadow();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [updateScrollShadow]);
+
   const enhancedActions = actions
     ? actions.map((action) => {
         if (action?.type === "edit") {
@@ -688,12 +738,17 @@ export function DataTable<TData>({
         />
       )}
 
-      <div className="rounded-lg">
+      <div className="relative rounded-lg border border-border bg-white shadow-sm">
         <div
-          className="overflow-auto"
+          ref={scrollContainerRef}
+          className={cn(
+            "data-table-scroll-container overflow-auto rounded-lg",
+            "scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent",
+          )}
           style={{ height: "calc(100vh - 250px)" }}
           onScroll={(e) => {
             const target = e.target as HTMLElement;
+            updateScrollShadow(target);
             const scrollPosition = target.scrollTop + target.clientHeight;
             const scrollThreshold = target.scrollHeight - 50;
 
@@ -704,12 +759,12 @@ export function DataTable<TData>({
             }
           }}
         >
-          <Table className="border-collapse border-spacing-0 text-right relative" style={{ width: "max-content", minWidth: "100%" }}>
+          <Table className="border-collapse border-spacing-0 text-right relative min-w-full" style={{ width: "max-content", minWidth: "100%" }}>
             <DataTableHeader
               table={table}
               actions={showActionColumn ? actions : null}
               enableColumnReordering={enableColumnReordering}
-              stickyColumnCount={stickyColumnCount}
+              stickyColumnCount={resolvedStickyColumnCount}
               selectedRowCount={selectedRowCount}
               enableRowSelection={!!onRowSelectionChange}
               isPagination={isPagination}
@@ -721,7 +776,7 @@ export function DataTable<TData>({
               columns={columns}
               table={table}
               actions={showActionColumn ? actions : null}
-              stickyColumnCount={stickyColumnCount}
+              stickyColumnCount={resolvedStickyColumnCount}
               renderExpandedContent={wrappedRenderExpandedContent}
               specialRow={specialRow}
               setSpecialRow={setSpecialRow}
@@ -743,6 +798,18 @@ export function DataTable<TData>({
             </div>
           )}
         </div>
+        {scrollShadow.showRightShadow && (
+          <div
+            className="pointer-events-none absolute top-4 bottom-4 right-2 w-8 rounded-2xl bg-gradient-to-l from-white via-white/70 to-transparent dark:from-slate-900 dark:via-slate-900/70 transition-opacity duration-200"
+            aria-hidden="true"
+          />
+        )}
+        {scrollShadow.showLeftShadow && (
+          <div
+            className="pointer-events-none absolute top-4 bottom-4 left-2 w-8 rounded-2xl bg-gradient-to-r from-white via-white/70 to-transparent dark:from-slate-900 dark:via-slate-900/70 transition-opacity duration-200"
+            aria-hidden="true"
+          />
+        )}
       </div>
       {isPagination && !isLazyLoading && (
         <DataTablePaginationControls 

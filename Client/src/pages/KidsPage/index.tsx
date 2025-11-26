@@ -51,6 +51,8 @@ const parentsApi = createApiService<Parent>("/parents", {
   includeOrgId: true,
 });
 
+const KID_PROFILE_UPLOAD_PATH = "uploads/kids/profile-images";
+
 export default function KidsPage() {
   const { t } = useTranslation();
   const { organization } = useOrganization();
@@ -131,6 +133,7 @@ export default function KidsPage() {
         contactId: contact._id,
         firstname: contact.firstname,
         lastname: contact.lastname,
+        profileImageUrl: contact.profileImageUrl,
         idNumber: contact.idNumber,
         address: contact.address,
         status: contact.status,
@@ -238,10 +241,16 @@ export default function KidsPage() {
   const columns: ColumnDef<Kid>[] = [
     selectionColumn,
     {
-      id: "profilePicture",
+      accessorKey: "profileImageUrl",
       header: t("profile_picture", "תמונת פרופיל"),
       enableSorting: false,
-      meta: { editable: false, excludeFromSearch: true },
+      meta: {
+        editable: true,
+        excludeFromSearch: true,
+        isImage: true,
+        fieldType: "IMAGE",
+        uploadPath: KID_PROFILE_UPLOAD_PATH,
+      },
       cell: ({ row }) => {
         const kid = row.original;
         const imageUrl = getProfileImageUrl(kid);
@@ -431,6 +440,7 @@ export default function KidsPage() {
         organizationId: organization._id,
         idNumber: data.idNumber,
         address: data.address,
+        profileImageUrl: data.profileImageUrl,
         dynamicFields: namespaceDynamicFields(
           data.dynamicFields as Record<string, unknown> | undefined,
           "kid",
@@ -629,6 +639,7 @@ export default function KidsPage() {
         lastname: data.lastname,
         idNumber: data.idNumber,
         address: data.address,
+        profileImageUrl: data.profileImageUrl,
         dynamicFields: namespaceDynamicFields(
           data.dynamicFields as Record<string, unknown> | undefined,
           "kid",
@@ -899,6 +910,7 @@ export default function KidsPage() {
           firstname: editingKid.firstname,
           lastname: editingKid.lastname,
           idNumber: editingKid.idNumber || "",
+          profileImageUrl: editingKid.profileImageUrl || "",
           linked_parents: Array.isArray(editingKid.linked_parents) 
             ? editingKid.linked_parents.map((p: any) => typeof p === 'string' ? p : (p?._id || p?.toString() || p))
             : [],

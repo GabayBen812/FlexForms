@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { z } from "zod";
+import type { HTMLAttributes, ReactElement } from "react";
 import { useState, useCallback, useMemo, useRef } from "react";
 import { Plus, Settings } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -16,11 +18,17 @@ import { Kid } from "@/types/kids/kid";
 import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
 import { TableFieldConfigDialog } from "@/components/ui/completed/dialogs/TableFieldConfigDialog";
 import { SmartLoadFromExcel } from "@/components/ui/completed/dialogs/SmartLoadFromExcel";
 import { DataTablePageLayout } from "@/components/layout/DataTablePageLayout";
-import { mergeColumnsWithDynamicFields } from "@/utils/tableFieldUtils";
+import {
+  getDynamicFieldDefinitions,
+  mergeColumnsWithDynamicFields,
+  normalizeDynamicFieldChoices,
+  type DynamicFieldDefinition,
+} from "@/utils/tableFieldUtils";
 import { toast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { showConfirm } from "@/utils/swal";
@@ -39,8 +47,10 @@ import {
   denamespaceDynamicFields,
   namespaceDynamicFields,
 } from "@/utils/contacts/dynamicFieldNamespaces";
-import { parseDateForSubmit } from "@/lib/dateUtils";
+import { formatDateForDisplay, parseDateForSubmit } from "@/lib/dateUtils";
 import { isValidIsraeliID } from "@/lib/israeliIdValidator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { formatPhoneNumber } from "@/lib/phoneUtils";
 
 const parentsApi = createApiService<Parent>("/parents", {
   includeOrgId: true,
@@ -49,6 +59,331 @@ const parentsApi = createApiService<Parent>("/parents", {
 const kidsApi = createApiService<Kid>("/kids", {
   includeOrgId: true,
 });
+
+interface KidDetailsPopoverProps {
+  kid: Kid;
+  trigger: ReactElement;
+  t: TFunction;
+  dynamicFieldDefinitions: Record<string, DynamicFieldDefinition>;
+  dynamicFieldOrder: string[];
+}
+
+interface KidFieldRow {
+  key: string;
+  label: string;
+  value: string;
+  href?: string;
+}
+
+const hasRenderableValue = (value: unknown): boolean => {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (typeof value === "number") return true;
+  if (typeof value === "boolean") return true;
+  if (Array.isArray(value)) {
+    return value.some(hasRenderableValue);
+  }
+  if (typeof value === "object") {
+    return Object.values(value as Record<string, unknown>).some(hasRenderableValue);
+  }
+  return false;
+};
+
+const stringifyFieldValue = (value: unknown): string => {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => stringifyFieldValue(entry))
+      .filter(Boolean)
+      .join(", ");
+  }
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    if (typeof record.label === "string" && record.label.trim().length > 0) {
+      return record.label;
+    }
+    if (
+      typeof record.value === "string" ||
+      typeof record.value === "number" ||
+      typeof record.value === "boolean"
+    ) {
+      return String(record.value);
+    }
+    return Object.values(record)
+      .map((entry) => stringifyFieldValue(entry))
+      .filter(Boolean)
+      .join(" • ");
+  }
+  return "";
+};
+
+const extractSingleValue = (value: unknown): string => {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    if (
+      typeof record.value === "string" ||
+      typeof record.value === "number" ||
+      typeof record.value === "boolean"
+    ) {
+      return String(record.value);
+    }
+    if (typeof record.label === "string") {
+      return record.label;
+    }
+  }
+  return "";
+};
+
+const normalizeValueArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.map((entry) => extractSingleValue(entry)).filter(Boolean);
+  }
+  const single = extractSingleValue(value);
+  if (!single) return [];
+  if (single.includes(",")) {
+    return single
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+  return [single];
+};
+
+function formatDynamicFieldValue(
+  definition: DynamicFieldDefinition,
+  rawValue: unknown,
+  t: TFunction,
+): { display: string; href?: string } {
+  const baseDisplay = stringifyFieldValue(rawValue).trim();
+
+  switch (definition.type) {
+    case "SELECT": {
+      const value = extractSingleValue(rawValue);
+      const choices = normalizeDynamicFieldChoices(definition.choices);
+      const label = value
+        ? (choices.find((choice) => choice.value === value)?.label ?? baseDisplay) || value
+        : baseDisplay;
+      return { display: label };
+    }
+    case "MULTI_SELECT": {
+      const values = normalizeValueArray(rawValue);
+      const choices = normalizeDynamicFieldChoices(definition.choices);
+      const labels = values.map(
+        (value) => choices.find((choice) => choice.value === value)?.label ?? value,
+      );
+      return { display: labels.join(", ") || baseDisplay };
+    }
+    case "CHECKBOX":
+      return {
+        display: Boolean(rawValue) ? t("common:yes", "כן") : t("common:no", "לא"),
+      };
+    case "DATE":
+      return { display: formatDateForDisplay(baseDisplay || undefined) };
+    case "PHONE": {
+      const value = extractSingleValue(rawValue) || baseDisplay;
+      return {
+        display: formatPhoneNumber(value),
+        href: value ? `tel:${value}` : undefined,
+      };
+    }
+    case "EMAIL": {
+      const value = extractSingleValue(rawValue) || baseDisplay;
+      return {
+        display: value,
+        href: value ? `mailto:${value}` : undefined,
+      };
+    }
+    case "LINK": {
+      const value = extractSingleValue(rawValue) || baseDisplay;
+      const hasProtocol = /^https?:\/\//i.test(value);
+      return {
+        display: value,
+        href: value ? (hasProtocol ? value : `https://${value}`) : undefined,
+      };
+    }
+    case "NUMBER":
+    case "MONEY": {
+      const numericValue =
+        typeof rawValue === "number"
+          ? rawValue
+          : typeof rawValue === "string" &&
+              rawValue.trim() !== "" &&
+              !Number.isNaN(Number(rawValue))
+            ? Number(rawValue)
+            : null;
+      if (numericValue !== null) {
+        return {
+          display:
+            definition.type === "MONEY"
+              ? numericValue.toLocaleString("he-IL", {
+                  style: "currency",
+                  currency: "ILS",
+                })
+              : numericValue.toLocaleString("he-IL"),
+        };
+      }
+      return { display: baseDisplay };
+    }
+    default:
+      return { display: baseDisplay };
+  }
+}
+
+function KidDetailsPopover({
+  kid,
+  trigger,
+  t,
+  dynamicFieldDefinitions,
+  dynamicFieldOrder,
+}: KidDetailsPopoverProps) {
+  const linkedParentsCount = kid.linked_parents?.length ?? 0;
+  const fullName = [kid.firstname, kid.lastname].filter(Boolean).join(" ");
+  const kidStatus = kid.status?.trim() || "";
+
+  const staticRows: KidFieldRow[] = [
+    {
+      key: "idNumber",
+      label: t("id_number", "תעודת זהות"),
+      value: kid.idNumber?.trim() || "",
+    },
+    {
+      key: "address",
+      label: t("address", "כתובת"),
+      value: kid.address?.trim() || "",
+    },
+    {
+      key: "status",
+      label: t("status", "סטטוס"),
+      value: kidStatus,
+    },
+  ].filter((row) => row.value);
+
+  const orderedDynamicKeys =
+    dynamicFieldOrder.length > 0
+      ? dynamicFieldOrder
+      : Object.keys(dynamicFieldDefinitions);
+
+  const dynamicRows: KidFieldRow[] = orderedDynamicKeys
+    .map((fieldKey) => {
+      const definition = dynamicFieldDefinitions[fieldKey];
+      if (!definition) {
+        return null;
+      }
+
+      const rawValue = kid.dynamicFields?.[fieldKey];
+      if (!hasRenderableValue(rawValue)) {
+        return null;
+      }
+
+      const formatted = formatDynamicFieldValue(definition, rawValue, t);
+      if (!formatted.display.trim()) {
+        return null;
+      }
+
+      return {
+        key: fieldKey,
+        label: definition.label || fieldKey,
+        value: formatted.display,
+        href: formatted.href,
+      };
+    })
+    .filter((row): row is KidFieldRow => Boolean(row));
+
+  const renderFieldGrid = (rows: KidFieldRow[], prefix: string) => (
+    <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+      {rows.map(({ key, label, value, href }) => (
+        <div key={`${prefix}-${key}`} className="space-y-1">
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
+          <dd className="text-sm font-semibold break-words text-right">
+            {href ? (
+              <a
+                href={href}
+                className="text-primary hover:underline"
+                onClick={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                {value}
+              </a>
+            ) : (
+              value
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+
+  const showEmptyState = staticRows.length === 0 && dynamicRows.length === 0;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+      <PopoverContent
+        align="end"
+        side="left"
+        className="w-[480px] max-w-[90vw] p-0 text-sm shadow-lg border bg-card max-h-[80vh] overflow-hidden"
+      >
+        <div className="max-h-[80vh] overflow-y-auto">
+          <div className="flex items-start justify-between gap-4 px-4 py-4 bg-muted/60">
+            <div className="space-y-1">
+              <p className="text-lg font-semibold">{fullName || t("kids:unknown_name", "ללא שם")}</p>
+              {linkedParentsCount > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {t("linked_parents_count", {
+                    count: linkedParentsCount,
+                    defaultValue:
+                      linkedParentsCount === 1
+                        ? "מקושר להורה אחד"
+                        : `מקושר ל-${linkedParentsCount} הורים`,
+                  })}
+                </p>
+              )}
+            </div>
+            {kidStatus && (
+              <Badge variant="secondary" className="text-xs font-medium">
+                {kidStatus}
+              </Badge>
+            )}
+          </div>
+
+          <div className="px-4 py-5 space-y-6">
+            {staticRows.length > 0 && (
+              <section>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t("kids:basic_information", "מידע בסיסי")}
+                </p>
+                {renderFieldGrid(staticRows, "static")}
+              </section>
+            )}
+
+            {dynamicRows.length > 0 && (
+              <section>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t("kids:custom_fields", "שדות דינאמיים")}
+                </p>
+                {renderFieldGrid(dynamicRows, "dynamic")}
+              </section>
+            )}
+
+            {showEmptyState && (
+              <p className="text-sm text-muted-foreground text-center">
+                {t("kids:no_kid_details", "אין נתונים להצגה")}
+              </p>
+            )}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export default function ParentsPage() {
   const { t } = useTranslation();
@@ -87,6 +422,7 @@ export default function ParentsPage() {
         value: kid._id || "",
         label: `${kid.firstname} ${kid.lastname}`,
         contactId: kid.contactId,
+        kid,
       })),
     [kidsData],
   );
@@ -108,6 +444,69 @@ export default function ParentsPage() {
       return acc;
     }, {});
   }, [kidsData]);
+
+  const kidDynamicFieldDefinitions = useMemo(
+    () => getDynamicFieldDefinitions(organization, "kids"),
+    [organization],
+  );
+
+  const kidDynamicFieldOrder = useMemo(() => {
+    const config = organization?.tableFieldDefinitions?.kids;
+    const definedKeys = Object.keys(kidDynamicFieldDefinitions);
+
+    if (!config) {
+      return definedKeys;
+    }
+
+    const ordered: string[] = [];
+    const seen = new Set<string>();
+
+    (config.fieldOrder || []).forEach((fieldName) => {
+      if (kidDynamicFieldDefinitions[fieldName]) {
+        ordered.push(fieldName);
+        seen.add(fieldName);
+      }
+    });
+
+    definedKeys.forEach((fieldName) => {
+      if (!seen.has(fieldName)) {
+        ordered.push(fieldName);
+      }
+    });
+
+    return ordered;
+  }, [organization, kidDynamicFieldDefinitions]);
+
+  const renderKidChip = useCallback(
+    ({
+      value,
+      DefaultChip,
+    }: {
+      value: string;
+      DefaultChip: (props?: HTMLAttributes<HTMLDivElement>) => React.ReactNode;
+    }) => {
+      const kid = kidById[value];
+      if (!kid) {
+        return DefaultChip();
+      }
+
+      const triggerElement = DefaultChip({
+        onClick: (event) => event.stopPropagation(),
+        onPointerDown: (event) => event.stopPropagation(),
+      }) as ReactElement;
+
+      return (
+        <KidDetailsPopover
+          kid={kid}
+          trigger={triggerElement}
+          t={t}
+          dynamicFieldDefinitions={kidDynamicFieldDefinitions}
+          dynamicFieldOrder={kidDynamicFieldOrder}
+        />
+      );
+    },
+    [kidById, kidDynamicFieldDefinitions, kidDynamicFieldOrder, t],
+  );
 
   const mapContactToParent = useCallback(
     (contact: Contact, relationships: ContactRelationship[] = []): Parent => {
@@ -242,6 +641,7 @@ export default function ParentsPage() {
       meta: {
         editable: true,
         relationshipOptions: kidsOptions,
+        relationshipChipRenderer: renderKidChip,
       },
     },
     { accessorKey: "organizationId", header: "", meta: { hidden: true } },
@@ -262,6 +662,7 @@ export default function ParentsPage() {
           meta: {
             ...(col as any).meta,
             relationshipOptions: kidsOptions,
+            relationshipChipRenderer: renderKidChip,
           },
         };
       }
@@ -273,7 +674,7 @@ export default function ParentsPage() {
       organization,
       t
     );
-  }, [visibleColumns, organization, t, kidsOptions]);
+  }, [visibleColumns, organization, t, kidsOptions, renderKidChip]);
 
   const excelColumns = useMemo(() => mergedColumns, [mergedColumns]);
 

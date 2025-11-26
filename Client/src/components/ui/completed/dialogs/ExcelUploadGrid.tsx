@@ -179,17 +179,29 @@ export function ExcelUploadGrid({ columns, onSave, excludeFields = [] }: ExcelUp
               const chunk = dataRows.slice(startIndex, endIndex);
 
               for (const row of chunk) {
+                // Skip if row is undefined, null, or not an array
+                if (!row || !Array.isArray(row)) {
+                  continue;
+                }
+                
                 // Use pre-created template for better performance
                 const baseRow: GridRow = { ...emptyRowTemplate };
+                let hasAnyValue = false;
+                
                 columnMappings.forEach(({ index, key }) => {
                   const value = row[index];
-                  if (value !== undefined && value !== null) {
-                    baseRow[key] = value.toString();
+                  if (value !== undefined && value !== null && value !== "") {
+                    const stringValue = value.toString().trim();
+                    if (stringValue !== "") {
+                      baseRow[key] = stringValue;
+                      hasAnyValue = true;
+                    }
                   }
                 });
                 
-                // Only add non-empty rows
-                if (Object.values(baseRow).some((value) => value && value.trim() !== "")) {
+                // Only add rows that have at least one non-empty value
+                // This ensures we skip completely empty rows but keep rows with partial data
+                if (hasAnyValue) {
                   parsedRows.push(baseRow);
                 }
               }

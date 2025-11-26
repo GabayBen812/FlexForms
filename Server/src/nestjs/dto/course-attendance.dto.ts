@@ -43,3 +43,4 @@ export class BulkUpsertCourseAttendanceDto {
   records!: CreateCourseAttendanceDto[];
 }
 
+

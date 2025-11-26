@@ -29,3 +29,4 @@ CourseAttendanceSchema.set('collection', 'CoursesAttendance');
 CourseAttendanceSchema.index({ courseId: 1, date: 1, kidId: 1 });
 CourseAttendanceSchema.index({ organizationId: 1, courseId: 1, date: 1 });
 
+

@@ -152,7 +152,7 @@ const normalizeDefinitionChoices = (
         color: normalizeHexColor(choice?.color),
       };
     })
-    .filter((choice): choice is FieldChoiceInput => Boolean(choice?.value));
+    .filter((choice) => Boolean(choice && typeof choice === 'object' && 'value' in choice && choice.value)) as FieldChoiceInput[];
 };
 
 const slugifyFieldName = (value: string): string => {

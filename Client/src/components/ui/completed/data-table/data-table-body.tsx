@@ -230,10 +230,7 @@ function MultiSelectChipsDisplay({
         color: matchedOption?.color,
       };
     })
-    .filter(
-      (chip): chip is { label: string; value: string; color?: string } =>
-        Boolean(chip?.label && chip.label.trim().length > 0)
-    );
+    .filter((chip) => Boolean(chip && chip.label && chip.label.trim().length > 0)) as Array<{ label: string; value: string; color?: string }>;
 
   if (!chips.length) {
     return <div className="px-2 py-1 rounded min-h-[1.5rem]" />;
@@ -1104,7 +1101,7 @@ function EditableCell<T>({
             onClick={(e) => {
               e.stopPropagation();
             }}
-            className="cursor-pointer"
+            className="cursor-pointer w-6 h-6 [&_svg]:w-5 [&_svg]:h-5"
           />
         </div>
       );
@@ -1351,7 +1348,7 @@ function EditableCell<T>({
             setValue(newChecked ? "true" : "false");
             setTimeout(handleSave, 100); // Auto-save after change
           }}
-          className="cursor-pointer"
+          className="cursor-pointer w-6 h-6 [&>svg]:w-5 [&>svg]:h-5"
         />
       </div>
     );

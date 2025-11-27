@@ -66,7 +66,7 @@ export function normalizeDynamicFieldChoices(
         color: choice?.color,
       };
     })
-    .filter((opt): opt is DynamicFieldChoiceOption => Boolean(opt?.value && opt?.label));
+    .filter((opt) => Boolean(opt && typeof opt === 'object' && 'value' in opt && 'label' in opt && opt.value && opt.label)) as DynamicFieldChoiceOption[];
 }
 
 /**

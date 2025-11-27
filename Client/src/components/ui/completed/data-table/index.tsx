@@ -747,6 +747,9 @@ export function DataTable<TData>({
       });
 
       // Apply calculated widths to columns
+      // Note: Column sizing in TanStack Table is managed through column definitions,
+      // not through a setSize method. The calculated widths are stored but not applied here.
+      // If dynamic column sizing is needed, it should be handled through column sizing state.
       visibleColumns.forEach((column) => {
         const calculatedWidth = columnWidths.get(column.id);
         if (calculatedWidth) {
@@ -755,10 +758,10 @@ export function DataTable<TData>({
           const maxWidth = 500; // Prevent columns from becoming too wide
           const finalWidth = Math.max(minWidth, Math.min(maxWidth, calculatedWidth));
           
-          // Update column size if it's different
-          if (column.getSize() !== finalWidth) {
-            column.setSize(finalWidth);
-          }
+          // Store calculated width for potential future use
+          // Column sizing in TanStack Table v8 is managed through column definitions
+          // and column sizing state, not through a setSize method
+          // TODO: Implement column sizing through proper TanStack Table API if needed
         }
       });
     };

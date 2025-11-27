@@ -313,7 +313,7 @@ function ParentDetailsPopover({
         href: formatted.href,
       };
     })
-    .filter((row): row is ParentFieldRow => Boolean(row));
+    .filter((row) => Boolean(row && typeof row === 'object' && 'key' in row && 'label' in row && 'value' in row)) as ParentFieldRow[];
 
   const renderFieldGrid = (rows: ParentFieldRow[], prefix: string) => (
     <dl className="grid grid-cols-2 gap-x-4 gap-y-3">

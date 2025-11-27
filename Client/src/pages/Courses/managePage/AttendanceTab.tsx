@@ -58,7 +58,7 @@ export function AttendanceTab({ courseId }: AttendanceTabProps) {
     },
   });
 
-  // Calculate available dates and default date
+  // Calculate available dates
   const availableDates = useMemo(() => {
     if (!schedulesData || schedulesData.length === 0) {
       return [];
@@ -66,19 +66,37 @@ export function AttendanceTab({ courseId }: AttendanceTabProps) {
     return getCourseScheduleDates(schedulesData);
   }, [schedulesData]);
 
-  const defaultDate = useMemo(() => {
-    if (!schedulesData || schedulesData.length === 0) {
-      return new Date();
-    }
-    return getDefaultAttendanceDate(schedulesData);
-  }, [schedulesData]);
-
-  // Set default date on mount
+  // Set default date on mount and when schedules change
+  // Always reset to the closest date to today (recalculates based on current time)
+  // This ensures consistent behavior after refresh or tab switch
   useEffect(() => {
-    if (defaultDate && !selectedDate) {
-      setSelectedDate(defaultDate);
+    if (schedulesData && schedulesData.length > 0 && availableDates.length > 0) {
+      const today = dayjs().startOf("day");
+      
+      // First, check if today exists in available dates - if so, use it
+      const todayInAvailable = availableDates.find((date) =>
+        dayjs(date).startOf("day").isSame(today, "day")
+      );
+      
+      if (todayInAvailable) {
+        setSelectedDate(todayInAvailable);
+        return;
+      }
+      
+      // Otherwise, find the next scheduled date after today
+      const nextDate = availableDates.find((date) =>
+        dayjs(date).startOf("day").isAfter(today)
+      );
+      
+      if (nextDate) {
+        setSelectedDate(nextDate);
+        return;
+      }
+      
+      // If no future date found, use the last available date
+      setSelectedDate(availableDates[availableDates.length - 1]);
     }
-  }, [defaultDate, selectedDate]);
+  }, [schedulesData, availableDates]);
 
   // Fetch course participants
   const { data: enrollmentsData, isLoading: isLoadingEnrollments } = useQuery({
@@ -218,63 +236,72 @@ export function AttendanceTab({ courseId }: AttendanceTabProps) {
 
   const fetchAttendanceData = useCallback(
     async (params?: ApiQueryParams): Promise<ApiResponse<AttendanceRow>> => {
+      // Read fresh data directly from React Query cache instead of memoized tableData
+      const currentAttendanceData = queryClient.getQueryData<CourseAttendance[]>([
+        "course-attendance",
+        courseId,
+        selectedDateISO,
+      ]) || [];
+      
+      const currentEnrollmentsData = queryClient.getQueryData<CourseEnrollment[]>([
+        "course-enrollments",
+        courseId,
+      ]) || [];
+
+      if (!currentEnrollmentsData || currentEnrollmentsData.length === 0) {
+        return {
+          data: [],
+          totalCount: 0,
+          totalPages: 1,
+        } as ApiResponse<AttendanceRow>;
+      }
+
+      // Merge participants with attendance data (same logic as tableData useMemo)
+      const attendanceMap = new Map<string, CourseAttendance>();
+      if (currentAttendanceData) {
+        currentAttendanceData.forEach((attendance) => {
+          const kidId = typeof attendance.kidId === "string" 
+            ? attendance.kidId 
+            : (attendance.kidId && typeof attendance.kidId === "object" && "_id" in attendance.kidId)
+              ? (attendance.kidId as { _id?: string })._id || ""
+              : "";
+          if (kidId) {
+            attendanceMap.set(kidId, attendance);
+          }
+        });
+      }
+
+      const freshTableData = currentEnrollmentsData.map((enrollment) => {
+        const kidData =
+          enrollment.kid ??
+          (typeof enrollment.kidId === "object" && enrollment.kidId !== null
+            ? enrollment.kidId
+            : null);
+
+        const kidId = typeof enrollment.kidId === "string" ? enrollment.kidId : enrollment.kidId?._id || "";
+        const kidName = kidData && (kidData.firstname || kidData.lastname)
+          ? `${kidData.firstname ?? ""} ${kidData.lastname ?? ""}`.trim()
+          : t("unknown");
+
+        const attendance = attendanceMap.get(kidId);
+
+        return {
+          _id: attendance?._id,
+          kidId,
+          kidName,
+          attended: attendance?.attended ?? false,
+          notes: attendance?.notes ?? "",
+          enrollment,
+        };
+      });
+
       return {
-        data: tableData,
-        totalCount: tableData.length,
+        data: freshTableData,
+        totalCount: freshTableData.length,
         totalPages: 1,
       } as ApiResponse<AttendanceRow>;
     },
-    [tableData]
-  );
-
-  // Debounce timer ref
-  const saveTimerRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
-
-  // Debounced save function
-  const debouncedSave = useCallback(
-    async (row: AttendanceRow, updates: Partial<AttendanceRow>) => {
-      if (!organization?._id || !selectedDateISO) {
-        return;
-      }
-
-      // Clear existing timer for this row
-      const existingTimer = saveTimerRef.current.get(row.kidId);
-      if (existingTimer) {
-        clearTimeout(existingTimer);
-      }
-
-      // Set new timer
-      const timer = setTimeout(async () => {
-        const attendanceDto: CreateCourseAttendanceDto = {
-          organizationId: organization._id,
-          courseId,
-          kidId: row.kidId,
-          date: selectedDateISO,
-          attended: updates.attended ?? row.attended,
-          notes: updates.notes ?? row.notes,
-        };
-
-        const response = await courseAttendanceApi.createOrUpdate(attendanceDto);
-        if (response.error) {
-          toast({
-            title: t("error"),
-            description: response.error,
-            variant: "destructive",
-          });
-          return;
-        }
-
-        // Invalidate and refetch attendance data
-        await queryClient.invalidateQueries({
-          queryKey: ["course-attendance", courseId, selectedDateISO],
-        });
-
-        saveTimerRef.current.delete(row.kidId);
-      }, 500);
-
-      saveTimerRef.current.set(row.kidId, timer);
-    },
-    [organization?._id, selectedDateISO, courseId, queryClient, t]
+    [courseId, selectedDateISO, queryClient, t]
   );
 
   const handleUpdateAttendance = useCallback(
@@ -284,7 +311,44 @@ export function AttendanceTab({ courseId }: AttendanceTabProps) {
         throw new Error(t("row_id_not_found"));
       }
 
-      const row = tableData.find((r) => r._id === id || r.kidId === id);
+      // Get fresh data from React Query cache to find the row
+      const currentAttendanceData = queryClient.getQueryData<CourseAttendance[]>([
+        "course-attendance",
+        courseId,
+        selectedDateISO,
+      ]) || [];
+      
+      const currentEnrollmentsData = queryClient.getQueryData<CourseEnrollment[]>([
+        "course-enrollments",
+        courseId,
+      ]) || [];
+
+      // Recompute tableData from fresh query data to find the row
+      const attendanceMap = new Map<string, CourseAttendance>();
+      currentAttendanceData.forEach((attendance) => {
+        const kidId = typeof attendance.kidId === "string" 
+          ? attendance.kidId 
+          : (attendance.kidId && typeof attendance.kidId === "object" && "_id" in attendance.kidId)
+            ? (attendance.kidId as { _id?: string })._id || ""
+            : "";
+        if (kidId) {
+          attendanceMap.set(kidId, attendance);
+        }
+      });
+
+      const currentTableData = currentEnrollmentsData.map((enrollment) => {
+        const kidId = typeof enrollment.kidId === "string" ? enrollment.kidId : enrollment.kidId?._id || "";
+        const attendance = attendanceMap.get(kidId);
+        return {
+          _id: attendance?._id,
+          kidId,
+          attended: attendance?.attended ?? false,
+          notes: attendance?.notes ?? "",
+          enrollment,
+        };
+      });
+
+      const row = currentTableData.find((r) => r._id === id || r.kidId === id);
       if (!row) {
         throw new Error(t("row_not_found"));
       }
@@ -292,6 +356,11 @@ export function AttendanceTab({ courseId }: AttendanceTabProps) {
       // Extract only the changed fields (exclude id)
       const { id: _, ...updates } = updatedData;
       
+      // Store original data for potential rollback
+      const originalAttendanceData = selectedDateISO 
+        ? queryClient.getQueryData<CourseAttendance[]>(["course-attendance", courseId, selectedDateISO]) || []
+        : [];
+
       // Update React Query cache optimistically so the UI updates immediately
       if (selectedDateISO) {
         queryClient.setQueryData<CourseAttendance[]>(
@@ -353,15 +422,70 @@ export function AttendanceTab({ courseId }: AttendanceTabProps) {
         );
       }
 
-      // Save to server after debounce
-      await debouncedSave(row, updates);
+      // Save to server immediately (no debouncing)
+      try {
+        if (!organization?._id || !selectedDateISO) {
+          throw new Error(t("missing_required_data") || "Missing required data");
+        }
 
-      return {
-        status: 200,
-        data: { ...row, ...updates } as AttendanceRow,
-      };
+        const attendanceDto: CreateCourseAttendanceDto = {
+          organizationId: organization._id,
+          courseId,
+          kidId: row.kidId,
+          date: selectedDateISO,
+          attended: updates.attended ?? row.attended,
+          notes: updates.notes ?? row.notes,
+        };
+
+        const response = await courseAttendanceApi.createOrUpdate(attendanceDto);
+        
+        if (response.error) {
+          // Revert optimistic update on error
+          if (selectedDateISO) {
+            queryClient.setQueryData<CourseAttendance[]>(
+              ["course-attendance", courseId, selectedDateISO],
+              originalAttendanceData
+            );
+          }
+          
+          toast({
+            title: t("error"),
+            description: response.error,
+            variant: "destructive",
+          });
+          
+          throw new Error(response.error);
+        }
+
+        // Silently invalidate query to ensure cache is fresh (but don't trigger visible refresh)
+        queryClient.invalidateQueries({
+          queryKey: ["course-attendance", courseId, selectedDateISO],
+        });
+
+        return {
+          status: 200,
+          data: { ...row, ...updates } as AttendanceRow,
+        };
+      } catch (error) {
+        // Revert optimistic update on error
+        if (selectedDateISO) {
+          queryClient.setQueryData<CourseAttendance[]>(
+            ["course-attendance", courseId, selectedDateISO],
+            originalAttendanceData
+          );
+        }
+        
+        const errorMessage = error instanceof Error ? error.message : t("error");
+        toast({
+          title: t("error"),
+          description: errorMessage,
+          variant: "destructive",
+        });
+        
+        throw error;
+      }
     },
-    [tableData, debouncedSave, selectedDateISO, attendanceData, courseId, organization?._id, queryClient]
+    [selectedDateISO, courseId, organization?._id, queryClient, t]
   );
 
   const handleDateChange = (dateStr: string) => {

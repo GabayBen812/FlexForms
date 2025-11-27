@@ -1,5 +1,4 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import defaultAvatar from "@/assets/landing/defaultAvatar.png";
 import { cn } from "@/lib/utils";
 
 const PROFILE_IMAGE_KEYS = [
@@ -37,13 +36,21 @@ export const ProfileAvatar = ({
   className,
 }: ProfileAvatarProps) => {
   const initials = getInitials(name);
-  const resolvedSrc = imageUrl && imageUrl.trim().length > 0 ? imageUrl : defaultAvatar;
+  const hasImage = imageUrl && imageUrl.trim().length > 0;
 
   return (
     <Avatar className={cn(sizeClasses[size], className)}>
-      <AvatarImage src={resolvedSrc} alt={name || "Profile picture"} />
-      <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
-        {initials}
+      {hasImage ? (
+        <AvatarImage src={imageUrl} alt={name || "Profile picture"} />
+      ) : null}
+      <AvatarFallback 
+        className={cn(
+          hasImage 
+            ? "text-xs font-medium bg-primary/10 text-primary" 
+            : "bg-gray-300"
+        )}
+      >
+        {hasImage ? initials : ""}
       </AvatarFallback>
     </Avatar>
   );

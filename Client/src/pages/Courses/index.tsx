@@ -38,7 +38,8 @@ export default function Courses() {
           </div>
         );
       },
-      size: 300,
+      size: 400,
+      minSize: 350,
       meta: { editable: false },
     },
     {
@@ -52,7 +53,8 @@ export default function Courses() {
           </div>
         );
       },
-      size: 150,
+      size: 200,
+      minSize: 180,
       meta: { editable: false },
     },
   ], [t]);
@@ -126,28 +128,34 @@ export default function Courses() {
   );
 
   return (
-    <div className="mx-auto w-full space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-primary">{t("courses")}</h1>
-        <Button onClick={() => navigate("/courses/create")}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t("create_new_course")}
-        </Button>
+    <div className="w-full">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col items-center px-4">
+        <div className="mb-6 flex w-full items-center justify-between">
+          <h1 className="text-center text-2xl font-semibold text-primary">
+            {t("courses")}
+          </h1>
+          <Button onClick={() => navigate("/courses/create")}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t("create_new_course")}
+          </Button>
+        </div>
+        <div className="w-full max-w-[1400px]">
+          <DataTable<Course>
+            data={[]}
+            fetchData={wrappedFetchData}
+            updateData={handleUpdateCourse}
+            deleteData={handleDeleteCourse}
+            columns={columns}
+            searchable
+            showAddButton={false}
+            defaultPageSize={10}
+            idField="_id"
+            onRowClick={handleCourseClick}
+            isPagination={true}
+            isLazyLoading={true}
+          />
+        </div>
       </div>
-      <DataTable<Course>
-        data={[]}
-        fetchData={wrappedFetchData}
-        updateData={handleUpdateCourse}
-        deleteData={handleDeleteCourse}
-        columns={columns}
-        searchable
-        showAddButton={false}
-        defaultPageSize={10}
-        idField="_id"
-        onRowClick={handleCourseClick}
-        isPagination={true}
-        isLazyLoading={true}
-      />
     </div>
   );
 }

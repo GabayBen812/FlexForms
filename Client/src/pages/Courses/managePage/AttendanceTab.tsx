@@ -18,6 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
+import "dayjs/locale/he";
+import "dayjs/locale/en";
 
 interface AttendanceTabProps {
   courseId: string;
@@ -33,10 +35,16 @@ interface AttendanceRow {
 }
 
 export function AttendanceTab({ courseId }: AttendanceTabProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { organization } = useOrganization();
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  // Configure dayjs locale based on current language
+  useEffect(() => {
+    const locale = i18n.language === "he" ? "he" : "en";
+    dayjs.locale(locale);
+  }, [i18n.language]);
 
   // Fetch course schedule
   const { data: schedulesData, isLoading: isLoadingSchedule } = useQuery({
@@ -115,7 +123,11 @@ export function AttendanceTab({ courseId }: AttendanceTabProps) {
     const attendanceMap = new Map<string, CourseAttendance>();
     if (attendanceData) {
       attendanceData.forEach((attendance) => {
-        const kidId = typeof attendance.kidId === "string" ? attendance.kidId : attendance.kidId._id || "";
+        const kidId = typeof attendance.kidId === "string" 
+          ? attendance.kidId 
+          : (attendance.kidId && typeof attendance.kidId === "object" && "_id" in attendance.kidId)
+            ? (attendance.kidId as { _id?: string })._id || ""
+            : "";
         if (kidId) {
           attendanceMap.set(kidId, attendance);
         }
@@ -279,6 +291,69 @@ export function AttendanceTab({ courseId }: AttendanceTabProps) {
 
       // Extract only the changed fields (exclude id)
       const { id: _, ...updates } = updatedData;
+      
+      // Update React Query cache optimistically so the UI updates immediately
+      if (selectedDateISO) {
+        queryClient.setQueryData<CourseAttendance[]>(
+          ["course-attendance", courseId, selectedDateISO],
+          (oldData) => {
+            // If oldData is undefined, create a new array with the updated attendance
+            if (!oldData) {
+              const kidId = typeof id === "string" ? id : String(id);
+              const newAttendance: CourseAttendance = {
+                _id: row._id || undefined,
+                organizationId: organization?._id || "",
+                courseId,
+                kidId: kidId,
+                date: selectedDateISO,
+                attended: updates.attended ?? row.attended ?? false,
+                notes: updates.notes ?? row.notes ?? "",
+              } as CourseAttendance;
+              return [newAttendance];
+            }
+            
+            const kidId = typeof id === "string" ? id : String(id);
+            const existingIndex = oldData.findIndex((attendance) => {
+              const attKidId = typeof attendance.kidId === "string" 
+                ? attendance.kidId 
+                : (attendance.kidId && typeof attendance.kidId === "object" && "_id" in attendance.kidId)
+                  ? (attendance.kidId as { _id?: string })._id || ""
+                  : "";
+              return attKidId === kidId;
+            });
+
+            const baseAttendance = existingIndex >= 0 
+              ? oldData[existingIndex] 
+              : {
+                  _id: row._id || undefined,
+                  organizationId: organization?._id || "",
+                  courseId,
+                  kidId: kidId,
+                  date: selectedDateISO,
+                  attended: row.attended ?? false,
+                  notes: row.notes ?? "",
+                };
+
+            const updatedAttendance: CourseAttendance = {
+              ...baseAttendance,
+              attended: updates.attended !== undefined ? updates.attended : baseAttendance.attended ?? false,
+              notes: updates.notes !== undefined ? (updates.notes ?? "") : (baseAttendance.notes ?? ""),
+            } as CourseAttendance;
+
+            if (existingIndex >= 0) {
+              // Update existing attendance
+              const newData = [...oldData];
+              newData[existingIndex] = updatedAttendance;
+              return newData;
+            } else {
+              // Add new attendance
+              return [...oldData, updatedAttendance];
+            }
+          }
+        );
+      }
+
+      // Save to server after debounce
       await debouncedSave(row, updates);
 
       return {
@@ -286,7 +361,7 @@ export function AttendanceTab({ courseId }: AttendanceTabProps) {
         data: { ...row, ...updates } as AttendanceRow,
       };
     },
-    [tableData, debouncedSave]
+    [tableData, debouncedSave, selectedDateISO, attendanceData, courseId, organization?._id, queryClient]
   );
 
   const handleDateChange = (dateStr: string) => {
@@ -317,52 +392,63 @@ export function AttendanceTab({ courseId }: AttendanceTabProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border bg-card p-6 shadow-sm">
-        <div className="mb-6">
-          <Label htmlFor="attendance-date">{t("select_date")}</Label>
-          <Select
-            value={selectedDate ? dayjs(selectedDate).format("YYYY-MM-DD") : undefined}
-            onValueChange={handleDateChange}
-          >
-            <SelectTrigger id="attendance-date" className="w-full sm:w-[300px] mt-2">
-              <SelectValue placeholder={t("select_date")} />
-            </SelectTrigger>
-            <SelectContent>
-              {availableDates.map((date) => {
-                const dateStr = dayjs(date).format("YYYY-MM-DD");
-                const displayDate = formatDateForDisplay(dateStr);
-                return (
-                  <SelectItem key={dateStr} value={dateStr}>
-                    {displayDate}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        </div>
+    <div className="w-full">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col items-center px-4">
+        <div className="w-full max-w-[1400px]">
+          <div className="rounded-2xl border bg-card p-6 shadow-sm">
+            <div className="mb-6">
+              <Label htmlFor="attendance-date">{t("select_date")}</Label>
+              <Select
+                value={selectedDate ? dayjs(selectedDate).format("YYYY-MM-DD") : undefined}
+                onValueChange={handleDateChange}
+              >
+                <SelectTrigger id="attendance-date" className="w-full sm:w-[300px] mt-2">
+                  <SelectValue placeholder={t("select_date")}>
+                    {selectedDate && (
+                      <>
+                        {formatDateForDisplay(dayjs(selectedDate).format("YYYY-MM-DD"))} - {dayjs(selectedDate).format("dddd")}
+                      </>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {availableDates.map((date) => {
+                    const dateStr = dayjs(date).format("YYYY-MM-DD");
+                    const displayDate = formatDateForDisplay(dateStr);
+                    const dayName = dayjs(date).format("dddd");
+                    return (
+                      <SelectItem key={dateStr} value={dateStr}>
+                        {displayDate} - {dayName}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
 
-        {selectedDate && (
-          <div className="mt-6">
-            <DataTable<AttendanceRow>
-              data={[]}
-              fetchData={fetchAttendanceData}
-              columns={columns}
-              updateData={handleUpdateAttendance}
-              deleteData={async () => {
-                return { status: 200, data: {} as AttendanceRow };
-              }}
-              showAddButton={false}
-              showEditButton={false}
-              showDeleteButton={false}
-              defaultPageSize={10}
-              showPageSizeSelector={false}
-              idField="kidId"
-              searchable={false}
-              contentHeight="auto"
-            />
+            {selectedDate && (
+              <div className="mt-6">
+                <DataTable<AttendanceRow>
+                  data={[]}
+                  fetchData={fetchAttendanceData}
+                  columns={columns}
+                  updateData={handleUpdateAttendance}
+                  deleteData={async () => {
+                    return { status: 200, data: {} as AttendanceRow };
+                  }}
+                  showAddButton={false}
+                  showEditButton={false}
+                  showDeleteButton={false}
+                  defaultPageSize={10}
+                  showPageSizeSelector={false}
+                  idField="kidId"
+                  searchable={false}
+                  contentHeight="auto"
+                />
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

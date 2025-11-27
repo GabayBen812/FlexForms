@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsMongoId } from 'class-validator';
+import { IsString, IsNotEmpty, IsMongoId, IsHexColor, IsOptional } from 'class-validator';
 
 export class CreateCourseDto {
   @IsString()
@@ -14,6 +14,10 @@ export class UpdateCourseDto {
   @IsString()
   @IsNotEmpty()
   name!: string;
+
+  @IsHexColor()
+  @IsOptional()
+  color?: string;
 }
 
 

@@ -650,6 +650,127 @@ export function DataTable<TData>({
     updateScrollMetrics();
   }, [tableData, internalColumnOrder, updateScrollMetrics]);
 
+  // Calculate column widths based on content
+  useEffect(() => {
+    if (!tableData.length) return;
+
+    const calculateColumnWidths = () => {
+      const columnWidths = new Map<string, number>();
+      
+      // Get all visible columns
+      const visibleColumns = table.getVisibleFlatColumns();
+      
+      // Initialize with header widths
+      visibleColumns.forEach((column) => {
+        const header = column.columnDef.header;
+        const headerText = typeof header === 'string' ? header : '';
+        // Estimate header width (rough calculation: ~8px per character for Hebrew)
+        const headerWidth = headerText.length * 10 + 40; // Add padding
+        columnWidths.set(column.id, headerWidth);
+      });
+
+      // Calculate max width for each column based on content
+      tableData.forEach((row) => {
+        visibleColumns.forEach((column) => {
+          const accessorKey = (column.columnDef as any).accessorKey as string | undefined;
+          const meta = (column.columnDef as any).meta || {};
+          const isDynamic = accessorKey?.startsWith("dynamicFields.");
+          
+          let cellValue: any;
+          if (accessorKey) {
+            if (isDynamic) {
+              const fieldName = accessorKey.replace("dynamicFields.", "");
+              cellValue = (row as any).dynamicFields?.[fieldName];
+            } else {
+              cellValue = (row as any)[accessorKey];
+            }
+          } else {
+            // For columns without accessorKey (like action columns), skip
+            return;
+          }
+
+          // Calculate width based on value
+          let contentWidth = 0;
+          
+          // Get field type - check dynamic field definition first, then meta
+          const fieldDefinition = meta.fieldDefinition;
+          const fieldType = isDynamic && fieldDefinition?.type 
+            ? fieldDefinition.type 
+            : meta.fieldType;
+          const isDate = meta.isDate || fieldType === "DATE";
+          const isEmailField = accessorKey === "email" || fieldType === "EMAIL";
+          const isPhoneField = accessorKey === "phone" || fieldType === "PHONE";
+          const isLinkField = fieldType === "LINK";
+          const isMoney = fieldType === "MONEY";
+          const isCheckbox = fieldType === "CHECKBOX";
+          const isMultiSelect = fieldType === "MULTI_SELECT";
+          
+          if (cellValue != null) {
+            let displayText = "";
+            
+            if (isDate) {
+              displayText = String(cellValue).length > 0 ? "DD/MM/YYYY" : "";
+            } else if (isMoney) {
+              displayText = cellValue ? `₪${parseFloat(String(cellValue)).toLocaleString("he-IL")}` : "";
+            } else if (isCheckbox) {
+              displayText = "✓";
+            } else if (isMultiSelect && Array.isArray(cellValue)) {
+              displayText = cellValue.join(", ");
+            } else if (isPhoneField && cellValue) {
+              // Phone numbers are formatted, estimate width
+              const phoneStr = String(cellValue);
+              displayText = phoneStr.replace(/\D/g, '').length <= 10 ? "050-123-4567" : phoneStr;
+            } else if (isLinkField && cellValue) {
+              displayText = String(cellValue);
+            } else if (typeof cellValue === "object" && cellValue !== null && !Array.isArray(cellValue)) {
+              displayText = (cellValue as any).name || (cellValue as any).email || (cellValue as any)._id || JSON.stringify(cellValue);
+            } else {
+              displayText = String(cellValue);
+            }
+            
+            // Calculate width: ~8px per character for Hebrew, add padding and icons
+            const textWidth = displayText.length * 8;
+            const padding = 40; // Cell padding
+            const iconWidth = (isEmailField || isPhoneField || isLinkField) ? 30 : 0; // Icon width if present
+            contentWidth = Math.max(textWidth + padding + iconWidth, 120); // Minimum width for content
+          } else {
+            // Empty cell - minimum width
+            contentWidth = 100;
+          }
+          
+          // Update max width for this column
+          const currentMax = columnWidths.get(column.id) || 0;
+          if (contentWidth > currentMax) {
+            columnWidths.set(column.id, contentWidth);
+          }
+        });
+      });
+
+      // Apply calculated widths to columns
+      visibleColumns.forEach((column) => {
+        const calculatedWidth = columnWidths.get(column.id);
+        if (calculatedWidth) {
+          // Set minimum and maximum widths
+          const minWidth = 100;
+          const maxWidth = 500; // Prevent columns from becoming too wide
+          const finalWidth = Math.max(minWidth, Math.min(maxWidth, calculatedWidth));
+          
+          // Update column size if it's different
+          if (column.getSize() !== finalWidth) {
+            column.setSize(finalWidth);
+          }
+        }
+      });
+    };
+
+    // Use setTimeout to ensure DOM is ready
+    const timeoutId = setTimeout(() => {
+      calculateColumnWidths();
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [tableData, table, columns]);
+
   useEffect(() => {
     const handleResize = () => updateScrollMetrics();
     window.addEventListener("resize", handleResize);

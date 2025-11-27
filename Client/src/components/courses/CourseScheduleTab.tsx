@@ -5,6 +5,7 @@ import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { courseScheduleApi } from "@/api/courses/schedule";
+import { coursesApi } from "@/api/courses";
 import { CreateCourseScheduleDto } from "@/types/courses/Course";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
@@ -24,9 +25,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Trash2, Plus, Copy, Save } from "lucide-react";
+import { Trash2, Plus, Copy, Save, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useOrganization } from "@/hooks/useOrganization";
+import { normalizeHexColor, getBadgeColors } from "@/lib/colorUtils";
+import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
 
 interface CourseScheduleTabProps {
@@ -81,6 +84,17 @@ const DAYS_OF_WEEK = [
   { value: 6, label: "Saturday" },
 ];
 
+const COLOR_PRESETS = [
+  "#F87171",
+  "#FB923C",
+  "#FBBF24",
+  "#34D399",
+  "#38BDF8",
+  "#818CF8",
+] as const;
+
+const DEFAULT_COURSE_COLOR = "#3b82f6";
+
 export function CourseScheduleTab({ courseId }: CourseScheduleTabProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -100,6 +114,20 @@ export function CourseScheduleTab({ courseId }: CourseScheduleTabProps) {
         throw new Error(response.error);
       }
       return response.data || [];
+    },
+  });
+
+  const {
+    data: courseData,
+    isLoading: courseLoading,
+  } = useQuery({
+    queryKey: ["course", courseId],
+    queryFn: async () => {
+      const response = await coursesApi.fetch(courseId);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data;
     },
   });
 
@@ -220,6 +248,48 @@ export function CourseScheduleTab({ courseId }: CourseScheduleTabProps) {
     },
   });
 
+  const updateColorMutation = useMutation({
+    mutationFn: async (color: string) => {
+      if (!courseData) {
+        throw new Error("Course data not available");
+      }
+      const response = await coursesApi.update({
+        id: courseId,
+        name: courseData.name,
+        color,
+      });
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["course", courseId] });
+      queryClient.invalidateQueries({ queryKey: ["schedule-courses", organization?._id] });
+      toast({
+        title: t("course_color_updated", {
+          defaultValue: "Course color updated",
+        }),
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t("error_updating_color", {
+          defaultValue: "Error updating color",
+        }),
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleColorChange = (color: string) => {
+    updateColorMutation.mutate(color);
+  };
+
+  const currentColor = courseData?.color || DEFAULT_COURSE_COLOR;
+  const normalizedColor = normalizeHexColor(currentColor) || DEFAULT_COURSE_COLOR;
+
   const onSubmit = (data: FormData) => {
     if (!organization?._id) {
       toast({
@@ -243,7 +313,7 @@ export function CourseScheduleTab({ courseId }: CourseScheduleTabProps) {
 
   const hasSchedules = fields.length > 0;
 
-  if (isLoading) {
+  if (isLoading || courseLoading) {
     return (
       <div className="p-4">
         {t("loading", { defaultValue: "Loading..." })}
@@ -341,6 +411,64 @@ export function CourseScheduleTab({ courseId }: CourseScheduleTabProps) {
                   </p>
                 )}
               </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <Label>
+                {t("course_color", {
+                  defaultValue: "Course Color",
+                })}
+              </Label>
+              <div className="flex flex-wrap items-center gap-2">
+                {COLOR_PRESETS.map((presetColor) => {
+                  const isSelected = normalizedColor === normalizeHexColor(presetColor);
+                  const { background: presetBg, text: presetText } = getBadgeColors(presetColor);
+                  return (
+                    <button
+                      key={presetColor}
+                      type="button"
+                      onClick={() => handleColorChange(presetColor)}
+                      disabled={updateColorMutation.isPending}
+                      className={cn(
+                        "h-9 w-9 rounded-full border-2 transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed",
+                        isSelected ? "border-primary ring-2 ring-primary/40" : "border-transparent"
+                      )}
+                      style={{ backgroundColor: presetBg, color: presetText }}
+                      aria-label={t("select_color", {
+                        defaultValue: "Select color",
+                      })}
+                    >
+                      {isSelected && <Check className="h-4 w-4 mx-auto" />}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => handleColorChange(DEFAULT_COURSE_COLOR)}
+                  disabled={updateColorMutation.isPending}
+                  className={cn(
+                    "h-9 w-9 rounded-full border-2 transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed",
+                    normalizedColor === normalizeHexColor(DEFAULT_COURSE_COLOR)
+                      ? "border-primary ring-2 ring-primary/40"
+                      : "border-transparent"
+                  )}
+                  style={{
+                    backgroundColor: DEFAULT_COURSE_COLOR,
+                    color: "#ffffff",
+                  }}
+                  aria-label={t("select_default_color", {
+                    defaultValue: "Select default blue color",
+                  })}
+                >
+                  {normalizedColor === normalizeHexColor(DEFAULT_COURSE_COLOR) && (
+                    <Check className="h-4 w-4 mx-auto" />
+                  )}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {t("course_color_helper", {
+                  defaultValue: "Choose a color for this course. Sessions will appear in this color on the schedule.",
+                })}
+              </p>
             </div>
           </CardContent>
         </Card>

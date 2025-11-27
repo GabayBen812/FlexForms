@@ -132,11 +132,11 @@ tr {
   background-color: #f0f7ff !important;
 }
 
-/* Remove global max-width, keep ellipsis and nowrap */
+/* Allow content to be visible - columns will auto-size based on content */
 th, td, .data-table-row-cell {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
   white-space: nowrap;
+  min-width: fit-content;
 }
 
 /* Optional: max-width utility for specific columns */

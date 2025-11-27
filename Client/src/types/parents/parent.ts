@@ -4,6 +4,7 @@ export interface Parent {
   contactId?: string;
   firstname: string;
   lastname: string;
+  profileImageUrl?: string;
   linked_kids?: string[];
   idNumber?: string;
   organizationId: string;

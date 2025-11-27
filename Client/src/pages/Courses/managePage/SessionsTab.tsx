@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState } from "react";
+import { useMemo, useCallback, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { useQueryClient } from "@tanstack/react-query";
@@ -9,6 +9,8 @@ import { courseSessionsApi } from "@/api/course-sessions";
 import { CourseSession, CourseSessionStatus } from "@/types/courses/CourseSession";
 import { formatDateForDisplay } from "@/lib/dateUtils";
 import dayjs from "dayjs";
+import "dayjs/locale/he";
+import "dayjs/locale/en";
 import { toast } from "@/hooks/use-toast";
 import { MutationResponse } from "@/types/api/auth";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +31,7 @@ const statusOptions: { value: CourseSessionStatus; label: string }[] = [
 ];
 
 export function SessionsTab({ courseId }: SessionsTabProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { organization } = useOrganization();
   const queryClient = useQueryClient();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -42,6 +44,12 @@ export function SessionsTab({ courseId }: SessionsTabProps) {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [tableRows, setTableRows] = useState<CourseSession[]>([]);
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>({});
+
+  // Configure dayjs locale based on current language
+  useEffect(() => {
+    const locale = i18n.language === "he" ? "he" : "en";
+    dayjs.locale(locale);
+  }, [i18n.language]);
 
   const getStatusBadgeStyles = (status: CourseSessionStatus) => {
     switch (status) {
@@ -114,13 +122,31 @@ export function SessionsTab({ courseId }: SessionsTabProps) {
       {
         accessorKey: "date",
         header: t("date") || "Date",
-        cell: ({ row }) => formatDateForDisplay(row.original.date),
+        cell: ({ row }) => {
+          const dateStr = formatDateForDisplay(row.original.date);
+          if (!dateStr || !row.original.date) return "";
+          
+          try {
+            const date = dayjs(row.original.date);
+            if (!date.isValid()) return dateStr;
+            
+            const dayOfWeek = date.format("dddd"); // Full day name (e.g., "רביעי" or "Wednesday")
+            return (
+              <div className="flex flex-col items-center gap-1">
+                <span className="font-medium">{dateStr}</span>
+                <span className="text-xs text-muted-foreground">{dayOfWeek}</span>
+              </div>
+            );
+          } catch {
+            return dateStr;
+          }
+        },
         meta: {
           isDate: true,
           editable: false,
           className: "text-center",
         },
-        size: 120,
+        size: 150,
       },
       {
         accessorKey: "startDateTime",

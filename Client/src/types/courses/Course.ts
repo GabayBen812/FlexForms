@@ -2,6 +2,7 @@ export interface Course {
   _id: string;
   name: string;
   organizationId: string;
+  color?: string;
   createdAt?: string;
   updatedAt?: string;
 }

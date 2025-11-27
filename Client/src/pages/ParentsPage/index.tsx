@@ -51,6 +51,7 @@ import { formatDateForDisplay, parseDateForSubmit } from "@/lib/dateUtils";
 import { isValidIsraeliID } from "@/lib/israeliIdValidator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
+import { ProfileAvatar, getProfileImageUrl } from "@/components/ProfileAvatar";
 
 const parentsApi = createApiService<Parent>("/parents", {
   includeOrgId: true,
@@ -59,6 +60,8 @@ const parentsApi = createApiService<Parent>("/parents", {
 const kidsApi = createApiService<Kid>("/kids", {
   includeOrgId: true,
 });
+
+const PARENT_PROFILE_UPLOAD_PATH = "uploads/parents/profile-images";
 
 interface KidDetailsPopoverProps {
   kid: Kid;
@@ -525,6 +528,7 @@ export default function ParentsPage() {
         contactId: contact._id,
         firstname: contact.firstname,
         lastname: contact.lastname,
+        profileImageUrl: contact.profileImageUrl,
         idNumber: contact.idNumber,
         email: contact.email,
         phone: contact.phone,
@@ -632,6 +636,31 @@ export default function ParentsPage() {
 
   const columns: ColumnDef<Parent>[] = [
     selectionColumn,
+    {
+      accessorKey: "profileImageUrl",
+      header: t("profile_picture", "תמונת פרופיל"),
+      enableSorting: false,
+      meta: {
+        editable: true,
+        excludeFromSearch: true,
+        isImage: true,
+        fieldType: "IMAGE",
+        uploadPath: PARENT_PROFILE_UPLOAD_PATH,
+        allowEmpty: true,
+      },
+      cell: ({ row }) => {
+        const parent = row.original;
+        const imageUrl = getProfileImageUrl(parent);
+        const name = [parent.firstname, parent.lastname].filter(Boolean).join(" ");
+
+        return (
+          <div className="flex justify-center">
+            <ProfileAvatar name={name} imageUrl={imageUrl} size="sm" />
+          </div>
+        );
+      },
+      size: 90,
+    },
     { accessorKey: "firstname", header: t("firstname") },
     { accessorKey: "lastname", header: t("lastname") },
     { accessorKey: "idNumber", header: t("id_number") },
@@ -813,6 +842,7 @@ export default function ParentsPage() {
         email: data.email,
         phone: data.phone,
         address: data.address,
+        profileImageUrl: data.profileImageUrl,
         dynamicFields: namespaceDynamicFields(
           data.dynamicFields as Record<string, unknown> | undefined,
           "parent",
@@ -1014,6 +1044,7 @@ export default function ParentsPage() {
         email: data.email,
         phone: data.phone,
         address: data.address,
+        profileImageUrl: data.profileImageUrl,
         dynamicFields: namespaceDynamicFields(
           data.dynamicFields as Record<string, unknown> | undefined,
           "parent",
@@ -1181,6 +1212,7 @@ export default function ParentsPage() {
                   firstname: editingParent.firstname,
                   lastname: editingParent.lastname,
                   idNumber: editingParent.idNumber || "",
+                  profileImageUrl: editingParent.profileImageUrl || "",
                   linked_kids: Array.isArray(editingParent.linked_kids)
                     ? editingParent.linked_kids.map((k: any) =>
                         typeof k === "string" ? k : k?._id || k?.toString() || k,

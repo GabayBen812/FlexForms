@@ -77,7 +77,8 @@ export default function Forms() {
         />
       </div>
     ),
-    size: 40,
+    size: 56,
+    minSize: 48,
   };
 
   const handleTitleClick = (form: Form) => {
@@ -107,13 +108,15 @@ export default function Forms() {
           </div>
         );
       },
-      size: 250,
+      size: 320,
+      minSize: 280,
       meta: { editable: false },
     },
     {
       accessorKey: "actions",
       header: t("actions"),
-      size: 300,
+      size: 380,
+      minSize: 320,
       meta: { editable: false },
     },
     {
@@ -124,7 +127,8 @@ export default function Forms() {
           {registrationCounts[row.original._id] ?? 0}
         </div>
       ),
-      size: 120,
+      size: 160,
+      minSize: 140,
       meta: { editable: false },
     },
     {
@@ -135,7 +139,8 @@ export default function Forms() {
           {formatDateForDisplay(row.original.createdAt)}
         </div>
       ),
-      size: 150,
+      size: 180,
+      minSize: 160,
       meta: { editable: false, isDate: true },
     },
     {
@@ -157,7 +162,8 @@ export default function Forms() {
           </div>
         );
       },
-      size: 120,
+      size: 200,
+      minSize: 160,
       meta: { editable: false },
     },
   ], [t, registrationCounts]);
@@ -419,46 +425,52 @@ export default function Forms() {
   };
 
   return (
-    <div className="mx-auto">
-      <h1 className="text-2xl font-semibold text-primary mb-6">{t("forms")}</h1>
-      <div className="mb-6 flex justify-center">
-        <Button
-          onClick={handleCreateActivity}
-          className="min-w-[240px] justify-center gap-3 rounded-full bg-blue-500 px-10 py-5 text-xl font-semibold text-white shadow-lg transition-all duration-200 hover:bg-blue-600 hover:shadow-xl"
-        >
-          <Plus className="h-6 w-6" />
-          {t("create_new_form")}
-        </Button>
+    <div className="w-full">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col items-center px-4">
+        <h1 className="mb-6 text-center text-2xl font-semibold text-primary">
+          {t("forms")}
+        </h1>
+        <div className="mb-6 flex w-full justify-center">
+          <Button
+            onClick={handleCreateActivity}
+            className="min-w-[240px] justify-center gap-3 rounded-full bg-blue-500 px-10 py-5 text-xl font-semibold text-white shadow-lg transition-all duration-200 hover:bg-blue-600 hover:shadow-xl"
+          >
+            <Plus className="h-6 w-6" />
+            {t("create_new_form")}
+          </Button>
+        </div>
+        <div className="w-full max-w-[1400px]">
+          <DataTable<Form>
+            data={[]}
+            key={refreshKey}
+            fetchData={wrappedFetchData}
+            addData={handleAddForm}
+            updateData={(data) => formsApi.update({ ...data, id: data._id })}
+            deleteData={handleDelete}
+            columns={columns}
+            columnOrder={columnOrder}
+            searchable
+            showAdvancedSearch
+            onAdvancedSearchChange={setAdvancedFilters}
+            initialAdvancedFilters={advancedFilters}
+            showAddButton={false}
+            defaultPageSize={250}
+            idField="_id"
+            extraFilters={advancedFilters}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
+            showActionColumn={true}
+            showEditButton={false}
+            showDeleteButton={false}
+            showDuplicateButton={true}
+            isPagination={false}
+            isLazyLoading={true}
+            onBulkDelete={handleBulkDelete}
+            entityType="forms"
+            visibleRows={useCallback((rows) => setTableRows(rows), [])}
+          />
+        </div>
       </div>
-      <DataTable<Form>
-        data={[]}
-        key={refreshKey}
-        fetchData={wrappedFetchData}
-        addData={handleAddForm}
-        updateData={(data) => formsApi.update({ ...data, id: data._id })}
-        deleteData={handleDelete}
-        columns={columns}
-        columnOrder={columnOrder}
-        searchable
-        showAdvancedSearch
-        onAdvancedSearchChange={setAdvancedFilters}
-        initialAdvancedFilters={advancedFilters}
-        showAddButton={false}
-        defaultPageSize={250}
-        idField="_id"
-        extraFilters={advancedFilters}
-        rowSelection={rowSelection}
-        onRowSelectionChange={setRowSelection}
-        showActionColumn={true}
-        showEditButton={false}
-        showDeleteButton={false}
-        showDuplicateButton={true}
-        isPagination={false}
-        isLazyLoading={true}
-        onBulkDelete={handleBulkDelete}
-        entityType="forms"
-        visibleRows={useCallback((rows) => setTableRows(rows), [])}
-      />
     </div>
   );
 }

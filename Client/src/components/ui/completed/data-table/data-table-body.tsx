@@ -41,6 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import "./data-table-row.css";
 import { getBadgeColors } from "@/lib/colorUtils";
 import { normalizeDynamicFieldChoices } from "@/utils/tableFieldUtils";
@@ -163,7 +164,7 @@ function RelationshipChipsDisplay({
         }: React.HTMLAttributes<HTMLDivElement> = {}) => (
           <div
             className={cn(
-              "flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium border",
+              "flex items-center gap-1 px-2 py-1 rounded-full text-base font-medium border",
               relationshipChipClass,
               className,
             )}
@@ -245,7 +246,7 @@ function MultiSelectChipsDisplay({
         return (
           <div
             key={`${chip.value}-${index}`}
-            className="flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium border"
+            className="flex items-center gap-1 px-2 py-1 rounded-full text-base font-medium border"
             style={{
               backgroundColor: background,
               color: text,
@@ -396,7 +397,7 @@ function SingleRelationshipChipsDisplay({
     >
       <div
         className={cn(
-          "flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium border",
+          "flex items-center gap-1 px-2 py-1 rounded-full text-base font-medium border",
           relationshipChipClass
         )}
       >
@@ -947,7 +948,9 @@ function EditableCell<T>({
                 className="w-10 h-10 object-cover rounded-md cursor-pointer hover:opacity-80"
               />
             ) : (
-              <span className="text-muted-foreground text-sm">{t("no_image", "אין תמונה")}</span>
+              <Avatar className="w-10 h-10">
+                <AvatarFallback className="bg-gray-300" />
+              </Avatar>
             )}
           </div>
           {cellValue && (
@@ -1148,7 +1151,7 @@ function EditableCell<T>({
         >
           <div className="flex items-center justify-center gap-2">
             <span
-              className="inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold shadow-sm"
+              className="inline-flex items-center rounded-full border px-3 py-1 text-base font-semibold shadow-sm"
               style={{
                 backgroundColor: background,
                 color: text,
@@ -1715,7 +1718,7 @@ const RowComponent = React.memo(function RowComponent<T>({
     }
     
     if (isDateColumn || isDateValue(value)) {
-      return <span className="text-base">{formatDateForDisplay(value)}</span>;
+      return <span className="text-lg">{formatDateForDisplay(value)}</span>;
     }
 
     // Check if this is a money field
@@ -1735,7 +1738,7 @@ const RowComponent = React.memo(function RowComponent<T>({
       // Try to get a string representation
       const objValue = value as any;
       const stringValue = objValue.name || objValue.email || objValue._id || JSON.stringify(value);
-      return <span className="text-base">{String(stringValue)}</span>;
+      return <span className="text-lg">{String(stringValue)}</span>;
     }
 
     return flexRender(columnDef.cell, cell.getContext());
@@ -1829,7 +1832,7 @@ const RowComponent = React.memo(function RowComponent<T>({
                   style={{
                     ...stickyStyles,
                     width: cell.column.getSize(),
-                    maxWidth: cell.column.getSize(),
+                    minWidth: cell.column.getSize(),
                   }}
                   className={`text-center data-table-row-cell ${roundedClass} ${isSticky ? "sticky-column" : ""}`}
                 >
@@ -1877,7 +1880,7 @@ const RowComponent = React.memo(function RowComponent<T>({
               style={{
                 ...stickyStyles,
                 width: cell.column.getSize(),
-                maxWidth: cell.column.getSize(),
+                minWidth: cell.column.getSize(),
               }}
               className={`text-center data-table-row-cell ${roundedClass} ${isSticky ? "sticky-column" : ""}`}
             >

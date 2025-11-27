@@ -13,7 +13,7 @@ import { Plus } from "lucide-react";
 import { AddChildDialog } from "./AddChildDialog";
 import { toast } from "@/hooks/use-toast";
 import { MutationResponse } from "@/types/api/auth";
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface ParticipantsTabProps {
   courseId: string;
@@ -52,23 +52,38 @@ export function ParticipantsTab({ courseId }: ParticipantsTabProps) {
         cell: ({ row }) => {
           const kidName = getKidFullName(row.original);
           return (
-            <Badge variant="secondary" className="text-sm font-medium">
-              {kidName}
-            </Badge>
+            <div className="flex justify-center">
+              <div
+                className={cn(
+                  "inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium border",
+                  "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800"
+                )}
+              >
+                <span>{kidName}</span>
+              </div>
+            </div>
           );
         },
         meta: {
           editable: false,
         },
+        size: 400,
+        minSize: 250,
       },
       {
         accessorKey: "enrollmentDate",
         header: t("enrollment_date") || "Enrollment Date",
-        cell: ({ row }) => formatDateForDisplay(row.original.enrollmentDate),
+        cell: ({ row }) => (
+          <span className="text-sm font-medium">
+            {formatDateForDisplay(row.original.enrollmentDate)}
+          </span>
+        ),
         meta: {
           isDate: true,
           editable: false,
         },
+        size: 300,
+        minSize: 200,
       },
     ];
   }, [t]);
@@ -178,44 +193,46 @@ export function ParticipantsTab({ courseId }: ParticipantsTabProps) {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border bg-card p-6 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <Button onClick={() => setIsAddDialogOpen(true)} className="self-start">
-            <Plus className="h-4 w-4 mr-2" />
-            {t("add_child") || "Add Child"}
-          </Button>
+    <div className="flex justify-center w-full">
+      <div className="w-full max-w-7xl mx-auto space-y-6">
+        <div className="rounded-2xl border bg-card p-8 shadow-sm">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between mb-6">
+            <Button onClick={() => setIsAddDialogOpen(true)} className="self-start">
+              <Plus className="h-4 w-4 mr-2" />
+              {t("add_child") || "Add Child"}
+            </Button>
+          </div>
+
+          <div className="w-full">
+            <DataTable<CourseEnrollment>
+              data={[]}
+              fetchData={fetchEnrollmentsData}
+              columns={columns}
+              updateData={async () => {
+                // Not needed for now
+                return { status: 200, data: {} as CourseEnrollment };
+              }}
+              deleteData={handleDeleteEnrollment}
+              showAddButton={false}
+              showEditButton={false}
+              showDeleteButton={true}
+              defaultPageSize={10}
+              showPageSizeSelector={false}
+              onRefreshReady={setTableMethods}
+              idField="_id"
+              searchable={false}
+              contentHeight="auto"
+            />
+          </div>
         </div>
 
-        <div className="mt-6">
-          <DataTable<CourseEnrollment>
-            data={[]}
-            fetchData={fetchEnrollmentsData}
-            columns={columns}
-            updateData={async () => {
-              // Not needed for now
-              return { status: 200, data: {} as CourseEnrollment };
-            }}
-            deleteData={handleDeleteEnrollment}
-            showAddButton={false}
-            showEditButton={false}
-            showDeleteButton={true}
-            defaultPageSize={10}
-            showPageSizeSelector={false}
-            onRefreshReady={setTableMethods}
-            idField="_id"
-            searchable={false}
-            contentHeight="auto"
-          />
-        </div>
+        <AddChildDialog
+          open={isAddDialogOpen}
+          onClose={() => setIsAddDialogOpen(false)}
+          onSelect={handleAddChild}
+          courseId={courseId}
+        />
       </div>
-
-      <AddChildDialog
-        open={isAddDialogOpen}
-        onClose={() => setIsAddDialogOpen(false)}
-        onSelect={handleAddChild}
-        courseId={courseId}
-      />
     </div>
   );
 }

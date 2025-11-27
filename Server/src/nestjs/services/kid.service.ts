@@ -129,6 +129,12 @@ export class KidService {
     return this.kidModel.find(filter).exec();
   }
 
+  async count(organizationId: string): Promise<number> {
+    return this.kidModel.countDocuments({
+      organizationId: new Types.ObjectId(organizationId),
+    }).exec();
+  }
+
   async findOne(id: string): Promise<Kid | null> {
     return this.kidModel.findById(id).exec();
   }

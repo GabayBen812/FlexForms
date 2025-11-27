@@ -34,6 +34,19 @@ export class KidController {
     return this.kidService.findAll(user.organizationId, query);
   }
 
+  @Get('count')
+  async count(@Req() req: Request) {
+    const user = req.user as { organizationId?: string };
+    if (!user || !user.organizationId) {
+      throw new Error('User organizationId not found');
+    }
+    const count = await this.kidService.count(user.organizationId);
+    return {
+      status: 200,
+      count,
+    };
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.kidService.findOne(id);

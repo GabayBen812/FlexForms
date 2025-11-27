@@ -1,0 +1,20 @@
+{
+  "name": "flexforms-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:client": "npm run dev --workspace=client",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:mobile": "npm run start --workspace=mobile",
+    "build:client": "npm run build --workspace=client",
+    "build:server": "npm run build --workspace=server",
+    "install:all": "npm install"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
+

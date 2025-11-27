@@ -39,6 +39,7 @@ export function AttendanceTab({ courseId }: AttendanceTabProps) {
   const { organization } = useOrganization();
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Configure dayjs locale based on current language
   useEffect(() => {
@@ -117,6 +118,14 @@ export function AttendanceTab({ courseId }: AttendanceTabProps) {
 
   // Fetch attendance for selected date
   const selectedDateISO = selectedDate ? dayjs(selectedDate).format("YYYY-MM-DD") : null;
+  
+  // Trigger table refresh when selectedDateISO changes (including automatic changes)
+  useEffect(() => {
+    if (selectedDateISO) {
+      setRefreshTrigger((prev) => prev + 1);
+    }
+  }, [selectedDateISO]);
+  
   const { data: attendanceData, isLoading: isLoadingAttendance, refetch: refetchAttendance } = useQuery({
     queryKey: ["course-attendance", courseId, selectedDateISO],
     queryFn: async () => {
@@ -568,6 +577,7 @@ export function AttendanceTab({ courseId }: AttendanceTabProps) {
                   idField="kidId"
                   searchable={false}
                   contentHeight="auto"
+                  refreshTrigger={refreshTrigger}
                 />
               </div>
             )}

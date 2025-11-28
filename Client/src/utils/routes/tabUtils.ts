@@ -3,7 +3,7 @@ import { router } from "./router";
 
 export interface RouteInfo {
   title: string;
-  icon?: React.ComponentType;
+  icon?: React.ComponentType<{ isActive?: boolean; className?: string }>;
   path: string;
   routeKey: string;
 }

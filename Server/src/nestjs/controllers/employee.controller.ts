@@ -34,6 +34,19 @@ export class EmployeeController {
     return this.employeeService.findAll(user.organizationId);
   }
 
+  @Get('count')
+  async count(@Req() req: Request) {
+    const user = req.user as { organizationId?: string };
+    if (!user || !user.organizationId) {
+      throw new Error('User organizationId not found');
+    }
+    const count = await this.employeeService.count(user.organizationId);
+    return {
+      status: 200,
+      count,
+    };
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.employeeService.findOne(id);

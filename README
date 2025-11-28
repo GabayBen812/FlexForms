@@ -24,24 +24,44 @@ FlexForms is a dynamic form management project built with modern technologies. T
       ```
 
 3. **Install dependencies:**
-    - After cloning the repository, navigate into the project folder and install the dependencies:
+    - After cloning the repository, install all dependencies from the root:
       ```bash
-      cd FlexForms/Server
-      npm install
-      cd ../Client
+      cd FlexForms
       npm install
       ```
+    - This will install dependencies for all workspaces (client, server, mobile).
 
 4. **Run the server:**
     - Start the server in your local environment:
       ```bash
-      npm run start:nest
+      npm run dev:server
+      ```
+    - Or navigate to the server directory:
+      ```bash
+      cd apps/server
+      npm run dev
       ```
 
-4. **Run the client:**
+5. **Run the client:**
     - Start the client and view the app in your local environment:
       ```bash
+      npm run dev:client
+      ```
+    - Or navigate to the client directory:
+      ```bash
+      cd apps/client
       npm run dev
+      ```
+
+6. **Run the mobile app (optional):**
+    - Start the mobile app:
+      ```bash
+      npm run dev:mobile
+      ```
+    - Or navigate to the mobile directory:
+      ```bash
+      cd apps/mobile
+      npm run start
       ```
 
 5. **Access the application:**
@@ -77,14 +97,28 @@ An overview of the Mixpanel integration, available helpers, and manual verificat
 
 ## Project Structure
 
-- **/src**: The source code for the application.
-  - **/components**: Reusable React components.
-  - **/pages**: Core pages in the application.
-  - **/api**: Server-side code for API creation and services.
-  - **/hooks**: Custom React hooks.
+This is a monorepo containing multiple applications:
 
-- **/public**: Static files (logos, images, etc.).
-- **/tests**: Test files.
+- **apps/client**: React + Vite frontend application
+  - **/src**: The source code for the client application
+    - **/components**: Reusable React components
+    - **/pages**: Core pages in the application
+    - **/api**: API client functions
+    - **/hooks**: Custom React hooks
+  - **/public**: Static files (logos, images, etc.)
+
+- **apps/server**: NestJS backend API server
+  - **/src**: Server source code
+    - **/nestjs**: NestJS modules, controllers, services
+    - **/utils**: Utility functions
+
+- **apps/mobile**: React Native mobile application (Expo)
+  - **/src**: Mobile app source code
+    - **/screens**: App screens
+    - **/components**: Mobile components
+    - **/api**: API client for mobile
+
+- **docs**: Project documentation
 
 ## Technologies Used
 

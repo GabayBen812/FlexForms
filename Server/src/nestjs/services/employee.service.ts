@@ -71,5 +71,11 @@ export class EmployeeService {
   async remove(id: string): Promise<Employee | null> {
     return this.employeeModel.findByIdAndDelete(id).exec();
   }
+
+  async count(organizationId: string): Promise<number> {
+    return this.employeeModel.countDocuments({
+      organizationId: new Types.ObjectId(organizationId),
+    }).exec();
+  }
 }
 

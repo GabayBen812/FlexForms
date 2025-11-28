@@ -10,6 +10,7 @@ import GradientButton from '../components/ui/GradientButton';
 import { useAuth } from '../providers/AuthProvider';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { fetchKidsCount } from '../api/kids';
+import { fetchEmployeesCount } from '../api/employees';
 
 type DashboardCardProps = {
   title: string;
@@ -40,6 +41,11 @@ const HomeScreen = () => {
   const { data: kidsCount, isLoading: isLoadingKidsCount } = useQuery({
     queryKey: ['kids', 'count'],
     queryFn: fetchKidsCount,
+  });
+
+  const { data: employeesCount, isLoading: isLoadingEmployeesCount } = useQuery({
+    queryKey: ['employees', 'count'],
+    queryFn: fetchEmployeesCount,
   });
 
   const currentDayData = useMemo(() => {
@@ -95,9 +101,9 @@ const HomeScreen = () => {
             />
             <DashboardCard
               title="עובדים"
-              value="9"
+              value={isLoadingEmployeesCount ? '...' : String(employeesCount ?? 0)}
               subtitle="כמות העובדים הפעילים"
-            onPress={() => navigation.navigate('EmployeesPage')}
+              onPress={() => navigation.navigate('EmployeesPage')}
             />
             <DashboardCard
               title="משימות"

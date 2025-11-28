@@ -4,7 +4,8 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/Input";
-import { formatDateForEdit, parseDateForSubmit, isDateValue } from "@/lib/dateUtils";
+import { formatDateForEdit, parseDateForSubmit, isDateValue, formatTimeForEdit } from "@/lib/dateUtils";
+import dayjs from "dayjs";
 import { MultiSelect } from "@/components/ui/multi-select";
 import {
   Select,
@@ -254,8 +255,29 @@ export function AddRecordDialog({
     if (column && (column.meta as any)?.isDate) {
       return true;
     }
-    // Check common date field names (excluding birthdate which is removed)
-    if (accessorKey.toLowerCase().includes("date")) {
+    // Check common date field names (excluding datetime fields which are handled separately)
+    const lowerKey = accessorKey.toLowerCase();
+    if (lowerKey.includes("date") && !lowerKey.includes("datetime")) {
+      return true;
+    }
+    return false;
+  };
+
+  // Helper function to check if a field is a time/datetime field
+  const isTimeField = (accessorKey: string): boolean => {
+    // Check if column is marked as time
+    const column = dataColumns.find((col) => (col as any).accessorKey === accessorKey);
+    if (column && (column.meta as any)?.isTime) {
+      return true;
+    }
+    // Check common datetime/time field names
+    const lowerKey = accessorKey.toLowerCase();
+    // Check for datetime fields (startDateTime, endDateTime, etc.)
+    if (lowerKey.includes("datetime")) {
+      return true;
+    }
+    // Check for time-only fields (but not date fields)
+    if (lowerKey.includes("time") && !lowerKey.includes("date")) {
       return true;
     }
     return false;
@@ -287,7 +309,10 @@ export function AddRecordDialog({
       Object.keys(editData).forEach((key) => {
         if (key !== "dynamicFields") {
           const value = editData[key];
-          if (isDateField(key) && value) {
+          if (isTimeField(key) && value) {
+            // Format datetime fields to time format (HH:mm) for time input
+            formattedData[key] = formatTimeForEdit(value);
+          } else if (isDateField(key) && value) {
             // If value is already in DD/MM/YYYY format, use it as-is
             // Otherwise, format it from ISO or other formats
             if (typeof value === "string" && value.includes("/") && value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
@@ -424,6 +449,60 @@ export function AddRecordDialog({
               processedData[key] = null;
             }
             return;
+          } else if (isTimeField(key) && value && typeof value === "string") {
+            // For datetime fields, combine date from 'date' field with time from this field
+            // Format: YYYY-MM-DDTHH:mm:ss (ISO datetime format)
+            const dateValue = form.date || editData?.date;
+            let dateStr: string;
+            
+            if (dateValue) {
+              // Parse date value (could be DD/MM/YYYY or YYYY-MM-DD)
+              if (typeof dateValue === "string" && dateValue.includes("/")) {
+                dateStr = parseDateForSubmit(dateValue);
+              } else if (typeof dateValue === "string" && dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                dateStr = dateValue;
+              } else {
+                // Try to format from ISO or other formats
+                try {
+                  const parsed = dayjs(dateValue);
+                  if (parsed.isValid()) {
+                    dateStr = parsed.format("YYYY-MM-DD");
+                  } else {
+                    dateStr = "";
+                  }
+                } catch {
+                  dateStr = "";
+                }
+              }
+            } else {
+              // If no date field, try to extract date from original datetime value
+              try {
+                const originalValue = editData?.[key];
+                if (originalValue) {
+                  const parsed = dayjs(originalValue);
+                  if (parsed.isValid()) {
+                    dateStr = parsed.format("YYYY-MM-DD");
+                  } else {
+                    dateStr = "";
+                  }
+                } else {
+                  dateStr = "";
+                }
+              } catch {
+                dateStr = "";
+              }
+            }
+            
+            // Combine date and time: YYYY-MM-DDTHH:mm:00.000Z
+            if (dateStr && value) {
+              const timeStr = value.length === 5 ? `${value}:00` : value; // Ensure HH:mm:ss format
+              // Create ISO datetime string
+              const isoDateTime = `${dateStr}T${timeStr}.000Z`;
+              processedData[key] = isoDateTime;
+            } else if (value) {
+              // If no date available, try to use original value or just time
+              processedData[key] = value;
+            }
           } else if (isDateField(key) && value && typeof value === "string") {
             // Convert DD/MM/YYYY or YYYY-MM-DD to YYYY-MM-DD for API
             let isoDate: string;
@@ -707,6 +786,15 @@ export function AddRecordDialog({
                     />
                     <span className="text-sm text-foreground">{t("yes_no", "כן / לא")}</span>
                   </label>
+                ) : (isTimeField(accessorKey) || (isDynamic && fieldDefinition?.type === "TIME")) ? (
+                  <input
+                    type="time"
+                    name={accessorKey}
+                    value={fieldValue || ""}
+                    onChange={handleChange}
+                    className="w-full border border-border rounded-md placeholder:text-muted-foreground font-normal rtl:text-right ltr:text-left focus:outline-border outline-none px-3 py-2"
+                    required={isRequiredField || fieldDefinition?.required}
+                  />
                 ) : (isDateField(accessorKey) || (isDynamic && fieldDefinition?.type === "DATE")) ? (
                   <DateInput
                     name={accessorKey}
@@ -734,15 +822,6 @@ export function AddRecordDialog({
                     value={fieldValue}
                     onChange={handleChange}
                     className="w-full"
-                    required={isRequiredField || fieldDefinition?.required}
-                  />
-                ) : (isDynamic && fieldDefinition?.type === "TIME") ? (
-                  <input
-                    type="time"
-                    name={accessorKey}
-                    value={fieldValue}
-                    onChange={handleChange}
-                    className="w-full border border-border rounded-md placeholder:text-muted-foreground font-normal rtl:text-right ltr:text-left focus:outline-border outline-none px-3 py-2"
                     required={isRequiredField || fieldDefinition?.required}
                   />
                 ) : (isDynamic && fieldDefinition?.type === "ADDRESS") ? (

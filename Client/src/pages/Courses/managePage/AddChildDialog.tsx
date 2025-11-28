@@ -23,6 +23,7 @@ import { Contact } from "@/types/contacts/contact";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { courseEnrollmentsApi } from "@/api/course-enrollments";
 import { CourseEnrollment } from "@/types/courses/CourseEnrollment";
+import { ProfileAvatar, getProfileImageUrl } from "@/components/ProfileAvatar";
 
 interface AddChildDialogProps {
   open: boolean;
@@ -71,37 +72,26 @@ export function AddChildDialog({ open, onClose, onSelect, courseId }: AddChildDi
     return new Set(ids);
   }, [enrollments]);
 
-  // Fetch kids
+  // Fetch all kids (no search filter - we'll do client-side filtering)
   const { data: kidsData = [], isLoading: isLoadingKids } = useQuery({
-    queryKey: ["kids-search", organization?._id, searchQuery],
+    queryKey: ["kids-search", organization?._id],
     queryFn: async () => {
       if (!organization?._id) return [];
 
       if (!isUnifiedContacts) {
         const response = await kidsApi.fetchAll(
-          searchQuery
-            ? {
-                firstname: searchQuery,
-                lastname: searchQuery,
-              }
-            : {},
+          {},
           false,
           organization._id
         );
         return (response.data || []) as Kid[];
       }
 
-      // Use contacts API
+      // Use contacts API - fetch more results for better search
       const response = await fetchContacts({
         type: "kid",
-        ...(searchQuery
-          ? {
-              firstname: searchQuery,
-              lastname: searchQuery,
-            }
-          : {}),
         page: 1,
-        pageSize: 50,
+        pageSize: 200,
       });
 
       if (response.error || !response.data) {
@@ -113,25 +103,45 @@ export function AddChildDialog({ open, onClose, onSelect, courseId }: AddChildDi
     enabled: !!organization?._id && open,
   });
 
-  // Filter out already enrolled kids and map to options
+  // Filter out already enrolled kids, apply search filter, and map to options
   const kidOptions = useMemo(() => {
+    // First filter out enrolled kids
     const filtered = kidsData.filter((kid) => {
       const kidId = (kid as Kid)._id || (kid as Contact)._id;
       return !enrolledKidIds.has(kidId);
     });
 
-    return filtered.map((kid) => {
+    // Then apply search filter using "includes" logic
+    const searchFiltered = searchQuery
+      ? filtered.filter((kid) => {
+          const firstname = (kid as Kid).firstname || (kid as Contact).firstname || "";
+          const lastname = (kid as Kid).lastname || (kid as Contact).lastname || "";
+          const fullName = `${firstname} ${lastname}`.trim().toLowerCase();
+          const idNumber = ((kid as Kid).idNumber || (kid as Contact).idNumber || "").toLowerCase();
+          const query = searchQuery.toLowerCase();
+          
+          return fullName.includes(query) || idNumber.includes(query);
+        })
+      : filtered;
+
+    // Map to options with all needed data
+    return searchFiltered.map((kid) => {
       const kidId = (kid as Kid)._id || (kid as Contact)._id;
-      const firstname = (kid as Kid).firstname || (kid as Contact).firstname;
-      const lastname = (kid as Kid).lastname || (kid as Contact).lastname;
+      const firstname = (kid as Kid).firstname || (kid as Contact).firstname || "";
+      const lastname = (kid as Kid).lastname || (kid as Contact).lastname || "";
+      const profileImageUrl = getProfileImageUrl(kid as Kid | Contact);
+      const idNumber = (kid as Kid).idNumber || (kid as Contact).idNumber;
+      
       return {
         id: kidId || "",
-        name: `${firstname} ${lastname}`,
+        name: `${firstname} ${lastname}`.trim(),
         firstname,
         lastname,
+        profileImageUrl,
+        idNumber,
       };
     });
-  }, [kidsData, enrolledKidIds]);
+  }, [kidsData, enrolledKidIds, searchQuery]);
 
   const handleSelect = (kidId: string) => {
     onSelect(kidId);
@@ -172,9 +182,23 @@ export function AddChildDialog({ open, onClose, onSelect, courseId }: AddChildDi
                   <CommandItem
                     key={kid.id}
                     onSelect={() => handleSelect(kid.id)}
-                    className="cursor-pointer"
+                    className="cursor-pointer text-lg py-3"
                   >
-                    {kid.name}
+                    <div className="flex items-center gap-3 w-full">
+                      <ProfileAvatar
+                        name={kid.name}
+                        imageUrl={kid.profileImageUrl}
+                        size="md"
+                      />
+                      <div className="flex-1 flex items-center justify-between gap-4">
+                        <span className="font-medium">{kid.name}</span>
+                        {kid.idNumber && (
+                          <span className="text-sm text-muted-foreground">
+                            {kid.idNumber}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </CommandItem>
                 ))}
               </CommandGroup>

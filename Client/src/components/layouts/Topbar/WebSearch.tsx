@@ -67,7 +67,9 @@ export function CommandDialogDemo() {
   }));
 
   const handleSelect = (path: string) => {
-    navigate(path);
+    // Ensure path starts with / for proper navigation
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    navigate(normalizedPath);
     setIsFocused(false);
     //@ts-ignore
     document.activeElement?.blur();

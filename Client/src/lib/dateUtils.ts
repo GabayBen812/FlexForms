@@ -271,3 +271,44 @@ export function formatDateOnlyForDisplay(value: string | Date | null | undefined
   return formatDateForDisplay(value);
 }
 
+/**
+ * Formats a time value to HH:mm format for editing in time inputs.
+ * Extracts time from ISO datetime strings or Date objects.
+ * 
+ * @param value - Time value (ISO datetime string, Date object, or null/undefined)
+ * @returns Formatted time string in HH:mm format, or empty string if value is invalid
+ * 
+ * @example
+ * formatTimeForEdit("2024-01-15T09:30:00.000Z") // Returns "09:30"
+ * formatTimeForEdit(new Date()) // Returns formatted time from date
+ */
+export function formatTimeForEdit(value: string | Date | null | undefined): string {
+  if (!value) return "";
+  
+  // If it's already in HH:mm format, return as-is
+  if (typeof value === "string" && /^\d{2}:\d{2}$/.test(value)) {
+    return value;
+  }
+  
+  // Handle Date objects
+  if (value instanceof Date) {
+    try {
+      return dayjs(value).format("HH:mm");
+    } catch {
+      return "";
+    }
+  }
+  
+  // Try to parse as date and extract time
+  try {
+    const parsed = dayjs(value);
+    if (parsed.isValid()) {
+      return parsed.format("HH:mm");
+    }
+  } catch {
+    return "";
+  }
+  
+  return "";
+}
+

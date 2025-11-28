@@ -161,6 +161,7 @@ export function SessionsTab({ courseId }: SessionsTabProps) {
         },
         meta: {
           editable: false,
+          isTime: true,
           className: "text-center",
         },
         size: 120,
@@ -178,6 +179,7 @@ export function SessionsTab({ courseId }: SessionsTabProps) {
         },
         meta: {
           editable: false,
+          isTime: true,
           className: "text-center",
         },
         size: 120,

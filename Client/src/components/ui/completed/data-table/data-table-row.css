@@ -5,15 +5,20 @@
   border-bottom: none !important; /* Override default border-b from TableRow */
   border-radius: 8px !important;
   margin-bottom: 4px !important;
-  transition: background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out !important;
+  transition: background-color 0.15s ease-out, border-color 0.15s ease-out !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
   overflow: hidden !important;
+  /* Performance optimizations for smooth scrolling */
+  will-change: transform, background-color, border-color !important;
+  transform: translateZ(0) !important; /* Force GPU acceleration */
+  contain: layout style paint !important; /* Isolate rendering */
+  backface-visibility: hidden !important; /* Prevent flickering */
 }
 
 .data-table-row:hover {
   background-color: #f8fafc !important;
   border-color: #c9d1d9 !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
 }
 
 .data-table-row:hover .data-table-row-cell {
@@ -32,6 +37,16 @@
   overflow-x: hidden !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
+}
+
+/* Optimize scroll container for better performance */
+.data-table-scroll-container {
+  /* Enable hardware acceleration for scrolling */
+  transform: translateZ(0) !important;
+  will-change: scroll-position !important;
+  /* Optimize scrolling performance */
+  -webkit-overflow-scrolling: touch !important;
+  overflow-scrolling: touch !important;
 }
 
 /* Allow horizontal scroll for tables in scrollable containers */
@@ -92,6 +107,8 @@ tr {
   padding: 0.75rem 1rem !important;
   border: none !important;
   background-color: transparent !important;
+  /* Performance optimizations */
+  contain: layout style !important;
 }
 
 /* First and last cells get rounded corners to match row border-radius */

@@ -85,6 +85,9 @@ export function CommandDialogDemo({
       .filter((route) => {
         if (!route.handle?.showInSidebar) return false;
         
+        // Hide admin route from command palette (SECRET PAGE)
+        if (route.path === "admin" || route.handle?.adminOnly) return false;
+        
         // Dynamic feature flag check
         const featureFlag = route.handle?.featureFlag;
         if (featureFlag && typeof featureFlag === "string") {
@@ -92,8 +95,6 @@ export function CommandDialogDemo({
           if (!isEnabled) return false;
         }
         
-        // Admin only check
-        if (route.handle?.adminOnly && user?.role !== 'system_admin') return false;
         return true;
       })
       .map((route) => {

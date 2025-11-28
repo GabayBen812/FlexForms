@@ -31,16 +31,24 @@ function Topbar() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Check for Ctrl+K or Cmd+K
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      // Use e.code (physical key) to work with both Hebrew and English keyboard layouts
+      // KeyK is the physical K key regardless of keyboard language
+      const isKKey = e.code === "KeyK" || e.key === "k" || e.key === "K";
+      
+      if ((e.metaKey || e.ctrlKey) && isKKey) {
+        // Prevent browser's default search behavior
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         setCommandPaletteOpen((prev) => !prev);
       }
     };
 
     // Use capture phase to intercept before browser handles it
-    window.addEventListener("keydown", handleKeyDown, true);
-    return () => window.removeEventListener("keydown", handleKeyDown, true);
+    // passive: false ensures preventDefault() works
+    const options = { capture: true, passive: false };
+    document.addEventListener("keydown", handleKeyDown, options);
+    return () => document.removeEventListener("keydown", handleKeyDown, options);
   }, []);
 
   // Detect if Mac for keyboard shortcut display
@@ -161,7 +169,7 @@ function Topbar() {
                 className="flex items-center gap-2 px-4 py-2 w-full max-w-[500px] rounded-lg border bg-background text-muted-foreground hover:bg-muted transition-colors shadow-sm"
               >
                 <Search className="h-4 w-4 opacity-50" />
-                <span className="flex-1 text-left text-sm">
+                <span className="flex-1 text-center text-base font-bold">
                   {t("search_in_system") || "Search pages..."}
                 </span>
                 <kbd className="pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">

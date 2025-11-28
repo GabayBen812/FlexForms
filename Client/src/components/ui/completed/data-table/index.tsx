@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import Fuse from "fuse.js";
 import {
   getCoreRowModel,
   getPaginationRowModel,
@@ -36,7 +37,12 @@ import { cn } from "@/lib/utils";
 import { GetDirection } from "@/lib/i18n";
 
 const globalFilterFn: FilterFn<any> = (row, columnId, filterValue) => {
-  const search = String(filterValue).toLowerCase();
+  const search = String(filterValue || "").trim();
+
+  // Empty search returns all rows
+  if (!search) {
+    return true;
+  }
 
   // Get all searchable values from the row
   const searchableValues = row
@@ -47,11 +53,33 @@ const globalFilterFn: FilterFn<any> = (row, columnId, filterValue) => {
     })
     .map((cell) => {
       const value = cell.getValue();
-      return value == null ? "" : String(value).toLowerCase();
-    });
+      if (value == null) return "";
+      
+      // Handle different data types
+      if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+        // For objects, try to extract meaningful string representation
+        return JSON.stringify(value);
+      }
+      if (Array.isArray(value)) {
+        return value.join(" ");
+      }
+      return String(value);
+    })
+    .filter((val) => val.length > 0);
 
-  // Check if any value includes the search term
-  return searchableValues.some((value) => value.includes(search));
+  // Combine all searchable values into a single searchable text string
+  const searchableText = searchableValues.join(" ");
+
+  // Use fuse.js for fuzzy search
+  const fuse = new Fuse([{ text: searchableText }], {
+    keys: ["text"],
+    threshold: 0.3, // 0.0 = exact match, 1.0 = match anything
+    includeScore: false,
+    minMatchCharLength: 1,
+  });
+
+  const results = fuse.search(search);
+  return results.length > 0;
 };
 
 export function DataTable<TData>({

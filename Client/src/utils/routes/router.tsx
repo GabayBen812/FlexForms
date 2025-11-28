@@ -17,6 +17,7 @@ import Settings from "@/pages/Settings/Settings";
 import OrganizationSettings from "@/pages/OrganizationSettings";
 import SettingsIcon from "@/assets/icons/SettingsIcon";
 import ClubsIcon from "@/assets/icons/ClubsIcon";
+import CoursesIcon from "@/assets/icons/CoursesIcon";
 import Payments from "@/pages/Payments";
 import KidsPage from "@/pages/KidsPage";
 import ParentsPage from "@/pages/ParentsPage";
@@ -115,7 +116,7 @@ export const router = createBrowserRouter([
         element: <Courses />,
         handle: {
           title: "courses",
-          icon: DoorOpen,
+          icon: CoursesIcon,
           showInSidebar: true,
           featureFlag: "ff_is_show_courses",
         },

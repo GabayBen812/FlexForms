@@ -4,6 +4,7 @@ import Topbar from "./Topbar/Topbar";
 import { NavigationLoader } from "@/components/routes/NavigationLoader";
 import { TabsProvider } from "@/contexts/TabsContext";
 import { TabsNavigationListener } from "@/components/routes/TabsNavigationListener";
+import { Footer } from "./Footer/Footer";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,11 +17,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <Topbar />
         <SidebarProvider className="flex-row-reverse">
           <SidebarInset>
-            <div className="flex flex-col gap-4 mt-28 h-[calc(100svh-7rem)]">
-              <div className="w-full overflow-y-auto p-4 min-h-full ">
+            <div className="flex flex-col mt-28 min-h-[calc(100svh-7rem)] overflow-x-hidden">
+              <div className="w-full overflow-y-auto overflow-x-hidden p-4 flex-1 min-h-0">
                 {children}
               </div>
-              {/* <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min" /> */}
+              <Footer />
             </div>
           </SidebarInset>
           <Toaster />

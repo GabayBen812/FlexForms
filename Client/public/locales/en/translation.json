@@ -1072,5 +1072,12 @@
   "failed_to_add_child": "Failed to add child",
   "search_child_name": "Search child name...",
   "no_children_found": "No children found",
-  "start_typing_to_search": "Start typing to search"
+  "start_typing_to_search": "Start typing to search",
+  "footer": {
+    "app_name": "Paradize",
+    "all_rights_reserved": "All rights reserved.",
+    "version": "Version",
+    "support": "Support",
+    "contact": "Contact"
+  }
 }

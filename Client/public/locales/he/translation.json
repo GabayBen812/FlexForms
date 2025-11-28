@@ -1170,5 +1170,12 @@
   "failed_to_add_child": "הוספת הילד נכשלה",
   "search_child_name": "חיפוש שם ילד...",
   "no_children_found": "לא נמצאו ילדים",
-  "start_typing_to_search": "התחל להקליד כדי לחפש"
+  "start_typing_to_search": "התחל להקליד כדי לחפש",
+  "footer": {
+    "app_name": "Paradize",
+    "all_rights_reserved": "כל הזכויות שמורות.",
+    "version": "גרסה",
+    "support": "תמיכה",
+    "contact": "יצירת קשר"
+  }
 }

@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Hotel } from "lucide-react";
+import { Hotel, LogOut, Search } from "lucide-react";
 import { CommandDialogDemo } from "./WebSearch";
 import { TabBar } from "./TabBar";
 import LanguagePicker from "@/components/LanguagePicker";
@@ -12,17 +12,40 @@ import { useToast } from "@/hooks/use-toast";
 import { updateOrganizationName } from "@/api/organizations";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { t } from "i18next";
+import { useNavigate } from "react-router-dom";
 
 function Topbar() {
   const { organization, isOrganizationFetching, refetchOrganization } = useOrganization();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(organization?.name || "");
   const [loading, setLoading] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const { toast } = useToast();
   
   // Allow editing if user is system_admin OR if feature flag is enabled
   const canEdit = useFeatureFlag("is_edit_org_name").isEnabled || user?.role === "system_admin";
+
+  // Keyboard shortcut: Cmd/Ctrl+K to open command palette
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Ctrl+K or Cmd+K
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        e.stopPropagation();
+        setCommandPaletteOpen((prev) => !prev);
+      }
+    };
+
+    // Use capture phase to intercept before browser handles it
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, []);
+
+  // Detect if Mac for keyboard shortcut display
+  const isMac = typeof window !== "undefined" && navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+  const shortcutHint = isMac ? "⌘K" : "Ctrl+K";
 
   if (!organization || isOrganizationFetching) {
     return null;
@@ -50,6 +73,15 @@ function Topbar() {
   const handleCancel = () => {
     setName(organization.name);
     setEditing(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      toast({ title: t("logout_failed") || "שגיאה בהתנתקות" });
+    }
   };
 
   return (
@@ -124,13 +156,36 @@ function Topbar() {
           </div>
           <div className="relative h-20">
             <div className="h-fit justify-center absolute top-5 w-full flex items-center z-50">
-              <CommandDialogDemo />
+              <button
+                onClick={() => setCommandPaletteOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 w-full max-w-[500px] rounded-lg border bg-background text-muted-foreground hover:bg-muted transition-colors shadow-sm"
+              >
+                <Search className="h-4 w-4 opacity-50" />
+                <span className="flex-1 text-left text-sm">
+                  {t("search_in_system") || "Search pages..."}
+                </span>
+                <kbd className="pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
+                  {shortcutHint}
+                </kbd>
+              </button>
+              <CommandDialogDemo 
+                open={commandPaletteOpen} 
+                onOpenChange={setCommandPaletteOpen} 
+              />
             </div>
           </div>
 
-          <div className="flex-1 flex items-center justify-end">
+          <div className="flex-1 flex items-center justify-end gap-3">
             <span className="text-sm font-semibold">Version: {APP_VERSION}</span>
             <LanguagePicker />
+            <button
+              onClick={handleLogout}
+              className="p-2 hover:bg-red-50 rounded-md transition-colors opacity-60 hover:opacity-100"
+              title={t("logout") || "התנתק"}
+              aria-label={t("logout") || "התנתק"}
+            >
+              <LogOut size={18} className="text-red-600" />
+            </button>
           </div>
         </div>
       </header>

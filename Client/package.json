@@ -65,6 +65,7 @@
     "firebase": "^11.7.1",
     "flag-icons": "^7.3.2",
     "framer-motion": "^12.5.0",
+    "fuse.js": "^7.1.0",
     "handsontable": "^15.3.0",
     "i18next": "^24.2.0",
     "i18next-browser-languagedetector": "^8.0.2",

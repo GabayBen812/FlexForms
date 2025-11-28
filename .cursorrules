@@ -100,6 +100,12 @@ Multi-tenant: The endpoint should use the organizationId from the JWT token,
 - Form state: React Hook Form
 - Global client state: Context API (sparingly, only when truly needed)
 
+### Feature Flags
+- Use the `useFeatureFlag(key)` hook for single-flag checks and `useFeatureFlags(keys[])` when multiple flags are needed.
+- Feature flag keys live on each route/component handle; derive the relevant keys once (e.g., via `useMemo`) and feed them into the hook.
+- The hooks share a cache and automatically scope checks by `organizationId`, so reuse them everywhere (routing, menus, tab bars, dialogs) instead of bespoke logic.
+- When filtering UI (like the Topbar command palette), only show entries whose `handle.featureFlag` resolves to `true`, and default to visible if no flag is attached.
+
 ### Error Handling
 - Always handle errors at the appropriate level
 - Use React Query's error handling for API errors

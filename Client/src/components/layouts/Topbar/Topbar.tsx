@@ -57,7 +57,7 @@ function Topbar() {
       <div className="absolute top-0 w-screen z-40">
         <TabBar />
       </div>
-      <header className="flex h-16 shrink-0 items-center justify-start gap-2 border-b bg-white absolute top-12 w-screen z-50">
+      <header className="flex h-20 shrink-0 items-center justify-start gap-2 border-b bg-white absolute top-12 w-screen z-50">
         <div className="flex items-center gap-2 px-4 w-full child:w-1/3">
           <div className="flex gap-2 items-center">
             <div className="flex aspect-square size-10 items-center justify-center rounded-md text-sidebar-primary-foreground ">
@@ -73,7 +73,7 @@ function Topbar() {
                 editing ? (
                   <div className="flex items-center gap-2">
                     <input
-                      className="border rounded px-2 py-1 text-sm flex-1"
+                      className="border rounded px-3 py-1.5 text-base w-56 max-w-full"
                       value={name}
                       onChange={e => setName(e.target.value)}
                       placeholder={organization?.name}

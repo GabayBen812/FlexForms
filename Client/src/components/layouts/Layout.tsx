@@ -1,6 +1,4 @@
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/layouts/Sidebar/Sidebar";
-import { GetDirection } from "@/lib/i18n";
 import { Toaster } from "@/components/ui/toaster";
 import Topbar from "./Topbar/Topbar";
 import { NavigationLoader } from "@/components/routes/NavigationLoader";
@@ -25,10 +23,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               {/* <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min" /> */}
             </div>
           </SidebarInset>
-          <AppSidebar
-            className="h-[calc(100svh-7rem)] top-28"
-            side={GetDirection() ? "right" : "left"}
-          />
           <Toaster />
         </SidebarProvider>
         <NavigationLoader />

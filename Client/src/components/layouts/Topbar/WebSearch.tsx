@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Command,
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/command";
 import { useTranslation } from "react-i18next";
 import { router } from "@/utils/routes/router";
-import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { useFeatureFlags } from "@/hooks/useFeatureFlag";
 import { useAuth } from "@/hooks/useAuth";
 
 export function CommandDialogDemo() {
@@ -23,16 +23,23 @@ export function CommandDialogDemo() {
   // Get user from auth context
   const { user } = useAuth();
 
-  // Get all feature flags
-  const { isEnabled: roomsFF } = useFeatureFlag("ff_is_show_rooms");
-  const { isEnabled: paymentsFF } = useFeatureFlag("is_show_payments");
-  const { isEnabled: clubsFF } = useFeatureFlag("is_show_clubs");
-  const { isEnabled: requestsFF } = useFeatureFlag("is_show_requests");
-  const { isEnabled: messagesFF } = useFeatureFlag("is_show_messages");
-  const { isEnabled: maccabiFF } = useFeatureFlag("is_maccabi");
+  // Extract all unique feature flags from router routes
+  const uniqueFeatureFlags = useMemo(() => {
+    const flags = new Set<string>();
+    const mainRoute = router.routes.find((route) => Array.isArray(route.children));
+    mainRoute?.children?.forEach((route) => {
+      if (route.handle?.featureFlag && typeof route.handle.featureFlag === "string") {
+        flags.add(route.handle.featureFlag);
+      }
+    });
+    return Array.from(flags);
+  }, []);
+
+  // Check all unique feature flags at once
+  const { flags: featureFlagLookup } = useFeatureFlags(uniqueFeatureFlags);
 
   // Extract commands from router
-  const commandData = [
+  const commandData = useMemo(() => [
     {
       heading: "pages",
       items:
@@ -40,13 +47,15 @@ export function CommandDialogDemo() {
           .find((route) => Array.isArray(route.children))
           ?.children?.filter((route) => {
             if (!route.handle?.showInSidebar) return false;
-            // Feature flag checks
-            if (route.handle.featureFlag === "ff_is_show_rooms" && !roomsFF) return false;
-            if (route.handle.featureFlag === "is_show_payments" && !paymentsFF) return false;
-            if (route.handle.featureFlag === "is_show_clubs" && !clubsFF) return false;
-            if (route.handle.featureFlag === "is_show_requests" && !requestsFF) return false;
-            if (route.handle.featureFlag === "is_show_messages" && !messagesFF) return false;
-            if (route.handle.featureFlag === "is_maccabi" && !maccabiFF) return false;
+            
+            // Dynamic feature flag check
+            const featureFlag = route.handle?.featureFlag;
+            if (featureFlag && typeof featureFlag === "string") {
+              // Check if this specific feature flag is enabled
+              const isEnabled = featureFlagLookup[featureFlag];
+              if (!isEnabled) return false;
+            }
+            
             // Admin only check
             if (route.handle?.adminOnly && user?.role !== 'system_admin') return false;
             return true;
@@ -57,7 +66,7 @@ export function CommandDialogDemo() {
             path: route.path,
           })) || [],
     },
-  ];
+  ], [featureFlagLookup, user?.role]);
 
   const filteredCommands = commandData.map((group) => ({
     ...group,
@@ -76,10 +85,10 @@ export function CommandDialogDemo() {
   };
 
   return (
-    <Command className="rounded-lg border shadow-sm md:min-w-[300px] max-w-[400px]">
+    <Command className="rounded-lg border shadow-sm md:min-w-[350px] max-w-[500px]">
       <CommandInput
         className="shadow-none"
-        placeholder={t("search")}
+        placeholder={t("search_in_system")}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setTimeout(() => setIsFocused(false), 200)}
         onValueChange={setQuery}

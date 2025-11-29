@@ -4,49 +4,188 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import { useQuery } from '@tanstack/react-query';
 
 import GradientButton from '../components/ui/GradientButton';
 import { useAuth } from '../providers/AuthProvider';
-import type { RootStackParamList } from '../navigation/AppNavigator';
-import { fetchKidsCount } from '../api/kids';
-import { fetchEmployeesCount } from '../api/employees';
+import type { HomeStackParamList } from '../navigation/AppNavigator';
 
-type DashboardCardProps = {
-  title: string;
-  value: string;
-  subtitle: string;
+// Mock data
+const mockKidsAttendance = {
+  arrived: 12,
+  notArrived: 3,
+};
+
+const mockEmployeeReports = [
+  { name: 'רות', checkInTime: '07:55', hasCheckedIn: true },
+  { name: 'מיכל', checkInTime: null, hasCheckedIn: false },
+  { name: 'דני', checkInTime: '08:10', hasCheckedIn: true },
+];
+
+const mockParentMessages = [
+  { parent: 'אמא של נויה', message: 'לא תגיע מחר' },
+  { parent: 'אבא של דניאל', message: 'איחור של 10 דק\'' },
+  { parent: 'אמא של שירה', message: 'תגיע ב-09:00' },
+];
+
+const mockFinanceData = {
+  income: 24650,
+  expenses: 18200,
+  profit: 6450,
+};
+
+// Card Components
+type TodayInKindergartenCardProps = {
   onPress?: () => void;
 };
 
-const DashboardCard = ({ title, value, subtitle, onPress }: DashboardCardProps) => (
+const TodayInKindergartenCard = ({ onPress }: TodayInKindergartenCardProps) => (
   <Pressable
     onPress={onPress}
     disabled={!onPress}
     style={({ pressed }) => [
       styles.dashboardCard,
+      styles.kidsCard,
       onPress && pressed && styles.dashboardCardPressed,
     ]}
   >
-    <Text style={styles.dashboardCardTitle}>{title}</Text>
-    <Text style={styles.dashboardCardValue}>{value}</Text>
-    <Text style={styles.dashboardCardSubtitle}>{subtitle}</Text>
+    <Text style={styles.dashboardCardTitle}>היום בגן</Text>
+    <View style={styles.kidsAttendanceRow}>
+      <View style={styles.kidsAttendanceItem}>
+        <Text style={styles.kidsAttendanceValue}>{mockKidsAttendance.arrived}</Text>
+        <Text style={styles.kidsAttendanceLabel}>הגיעו</Text>
+      </View>
+      <View style={styles.kidsAttendanceItem}>
+        <Text style={[styles.kidsAttendanceValue, styles.kidsAttendanceValueWarning]}>
+          {mockKidsAttendance.notArrived}
+        </Text>
+        <Text style={[styles.kidsAttendanceLabel, styles.kidsAttendanceLabelWarning]}>
+          טרם הגיעו
+        </Text>
+      </View>
+    </View>
   </Pressable>
 );
 
+type EmployeeReportsCardProps = {
+  onPress?: () => void;
+};
+
+const EmployeeReportsCard = ({ onPress }: EmployeeReportsCardProps) => (
+  <Pressable
+    onPress={onPress}
+    disabled={!onPress}
+    style={({ pressed }) => [
+      styles.dashboardCard,
+      styles.employeesCard,
+      onPress && pressed && styles.dashboardCardPressed,
+    ]}
+  >
+    <Text style={styles.dashboardCardTitle}>דיווחי עובדים היום</Text>
+    <View style={styles.employeeReportsList}>
+      {mockEmployeeReports.slice(0, 3).map((employee, index) => (
+        <View key={index} style={styles.employeeReportItem}>
+          <Text style={styles.employeeReportName}>{employee.name}</Text>
+          <Text style={styles.employeeReportStatus}>
+            {employee.hasCheckedIn
+              ? `הגיעה ${employee.checkInTime}`
+              : 'טרם דווח'}
+          </Text>
+        </View>
+      ))}
+    </View>
+  </Pressable>
+);
+
+type ParentMessagesCardProps = {
+  onPress?: () => void;
+};
+
+const ParentMessagesCard = ({ onPress }: ParentMessagesCardProps) => (
+  <Pressable
+    onPress={onPress}
+    disabled={!onPress}
+    style={({ pressed }) => [
+      styles.dashboardCard,
+      styles.messagesCard,
+      onPress && pressed && styles.dashboardCardPressed,
+    ]}
+  >
+    <Text style={styles.dashboardCardTitle}>הודעות מההורים</Text>
+    <View style={styles.parentMessagesList}>
+      {mockParentMessages.slice(0, 3).map((msg, index) => (
+        <View key={index} style={styles.parentMessageItem}>
+          <Text style={styles.parentMessageText}>
+            {msg.parent}: {msg.message}
+          </Text>
+        </View>
+      ))}
+    </View>
+  </Pressable>
+);
+
+type MonthlyFinanceCardProps = {
+  onPress?: () => void;
+};
+
+const MonthlyFinanceCard = ({ onPress }: MonthlyFinanceCardProps) => {
+  const formatCurrency = (amount: number) => {
+    return `₪${amount.toLocaleString('he-IL')}`;
+  };
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      style={({ pressed }) => [
+        styles.dashboardCard,
+        styles.monthlyFinanceCard,
+        onPress && pressed && styles.dashboardCardPressed,
+      ]}
+    >
+      <Text style={styles.dashboardCardTitle}>כספים – החודש</Text>
+      <View style={styles.financeSummaryList}>
+        <View style={styles.financeSummaryItem}>
+          <Text style={styles.financeSummaryLabel}>הכנסות</Text>
+          <Text style={styles.financeSummaryValue}>{formatCurrency(mockFinanceData.income)}</Text>
+        </View>
+        <View style={styles.financeSummaryItem}>
+          <Text style={styles.financeSummaryLabel}>הוצאות</Text>
+          <Text style={[styles.financeSummaryValue, styles.financeSummaryValueExpense]}>
+            {formatCurrency(mockFinanceData.expenses)}
+          </Text>
+        </View>
+        <View style={styles.financeSummaryItem}>
+          <Text style={styles.financeSummaryLabel}>רווח חודשי משוער</Text>
+          <Text style={[styles.financeSummaryValue, styles.financeSummaryValueProfit]}>
+            {formatCurrency(mockFinanceData.profit)}
+          </Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+};
+
 const HomeScreen = () => {
   const { user, logout } = useAuth();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
+  const parentNavigation = useNavigation();
+  
+  // Navigate to different pages
+  const navigateToKids = () => {
+    (parentNavigation as any).navigate('KidsTab');
+  };
 
-  const { data: kidsCount, isLoading: isLoadingKidsCount } = useQuery({
-    queryKey: ['kids', 'count'],
-    queryFn: fetchKidsCount,
-  });
+  const navigateToEmployees = () => {
+    navigation.navigate('EmployeesPage');
+  };
 
-  const { data: employeesCount, isLoading: isLoadingEmployeesCount } = useQuery({
-    queryKey: ['employees', 'count'],
-    queryFn: fetchEmployeesCount,
-  });
+  const navigateToMessages = () => {
+    (parentNavigation as any).navigate('MessagesTab');
+  };
+
+  const navigateToFinance = () => {
+    (parentNavigation as any).navigate('FinanceTab');
+  };
 
   const currentDayData = useMemo(() => {
     const now = new Date();
@@ -87,30 +226,10 @@ const HomeScreen = () => {
           </View>
 
           <View style={styles.dashboardGrid}>
-            <DashboardCard
-              title="ילדים"
-              value={isLoadingKidsCount ? '...' : String(kidsCount ?? 0)}
-              subtitle="כמות הילדים הפעילים"
-              onPress={() => navigation.navigate('KidsPage')}
-            />
-            <DashboardCard
-              title="צ׳אט"
-              value="5"
-              subtitle="הודעות חדשות ממתינות"
-              onPress={() => navigation.navigate('ChatPage')}
-            />
-            <DashboardCard
-              title="עובדים"
-              value={isLoadingEmployeesCount ? '...' : String(employeesCount ?? 0)}
-              subtitle="כמות העובדים הפעילים"
-              onPress={() => navigation.navigate('EmployeesPage')}
-            />
-            <DashboardCard
-              title="משימות"
-              value="8"
-              subtitle="משימות פתוחות לסגירה"
-              onPress={() => navigation.navigate('MyTasks')}
-            />
+            <TodayInKindergartenCard onPress={navigateToKids} />
+            <EmployeeReportsCard onPress={navigateToEmployees} />
+            <ParentMessagesCard onPress={navigateToMessages} />
+            <MonthlyFinanceCard onPress={navigateToFinance} />
           </View>
 
           <View style={styles.financeCard}>
@@ -257,6 +376,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    marginBottom: 20,
   },
   dashboardCard: {
     width: '48%',
@@ -272,7 +392,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 18 },
     elevation: 12,
-    marginBottom: 18,
+    marginBottom: 16,
   },
   dashboardCardPressed: {
     transform: [{ scale: 0.98 }],
@@ -281,21 +401,123 @@ const styles = StyleSheet.create({
   dashboardCardTitle: {
     textAlign: 'right',
     color: '#64748B',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 16,
   },
-  dashboardCardValue: {
+  // Kids Card Styles
+  kidsCard: {
+    borderLeftWidth: 5,
+    borderLeftColor: '#457B9D',
+  },
+  kidsAttendanceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 16,
+    marginTop: 4,
+  },
+  kidsAttendanceItem: {
+    flex: 1,
+    alignItems: 'flex-end',
+  },
+  kidsAttendanceValue: {
     textAlign: 'right',
     color: '#1e293b',
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
-    marginTop: 12,
+    marginBottom: 6,
   },
-  dashboardCardSubtitle: {
+  kidsAttendanceValueWarning: {
+    color: '#FF6B4D',
+  },
+  kidsAttendanceLabel: {
     textAlign: 'right',
-    color: '#94A3B8',
-    fontSize: 13,
-    marginTop: 10,
+    color: '#64748B',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  kidsAttendanceLabelWarning: {
+    color: '#E85A3F',
+  },
+  // Employees Card Styles
+  employeesCard: {
+    borderLeftWidth: 5,
+    borderLeftColor: '#10B981',
+  },
+  employeeReportsList: {
+    gap: 12,
+    marginTop: 4,
+  },
+  employeeReportItem: {
+    alignItems: 'flex-end',
+    paddingVertical: 2,
+  },
+  employeeReportName: {
+    textAlign: 'right',
+    color: '#1e293b',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  employeeReportStatus: {
+    textAlign: 'right',
+    color: '#64748B',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  // Messages Card Styles
+  messagesCard: {
+    borderLeftWidth: 5,
+    borderLeftColor: '#F59E0B',
+  },
+  parentMessagesList: {
+    gap: 12,
+    marginTop: 4,
+  },
+  parentMessageItem: {
+    alignItems: 'flex-end',
+    paddingVertical: 2,
+  },
+  parentMessageText: {
+    textAlign: 'right',
+    color: '#1e293b',
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 22,
+  },
+  // Monthly Finance Card Styles (dashboard card)
+  monthlyFinanceCard: {
+    borderLeftWidth: 5,
+    borderLeftColor: '#8B5CF6',
+  },
+  financeSummaryList: {
+    gap: 14,
+    marginTop: 4,
+  },
+  financeSummaryItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 2,
+  },
+  financeSummaryLabel: {
+    textAlign: 'right',
+    color: '#64748B',
+    fontSize: 15,
+    fontWeight: '600',
+    flex: 1,
+  },
+  financeSummaryValue: {
+    textAlign: 'left',
+    color: '#1e293b',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  financeSummaryValueExpense: {
+    color: '#E85A3F',
+  },
+  financeSummaryValueProfit: {
+    color: '#10B981',
   },
   financeCard: {
     width: '100%',

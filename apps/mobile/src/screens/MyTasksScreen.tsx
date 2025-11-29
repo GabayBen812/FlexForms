@@ -5,10 +5,10 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import GradientButton from '../components/ui/GradientButton';
-import type { RootStackParamList } from '../navigation/AppNavigator';
+import type { HomeStackParamList } from '../navigation/AppNavigator';
 
 const MyTasksScreen = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
 
   return (
     <LinearGradient colors={['#FFFFFF', '#F0FDFC', '#FFFFFF']} style={styles.root}>

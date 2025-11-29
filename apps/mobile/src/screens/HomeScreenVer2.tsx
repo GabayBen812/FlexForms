@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 
 import GradientButton from '../components/ui/GradientButton';
 import { useAuth } from '../providers/AuthProvider';
-import type { RootStackParamList } from '../navigation/AppNavigator';
+import type { HomeStackParamList } from '../navigation/AppNavigator';
 
 type DashboardCardProps = {
   title: string;
@@ -33,7 +33,7 @@ const DashboardCard = ({ title, value, subtitle, onPress }: DashboardCardProps) 
 
 const HomeScreenVer2 = () => {
   const { user, logout } = useAuth();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
 
   const currentDayData = useMemo(() => {
     const now = new Date();

@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 
-import type { RootStackParamList } from '../navigation/AppNavigator';
+import type { MessagesStackParamList } from '../navigation/AppNavigator';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { fetchChatGroups } from '../api/chat';
 
@@ -34,7 +34,7 @@ const ChatListItem = ({ name, subtitle, unreadCount, updatedAt }: ChatListItemPr
 );
 
 const ChatPage = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<MessagesStackParamList>>();
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['chat', 'groups'],
@@ -59,7 +59,7 @@ const ChatPage = () => {
         <View style={styles.container}>
           <View style={styles.header}>
             <Pressable
-              onPress={() => navigation.navigate('Home')}
+              onPress={() => navigation.goBack()}
               style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
             >
               <Text style={styles.backButtonLabel}>חזרה</Text>

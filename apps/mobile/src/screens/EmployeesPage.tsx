@@ -6,7 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 
 import { api } from '../api/client';
-import type { RootStackParamList } from '../navigation/AppNavigator';
+import type { HomeStackParamList } from '../navigation/AppNavigator';
 
 type Employee = {
   id: string;
@@ -20,7 +20,7 @@ type Employee = {
 };
 
 const EmployeesPage = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

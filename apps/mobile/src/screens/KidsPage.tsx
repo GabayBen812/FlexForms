@@ -6,7 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 
 import { api } from '../api/client';
-import type { RootStackParamList } from '../navigation/AppNavigator';
+import type { KidsStackParamList } from '../navigation/AppNavigator';
 
 type Kid = {
   id?: string | number | null;
@@ -18,7 +18,7 @@ type Kid = {
 };
 
 const KidsPage = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<KidsStackParamList>>();
   const [kids, setKids] = useState<Kid[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -27,6 +27,15 @@ Multi-tenant: The endpoint should use the organizationId from the JWT token,
 - **Authentication:** JWT-based authentication
 - **Validation:** class-validator and class-transformer
 
+### Mobile (`/apps/mobile`)
+- **Framework:** React Native with Expo (SDK 54)
+- **Styling:** NativeWind (Tailwind for React Native) + StyleSheet API
+- **UI Components:** Gluestack UI (not shadcn/ui)
+- **State Management:** React Query (@tanstack/react-query) for server state
+- **Navigation:** React Navigation (Native Stack + Bottom Tabs)
+- **Internationalization:** Support for English (en) and Hebrew (he) with RTL
+- **Authentication:** JWT via SecureStore cookies
+
 ## Code Style & Conventions
 
 ### TypeScript
@@ -49,6 +58,18 @@ Multi-tenant: The endpoint should use the organizationId from the JWT token,
 - single Source Of Truth
 - Keep components small and focused - extract logic into custom hooks when needed
 - Use React.memo() sparingly, only when performance profiling shows it's needed
+
+### React Native/TypeScript (Mobile)
+- Use functional components with hooks (same as Client)
+- Follow React hooks rules strictly
+- Use TypeScript for all components and utilities
+- Prefer named exports over default exports
+- Component files should use PascalCase (e.g., `HomeScreen.tsx`)
+- Use React Query for all server state management (same patterns as Client)
+- Always use SafeAreaView for screens to handle notches/status bars
+- Use Pressable with pressed states for interactive elements (not TouchableOpacity)
+- Type navigation params using React Navigation's type system
+- Keep components focused on mobile screen sizes (320px - 428px width)
 
 ### NestJS (Server)
 - Follow NestJS module architecture patterns
@@ -75,24 +96,37 @@ Multi-tenant: The endpoint should use the organizationId from the JWT token,
 ## Best Practices
 
 ### API Client
-- Use the centralized API client (`apiClient.ts`) for all HTTP requests
+- Use the centralized API client (`apiClient.ts` for Client, `api/client.ts` for Mobile) for all HTTP requests
 - Organize API functions by feature in subfolders
 - Always handle errors appropriately
 - Use React Query hooks for data fetching and mutations
+- Mobile: Use SecureStore for auth cookies, handle cookie management in API interceptors
 
 ### Internationalization
-- All user-facing text must be internationalized using i18next
+- All user-facing text must be internationalized using i18next (Client) or similar approach (Mobile)
 - Use translation keys in the format: `namespace:key` (e.g., `common:save`)
 - Keep translation keys organized by feature/namespace
 - Support both RTL (Hebrew) and LTR (English) layouts
+- Mobile: Ensure text alignment and flex direction support RTL properly
 
-### Styling
-- use shadcn/ui 
+### Styling (Client - Web)
+- Use shadcn/ui and Radix UI components
 - Use Tailwind CSS utility classes
 - Prefer Radix UI components for complex UI elements
 - Use Tailwind's RTL support for Hebrew language support
 - Keep custom CSS minimal - use Tailwind configuration for design tokens
 - Use `cn()` utility (from `clsx` + `tailwind-merge`) for conditional classes
+
+### Styling (Mobile - React Native)
+- Use NativeWind for Tailwind-like utility classes (when convenient)
+- Use StyleSheet.create() for component styles (preferred for performance)
+- Use Gluestack UI components for complex UI elements (not shadcn/ui)
+- Support RTL layouts - use `textAlign: 'right'` and `flexDirection: 'row-reverse'` for Hebrew
+- Use SafeAreaView for all screens to handle device notches and status bars
+- Ensure touch targets are at least 44x44 points for accessibility
+- Use elevation and shadowColor for Android, shadowOpacity/shadowRadius for iOS
+- Prefer flexbox layouts - mobile screens are constrained (320-428px width)
+- Use LinearGradient from expo-linear-gradient for gradient buttons/backgrounds
 
 ### State Management
 - Server state: React Query (@tanstack/react-query)
@@ -159,7 +193,34 @@ Multi-tenant: The endpoint should use the organizationId from the JWT token,
 
 ## Common Patterns
 
-### React Component with API
+### React Native Screen with API (Mobile)
+```typescript
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
+import { StyleSheet } from 'react-native';
+
+const HomeScreen = () => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['employees', 'count'],
+    queryFn: fetchEmployeesCount,
+  });
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Screen content */}
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 24,
+  },
+});
+```
+
+### React Component with API (Client)
 ```typescript
 // Use React Query for data fetching
 const { data, isLoading, error } = useQuery({
@@ -174,6 +235,23 @@ const mutation = useMutation({
     queryClient.invalidateQueries({ queryKey: ['users'] });
   }
 });
+```
+
+### React Navigation Pattern (Mobile)
+```typescript
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { HomeStackParamList } from '../navigation/AppNavigator';
+
+const MyScreen = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
+  
+  const handleNavigate = () => {
+    navigation.navigate('EmployeesPage');
+  };
+  
+  return (/* ... */);
+};
 ```
 
 ### NestJS Controller Pattern
@@ -194,14 +272,18 @@ export class UsersController {
 - Use React Hook Form with Zod validation
 - Use `@hookform/resolvers` for Zod integration
 - Extract form logic into custom hooks when reused
+- Mobile: Use native TextInput components, ensure proper keyboard handling and safe area considerations
 
 ## Dependencies to Prefer
-- **UI Components:** shadcn/ui  or Radix UI primitives
+- **UI Components (Client):** shadcn/ui or Radix UI primitives
+- **UI Components (Mobile):** Gluestack UI, React Native core components
 - **Forms:** React Hook Form + Zod
 - **HTTP Client:** Axios (via apiClient)
 - **Date Handling:** date-fns or dayjs
-- **Icons:** lucide-react
-- **Animations:** framer-motion (when needed)
+- **Icons (Client):** lucide-react
+- **Icons (Mobile):** @expo/vector-icons (Feather, etc.)
+- **Animations (Client):** framer-motion (when needed)
+- **Animations (Mobile):** react-native-reanimated (already included)
 
 ## Dependencies to Avoid
 - Avoid adding new state management libraries (use React Query + Context)
@@ -215,6 +297,10 @@ export class UsersController {
 - Lazy load routes when appropriate
 - Optimize images and assets
 - Use React.memo() only when profiling shows benefit
+- Mobile: Use StyleSheet.create() outside render for better performance
+- Mobile: Avoid inline styles in render functions
+- Mobile: Use FlatList/ScrollView for long lists, implement proper keyExtractor
+- Mobile: Consider image optimization and lazy loading for mobile data constraints
 
 ## Git Workflow
 - Write clear, descriptive commit messages

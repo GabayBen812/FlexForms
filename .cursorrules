@@ -26,6 +26,10 @@ Before writing code, list missing information
 Ask for confirmation before applying major changes
 Always talk to the developer in english.
 
+# LANGUAGE RULES
+- Always respond in English unless explicitly asked otherwise.
+- Even if the user writes in Hebrew or any other language, reply in English.
+
 
 ## Project Structure
 

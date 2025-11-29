@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { Feather } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import 'dayjs/locale/he';
 import 'dayjs/locale/en';
@@ -451,23 +452,70 @@ const CourseAttendancePage = () => {
                     </View>
 
                     <View style={styles.participantControls}>
-                      <Pressable
-                        onPress={() => handleAttendanceChange(item.kidId, !localData.attended)}
-                        style={({ pressed }) => [
-                          styles.checkboxContainer,
-                          pressed && styles.checkboxContainerPressed,
-                        ]}
-                      >
-                        <View
-                          style={[
-                            styles.checkbox,
-                            localData.attended && styles.checkboxChecked,
+                      <View style={styles.attendanceToggleContainer}>
+                        <Pressable
+                          onPress={() => handleAttendanceChange(item.kidId, false)}
+                          style={({ pressed }) => [
+                            styles.attendanceButton,
+                            styles.attendanceButtonAbsent,
+                            !localData.attended && {
+                              backgroundColor: '#EF4444',
+                              borderColor: '#EF4444',
+                            },
+                            localData.attended && {
+                              backgroundColor: '#FFFFFF',
+                            },
+                            pressed && styles.attendanceButtonPressed,
                           ]}
                         >
-                          {localData.attended && <Text style={styles.checkmark}>✓</Text>}
-                        </View>
-                        <Text style={styles.checkboxLabel}>נוכח</Text>
-                      </Pressable>
+                          <Feather
+                            name="x-circle"
+                            size={16}
+                            color={!localData.attended ? '#FFFFFF' : '#EF4444'}
+                          />
+                          <Text
+                            style={[
+                              styles.attendanceButtonText,
+                              !localData.attended
+                                ? styles.attendanceButtonTextActive
+                                : { color: '#EF4444' },
+                            ]}
+                          >
+                            לא הגיע
+                          </Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => handleAttendanceChange(item.kidId, true)}
+                          style={({ pressed }) => [
+                            styles.attendanceButton,
+                            styles.attendanceButtonPresent,
+                            localData.attended && {
+                              backgroundColor: '#10B981',
+                              borderColor: '#10B981',
+                            },
+                            !localData.attended && {
+                              backgroundColor: '#FFFFFF',
+                            },
+                            pressed && styles.attendanceButtonPressed,
+                          ]}
+                        >
+                          <Feather
+                            name="check-circle"
+                            size={16}
+                            color={localData.attended ? '#FFFFFF' : '#10B981'}
+                          />
+                          <Text
+                            style={[
+                              styles.attendanceButtonText,
+                              localData.attended
+                                ? styles.attendanceButtonTextActive
+                                : { color: '#10B981' },
+                            ]}
+                          >
+                            הגיע
+                          </Text>
+                        </Pressable>
+                      </View>
 
                       <View style={styles.notesContainer}>
                         <Text style={styles.notesLabel}>הערות:</Text>
@@ -502,15 +550,15 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 32,
-    gap: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 12,
   },
   backButton: {
     alignSelf: 'flex-start',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#D1D5DB',
     backgroundColor: '#FFFFFF',
@@ -527,27 +575,29 @@ const styles = StyleSheet.create({
   headerBadge: {
     alignSelf: 'flex-end',
     color: '#457B9D',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
+    marginBottom: 2,
   },
   headerTitle: {
     color: '#1e293b',
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     textAlign: 'right',
+    marginBottom: 4,
   },
   stateContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 10,
   },
   stateText: {
     color: '#64748B',
     fontSize: 16,
   },
   dateSelectorContainer: {
-    gap: 8,
+    gap: 6,
   },
   dateLabel: {
     color: '#334155',
@@ -636,13 +686,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   listContent: {
-    paddingBottom: 24,
-    gap: 16,
+    paddingBottom: 16,
+    gap: 10,
   },
   participantCard: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
@@ -651,77 +701,79 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
-    gap: 16,
+    gap: 8,
   },
   participantHeader: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
   },
   nameBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
     borderWidth: 1,
   },
   participantName: {
     color: '#0284C7',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
   participantControls: {
-    gap: 12,
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
   },
-  checkboxContainerPressed: {
-    opacity: 0.8,
+  attendanceToggleContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    width: '100%',
   },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
+  attendanceButton: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 5,
+    minHeight: 36,
   },
-  checkboxChecked: {
-    backgroundColor: '#0284C7',
-    borderColor: '#0284C7',
+  attendanceButtonPresent: {
+    borderColor: '#10B981',
   },
-  checkmark: {
+  attendanceButtonAbsent: {
+    borderColor: '#EF4444',
+  },
+  attendanceButtonPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+  },
+  attendanceButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  attendanceButtonTextActive: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  checkboxLabel: {
-    color: '#334155',
-    fontSize: 16,
-    fontWeight: '500',
   },
   notesContainer: {
-    gap: 8,
+    gap: 4,
   },
   notesLabel: {
     color: '#334155',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     textAlign: 'right',
   },
   notesInput: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#D1D5DB',
     backgroundColor: '#FFFFFF',
     color: '#1e293b',
     fontSize: 14,
-    minHeight: 80,
+    minHeight: 50,
     textAlignVertical: 'top',
   },
 });

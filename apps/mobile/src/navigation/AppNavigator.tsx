@@ -170,7 +170,7 @@ const MainTabNavigator = () => (
       options={{
         tabBarLabel: 'כספים',
         tabBarIcon: ({ focused, color }) => (
-          <Feather name="dollar-sign" size={26} color={color} />
+          <Feather name="credit-card" size={26} color={color} />
         ),
       }}
     />

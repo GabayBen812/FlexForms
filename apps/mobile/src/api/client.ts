@@ -61,6 +61,7 @@ export type ApiUser = {
   email: string;
   name?: string | null;
   role: ApiUserRole;
+  organizationId?: string;
 };
 
 

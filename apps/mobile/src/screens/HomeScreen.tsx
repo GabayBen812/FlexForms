@@ -187,6 +187,10 @@ const HomeScreen = () => {
     (parentNavigation as any).navigate('FinanceTab');
   };
 
+  const navigateToCourses = () => {
+    navigation.navigate('CoursesPage');
+  };
+
   const currentDayData = useMemo(() => {
     const now = new Date();
     const dayName = new Intl.DateTimeFormat('he-IL', { weekday: 'long' }).format(now);
@@ -226,7 +230,7 @@ const HomeScreen = () => {
           </View>
 
           <View style={styles.dashboardGrid}>
-            <TodayInKindergartenCard onPress={navigateToKids} />
+            <TodayInKindergartenCard onPress={navigateToCourses} />
             <EmployeeReportsCard onPress={navigateToEmployees} />
             <ParentMessagesCard onPress={navigateToMessages} />
             <MonthlyFinanceCard onPress={navigateToFinance} />

@@ -15,6 +15,8 @@ import ChatPage from '../screens/ChatPage';
 import KidsPage from '../screens/KidsPage';
 import MessagesPage from '../screens/MessagesPage';
 import FinancePage from '../screens/FinancePage';
+import CoursesPage from '../screens/CoursesPage';
+import CourseAttendancePage from '../screens/CourseAttendancePage';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -35,6 +37,8 @@ export type HomeStackParamList = {
   HomeEmployee: undefined;
   MyTasks: undefined;
   EmployeesPage: undefined;
+  CoursesPage: undefined;
+  CourseAttendancePage: { courseId: string };
 };
 
 export type KidsStackParamList = {
@@ -71,6 +75,8 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="HomeEmployee" component={HomeScreenEmployee} />
     <HomeStack.Screen name="MyTasks" component={MyTasksScreen} />
     <HomeStack.Screen name="EmployeesPage" component={EmployeesPage} />
+    <HomeStack.Screen name="CoursesPage" component={CoursesPage} />
+    <HomeStack.Screen name="CourseAttendancePage" component={CourseAttendancePage} />
   </HomeStack.Navigator>
 );
 

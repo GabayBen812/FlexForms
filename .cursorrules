@@ -1,14 +1,31 @@
 # Paradize Cursor Rules
 
+## The profile of the developers using Cursor
+The developers using the cursor IDE are proffestional developers
+so they understand code very well u can ask them questions about architecture if u not sure.
+Very important for us is that u do not do anything that we wont fully understand.
+Always talk to the developer in english.
+TREAT ME AS AN EXPERT.
+
 ## Project Overview
 Paradize is a multi-tenant ERP/CRM platform with a React frontend and NestJS backend. This project uses TypeScript throughout, MongoDB for data storage, and modern tooling including Vite, Tailwind CSS, and React Query. also Radix UI - also shadcn/ui 
 This will be dedicated for education organizations
-
 When i write "FF" i usally refer to FeatureFlag
-
 this project use Mixpanel and google analytics and SendGrid
-
 Multi-tenant: The endpoint should use the organizationId from the JWT token,
+
+## The target audience of the project
+The project currently is for:
+Kindergarten, teachers, courses instructors, coaches.
+
+## Cursor prferences behavior
+Ask me questions before you start (always in english)
+Ask me if anything is unclear (always in english)
+Before writing code, list assumptions
+Before writing code, list missing information
+Ask for confirmation before applying major changes
+Always talk to the developer in english.
+
 
 ## Project Structure
 
@@ -303,7 +320,7 @@ export class UsersController {
 - Mobile: Consider image optimization and lazy loading for mobile data constraints
 
 ## Git Workflow
-- Write clear, descriptive commit messages
+- Write small simple commit messages
 - Keep commits focused and atomic
 - Use feature branches for new work
 - Update documentation when adding features

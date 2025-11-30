@@ -100,14 +100,18 @@ function Topbar() {
       <header className="flex h-20 shrink-0 items-center justify-start gap-2 border-b bg-white absolute top-12 w-screen z-50">
         <div className="flex items-center gap-2 px-4 w-full child:w-1/3">
           <div className="flex gap-2 items-center">
-            <div className="flex aspect-square size-10 items-center justify-center rounded-md text-sidebar-primary-foreground ">
+            <button 
+              onClick={() => navigate("/home")}
+              className="flex aspect-square size-10 items-center justify-center rounded-md text-sidebar-primary-foreground cursor-pointer hover:opacity-80 transition-opacity"
+              title={t("go_to_homepage") || "Go to homepage"}
+            >
               <Avatar className="rounded-lg size-10">
                 <AvatarImage src={organization?.logo} alt={organization?.name} />
                 <AvatarFallback className="rounded-md text-white bg-[var(--datatable-header)]">
                   <Hotel className="size-4" />
                 </AvatarFallback>
               </Avatar>
-            </div>
+            </button>
             <div className="grid flex-1 ltr:text-left rtl:text-right text-sm leading-tight">
               {canEdit ? (
                 editing ? (

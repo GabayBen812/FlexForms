@@ -285,7 +285,7 @@ function SortableFieldCard({
                     <span className="capitalize">{field.type}</span>
                   </Badge>
                   {field.isRequired && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="destructive" className="text-xs font-semibold">
                       {t("required")}
                     </Badge>
                   )}
@@ -517,8 +517,8 @@ export default function FormEditor({
     if (!typeAllowsRequired(typedFieldType)) {
       newField.isRequired = false;
     }
-    // Add field at the top (beginning) of the array
-    setFields([newField, ...fields]);
+    // Add field at the bottom (end) of the array
+    setFields([...fields, newField]);
     setAddFieldOpen(false);
     
     // Show success toast

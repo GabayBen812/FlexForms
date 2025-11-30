@@ -9,6 +9,7 @@ import {
   View,
   Modal,
   ScrollView,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -34,10 +35,39 @@ interface AttendanceRow {
   _id?: string;
   kidId: string;
   kidName: string;
+  profileImageUrl?: string;
   attended: boolean;
   notes?: string;
   enrollment: CourseEnrollment;
 }
+
+// Helper component for profile image with error handling
+const ProfileImage = ({ 
+  imageUrl, 
+  style 
+}: { 
+  imageUrl?: string; 
+  style?: any;
+}) => {
+  const [imageError, setImageError] = useState(false);
+
+  if (!imageUrl || imageError) {
+    return (
+      <View style={[styles.profileImagePlaceholder, style]}>
+        <Feather name="user" size={24} color="#94A3B8" />
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      source={{ uri: imageUrl }}
+      style={[styles.profileImage, style]}
+      resizeMode="cover"
+      onError={() => setImageError(true)}
+    />
+  );
+};
 
 const CourseAttendancePage = () => {
   const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
@@ -151,6 +181,8 @@ const CourseAttendancePage = () => {
         kidData && (kidData.firstname || kidData.lastname)
           ? `${kidData.firstname ?? ''} ${kidData.lastname ?? ''}`.trim()
           : 'ללא שם';
+      
+      const profileImageUrl = kidData && 'profileImageUrl' in kidData ? kidData.profileImageUrl : undefined;
 
       const attendance = attendanceMap.get(kidId);
 
@@ -158,6 +190,7 @@ const CourseAttendancePage = () => {
         _id: attendance?._id,
         kidId,
         kidName,
+        profileImageUrl,
         attended: attendance?.attended ?? false,
         notes: attendance?.notes ?? '',
         enrollment,
@@ -441,75 +474,70 @@ const CourseAttendancePage = () => {
                 return (
                   <View style={styles.participantCard}>
                     <View style={styles.participantHeader}>
-                      <View
-                        style={[
-                          styles.nameBadge,
-                          { backgroundColor: '#E0F2FE', borderColor: '#0284C7' },
-                        ]}
-                      >
-                        <Text style={styles.participantName}>{item.kidName}</Text>
+                      <View style={styles.participantInfoContainer}>
+                        <ProfileImage
+                          imageUrl={item.profileImageUrl}
+                        />
+                        <View
+                          style={[
+                            styles.nameBadge,
+                            { backgroundColor: '#E0F2FE', borderColor: '#0284C7' },
+                          ]}
+                        >
+                          <Text style={styles.participantName}>{item.kidName}</Text>
+                        </View>
                       </View>
                     </View>
 
                     <View style={styles.participantControls}>
-                      <View style={styles.attendanceToggleContainer}>
+                      {/* Modern Switch-style Toggle */}
+                      <View style={styles.attendanceSwitchContainer}>
                         <Pressable
                           onPress={() => handleAttendanceChange(item.kidId, false)}
                           style={({ pressed }) => [
-                            styles.attendanceButton,
-                            styles.attendanceButtonAbsent,
-                            !localData.attended && {
-                              backgroundColor: '#EF4444',
-                              borderColor: '#EF4444',
-                            },
-                            localData.attended && {
-                              backgroundColor: '#FFFFFF',
-                            },
-                            pressed && styles.attendanceButtonPressed,
+                            styles.switchOption,
+                            styles.switchOptionLeft,
+                            !localData.attended && styles.switchOptionActive,
+                            !localData.attended && styles.switchOptionAbsentActive,
+                            pressed && styles.switchOptionPressed,
                           ]}
                         >
                           <Feather
                             name="x-circle"
-                            size={16}
-                            color={!localData.attended ? '#FFFFFF' : '#EF4444'}
+                            size={18}
+                            color={!localData.attended ? '#FFFFFF' : '#94A3B8'}
                           />
                           <Text
                             style={[
-                              styles.attendanceButtonText,
-                              !localData.attended
-                                ? styles.attendanceButtonTextActive
-                                : { color: '#EF4444' },
+                              styles.switchOptionText,
+                              !localData.attended && styles.switchOptionTextActive,
                             ]}
                           >
                             לא הגיע
                           </Text>
                         </Pressable>
+                        
+                        <View style={styles.switchDivider} />
+                        
                         <Pressable
                           onPress={() => handleAttendanceChange(item.kidId, true)}
                           style={({ pressed }) => [
-                            styles.attendanceButton,
-                            styles.attendanceButtonPresent,
-                            localData.attended && {
-                              backgroundColor: '#10B981',
-                              borderColor: '#10B981',
-                            },
-                            !localData.attended && {
-                              backgroundColor: '#FFFFFF',
-                            },
-                            pressed && styles.attendanceButtonPressed,
+                            styles.switchOption,
+                            styles.switchOptionRight,
+                            localData.attended && styles.switchOptionActive,
+                            localData.attended && styles.switchOptionPresentActive,
+                            pressed && styles.switchOptionPressed,
                           ]}
                         >
                           <Feather
                             name="check-circle"
-                            size={16}
-                            color={localData.attended ? '#FFFFFF' : '#10B981'}
+                            size={18}
+                            color={localData.attended ? '#FFFFFF' : '#94A3B8'}
                           />
                           <Text
                             style={[
-                              styles.attendanceButtonText,
-                              localData.attended
-                                ? styles.attendanceButtonTextActive
-                                : { color: '#10B981' },
+                              styles.switchOptionText,
+                              localData.attended && styles.switchOptionTextActive,
                             ]}
                           >
                             הגיע
@@ -612,15 +640,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D1D5DB',
     backgroundColor: '#FFFFFF',
+    alignItems: 'center',
   },
   dateSelectorButtonPressed: {
     opacity: 0.8,
   },
   dateSelectorText: {
     color: '#1e293b',
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '500',
-    textAlign: 'right',
+    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,
@@ -652,6 +681,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
+    alignItems: 'center',
   },
   dateOptionPressed: {
     opacity: 0.8,
@@ -661,9 +691,9 @@ const styles = StyleSheet.create({
     borderColor: '#0284C7',
   },
   dateOptionText: {
-    fontSize: 16,
+    fontSize: 20,
     color: '#1e293b',
-    textAlign: 'right',
+    textAlign: 'center',
   },
   dateOptionTextSelected: {
     color: '#0284C7',
@@ -705,55 +735,106 @@ const styles = StyleSheet.create({
   },
   participantHeader: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  participantInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  profileImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F3F4F6',
+  },
+  profileImagePlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   nameBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
+    flex: 1,
+    alignItems: 'center',
   },
   participantName: {
     color: '#0284C7',
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
   },
   participantControls: {
     gap: 8,
   },
-  attendanceToggleContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    width: '100%',
+  // Modern Switch-style Toggle
+  attendanceSwitchContainer: {
+    flexDirection: 'row-reverse', // RTL support
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    overflow: 'hidden',
   },
-  attendanceButton: {
+  switchOption: {
     flex: 1,
-    flexDirection: 'row',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    borderWidth: 1.5,
+    flexDirection: 'row-reverse', // RTL: icon on right
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    minHeight: 36,
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    minHeight: 44, // Better touch target
   },
-  attendanceButtonPresent: {
-    borderColor: '#10B981',
+  switchOptionLeft: {
+    // For absent (left side in RTL)
   },
-  attendanceButtonAbsent: {
-    borderColor: '#EF4444',
+  switchOptionRight: {
+    // For present (right side in RTL)
   },
-  attendanceButtonPressed: {
-    opacity: 0.7,
+  switchOptionActive: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  switchOptionAbsentActive: {
+    backgroundColor: '#EF4444',
+  },
+  switchOptionPresentActive: {
+    backgroundColor: '#10B981',
+  },
+  switchOptionPressed: {
+    opacity: 0.85,
     transform: [{ scale: 0.98 }],
   },
-  attendanceButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
+  switchDivider: {
+    width: 1,
+    backgroundColor: '#CBD5E1',
+    marginVertical: 8,
   },
-  attendanceButtonTextActive: {
+  switchOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  switchOptionTextActive: {
     color: '#FFFFFF',
+    fontWeight: '700',
   },
   notesContainer: {
     gap: 4,

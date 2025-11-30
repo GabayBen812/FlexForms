@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -15,6 +15,7 @@ type Kid = {
   lastName?: string | null;
   firstname?: string | null;
   lastname?: string | null;
+  profileImageUrl?: string;
 };
 
 const KidsPage = () => {
@@ -22,6 +23,7 @@ const KidsPage = () => {
   const [kids, setKids] = useState<Kid[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let isMounted = true;
@@ -61,6 +63,20 @@ const KidsPage = () => {
     return fullName || 'ללא שם';
   };
 
+  const getKidInitials = (kid: Kid) => {
+    const first = (kid.firstName ?? kid.firstname)?.toString().trim();
+    const last = (kid.lastName ?? kid.lastname)?.toString().trim();
+    
+    const firstInitial = first?.[0]?.toUpperCase() || '';
+    const lastInitial = last?.[0]?.toUpperCase() || '';
+    
+    return (firstInitial + lastInitial) || '?';
+  };
+
+  const handleImageError = (imageUrl: string) => {
+    setFailedImages((prev) => new Set(prev).add(imageUrl));
+  };
+
   return (
     <LinearGradient colors={['#FFFFFF', '#F0FDFC', '#FFFFFF']} style={styles.root}>
       <SafeAreaView style={styles.safeArea}>
@@ -95,11 +111,28 @@ const KidsPage = () => {
                 String(item.id ?? item._id ?? `${item.firstname ?? item.firstName ?? 'kid'}-${index}`)
               }
               contentContainerStyle={styles.listContent}
-              renderItem={({ item }) => (
-                <View style={styles.kidCard}>
-                  <Text style={styles.kidName}>{getKidName(item)}</Text>
-                </View>
-              )}
+              renderItem={({ item }) => {
+                const shouldShowFallback = !item.profileImageUrl || failedImages.has(item.profileImageUrl);
+                
+                return (
+                  <View style={styles.kidCard}>
+                    <View style={styles.kidCardContent}>
+                      {shouldShowFallback ? (
+                        <View style={styles.kidImageFallback}>
+                          <Text style={styles.kidImageFallbackText}>{getKidInitials(item)}</Text>
+                        </View>
+                      ) : (
+                        <Image
+                          source={{ uri: item.profileImageUrl }}
+                          style={styles.kidImage}
+                          onError={() => item.profileImageUrl && handleImageError(item.profileImageUrl)}
+                        />
+                      )}
+                      <Text style={styles.kidName}>{getKidName(item)}</Text>
+                    </View>
+                  </View>
+                );
+              }}
             />
           )}
         </View>
@@ -181,7 +214,32 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
+  kidCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  kidImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#F3F4F6',
+  },
+  kidImageFallback: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#14B8A6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  kidImageFallbackText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '600',
+  },
   kidName: {
+    flex: 1,
     color: '#1e293b',
     fontSize: 18,
     fontWeight: '600',

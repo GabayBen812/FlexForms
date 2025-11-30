@@ -39,7 +39,8 @@ export async function fetchCourseSessions(courseId?: string): Promise<CourseSess
 export type CourseEnrollment = {
   _id: string;
   courseId: string | { _id: string; name: string };
-  kidId: string | { _id: string; firstname: string; lastname: string };
+  kidId: string | { _id: string; firstname: string; lastname: string; profileImageUrl?: string };
+  kid?: { _id: string; firstname: string; lastname: string; profileImageUrl?: string };
   organizationId: string;
   enrollmentDate: string | Date;
 };

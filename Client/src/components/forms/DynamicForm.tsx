@@ -10,7 +10,7 @@ import SignatureCanvas from "react-signature-canvas";
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { uploadFile } from "@/lib/imageUtils";
-import { Send, Eraser, Save, X, Download, File as FileIcon, Image as ImageIcon } from "lucide-react";
+import { Send, Eraser, Save, X, Download, File as FileIcon, Image as ImageIcon, Mail } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -356,13 +356,30 @@ export default function DynamicForm({
       case "text":
       case "email":
       case "idNumber":
-        return (
+        return field.type === "email" ? (
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
+            <Input
+              type="email"
+              placeholder="דוא״ל"
+              {...register(field.name)}
+              disabled={mode !== "registration"}
+              data-cy={`field-input-${field.name}`}
+              className="pl-10 text-blue-600"
+              dir="ltr"
+              lang="en"
+              autoComplete="email"
+              onKeyDown={(e) => {
+                // Prevent Hebrew characters
+                if (/[\u0590-\u05FF]/.test(e.key)) {
+                  e.preventDefault();
+                }
+              }}
+            />
+          </div>
+        ) : (
           <Input
-            type={
-              field.type === "email"
-                ? "email"
-                : "text"
-            }
+            type="text"
             inputMode={
               field.type === "idNumber"
                 ? "numeric"
@@ -731,13 +748,34 @@ export default function DynamicForm({
               className="mt-3"
               data-cy={`field-input-container-${field.name}`}
             >
-              {field.type === "text" || field.type === "email" ? (
+              {field.type === "text" ? (
                 <Input
-                  type={field.type}
+                  type="text"
                   {...register(field.name)}
                   disabled={mode !== "registration"}
                   data-cy={`field-input-${field.name}`}
                 />
+              ) : field.type === "email" ? (
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
+                  <Input
+                    type="email"
+                    placeholder="דוא״ל"
+                    {...register(field.name)}
+                    disabled={mode !== "registration"}
+                    data-cy={`field-input-${field.name}`}
+                    className="pl-10 text-blue-600"
+                    dir="ltr"
+                    lang="en"
+                    autoComplete="email"
+                    onKeyDown={(e) => {
+                      // Prevent Hebrew characters
+                      if (/[\u0590-\u05FF]/.test(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
+                  />
+                </div>
               ) : field.type === "phone" ? (
                 <Controller
                   name={field.name}
@@ -1183,3 +1221,4 @@ export default function DynamicForm({
     </form>
   );
 }
+

@@ -65,6 +65,10 @@ export class UpdateOrganizationDto {
 
   @IsString()
   @IsOptional()
+  logo?: string;
+
+  @IsString()
+  @IsOptional()
   paymentProvider?: string;
 
   @IsObject()

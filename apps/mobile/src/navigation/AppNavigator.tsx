@@ -14,6 +14,7 @@ import EmployeesPage from '../screens/EmployeesPage';
 import ChatPage from '../screens/ChatPage';
 import KidsPage from '../screens/KidsPage';
 import KidDetailsPage from '../screens/KidDetailsPage';
+import ParentDetailsPage from '../screens/ParentDetailsPage';
 import MessagesPage from '../screens/MessagesPage';
 import FinancePage from '../screens/FinancePage';
 import CoursesPage from '../screens/CoursesPage';
@@ -41,11 +42,13 @@ export type HomeStackParamList = {
   CoursesPage: undefined;
   CourseAttendancePage: { courseId: string };
   KidDetails: { kidId: string };
+  ParentDetails: { parentId: string };
 };
 
 export type KidsStackParamList = {
   KidsPage: undefined;
   KidDetails: { kidId: string };
+  ParentDetails: { parentId: string };
 };
 
 export type MessagesStackParamList = {
@@ -81,6 +84,7 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="CoursesPage" component={CoursesPage} />
     <HomeStack.Screen name="CourseAttendancePage" component={CourseAttendancePage} />
     <HomeStack.Screen name="KidDetails" component={KidDetailsPage} />
+    <HomeStack.Screen name="ParentDetails" component={ParentDetailsPage} />
   </HomeStack.Navigator>
 );
 
@@ -89,6 +93,7 @@ const KidsStackNavigator = () => (
   <KidsStack.Navigator screenOptions={{ headerShown: false }}>
     <KidsStack.Screen name="KidsPage" component={KidsPage} />
     <KidsStack.Screen name="KidDetails" component={KidDetailsPage} />
+    <KidsStack.Screen name="ParentDetails" component={ParentDetailsPage} />
   </KidsStack.Navigator>
 );
 

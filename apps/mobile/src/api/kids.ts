@@ -21,6 +21,7 @@ export type Parent = {
   _id: string;
   firstname: string;
   lastname: string;
+  profileImageUrl?: string;
   linked_kids?: string[];
   idNumber?: string;
   organizationId: string;

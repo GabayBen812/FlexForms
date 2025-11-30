@@ -80,6 +80,10 @@ export class OrganizationService {
       updatePayload.name = update.name;
     }
 
+    if (update.logo !== undefined) {
+      updatePayload.logo = update.logo;
+    }
+
     if (update.description !== undefined) {
       updatePayload.description = update.description;
     }

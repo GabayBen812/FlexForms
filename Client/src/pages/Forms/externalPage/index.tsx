@@ -180,6 +180,23 @@ export default function FormRegistration() {
   }
 
   const pageUrl = typeof window !== "undefined" ? window.location.href : "";
+  
+  // Handle organizationId - can be string or populated object
+  const organization = typeof form.organizationId === 'object' 
+    ? form.organizationId 
+    : null;
+  const organizationIdString = typeof form.organizationId === 'string' 
+    ? form.organizationId 
+    : (organization?._id || '');
+  
+  // Get logo URL - ensure it's absolute for social media crawlers
+  const logoUrl = organization?.logo 
+    ? (organization.logo.startsWith('http') 
+        ? organization.logo 
+        : (typeof window !== 'undefined' 
+            ? `${window.location.origin}${organization.logo.startsWith('/') ? '' : '/'}${organization.logo}`
+            : organization.logo))
+    : null;
 
   return (
     <>
@@ -190,9 +207,18 @@ export default function FormRegistration() {
         {form.description && <meta property="og:description" content={form.description} />}
         <meta property="og:url" content={pageUrl} />
         <meta property="og:type" content="website" />
-        <meta name="twitter:card" content="summary" />
+        {logoUrl && (
+          <>
+            <meta property="og:image" content={logoUrl} />
+            <meta property="og:image:width" content="1200" />
+            <meta property="og:image:height" content="630" />
+            <meta property="og:image:type" content="image/png" />
+          </>
+        )}
+        <meta name="twitter:card" content={logoUrl ? "summary_large_image" : "summary"} />
         <meta name="twitter:title" content={form.title} />
         {form.description && <meta name="twitter:description" content={form.description} />}
+        {logoUrl && <meta name="twitter:image" content={logoUrl} />}
       </Helmet>
       <div 
         className="min-h-screen py-6 sm:py-8 px-4 sm:px-6 lg:px-8"
@@ -201,6 +227,19 @@ export default function FormRegistration() {
         }}
       >
       <div className="max-w-3xl mx-auto space-y-6">
+        {/* Organization Logo */}
+        {logoUrl && (
+          <div className="flex justify-center mb-6 sm:mb-8">
+            <div className="relative bg-white rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-100">
+              <img 
+                src={logoUrl} 
+                alt={organization?.name || 'Organization logo'}
+                className="w-48 h-48 sm:w-40 sm:h-40 md:w-48 md:h-48 object-contain"
+              />
+            </div>
+          </div>
+        )}
+        
         {/* Form Header Card */}
         <Card className="shadow-lg border-0">
           <CardHeader className="pb-4">
@@ -273,7 +312,7 @@ export default function FormRegistration() {
                     // and are NOT in the dynamic fields list
                     const formData: any = {
                       formId: form._id,
-                      organizationId: form.organizationId,
+                      organizationId: organizationIdString,
                       additionalData,
                     };
                     

@@ -32,6 +32,17 @@ export const updateOrganizationName = async (organizationId: string, name: strin
   return apiClient.put(`/organizations/${organizationId}`, { name });
 };
 
+export const updateOrganization = async (
+  organizationId: string, 
+  data: Partial<Organization>
+): Promise<MutationResponse<Organization>> => {
+  const res = await apiClient.put(`/organizations/${organizationId}`, data);
+  return {
+    status: res.status,
+    data: res.data,
+  };
+};
+
 export const fetchTableFieldDefinitions = async (organizationId: string): Promise<MutationResponse<Record<string, any>>> => {
   const res = await apiClient.get(`/organizations/${organizationId}/table-field-definitions`);
   return {

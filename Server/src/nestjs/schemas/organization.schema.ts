@@ -14,6 +14,9 @@ export class Organization {
   @Prop()
   description?: string;
 
+  @Prop()
+  logo?: string;
+
   @Prop({ type: [Types.ObjectId], ref: 'FeatureFlag', default: [] })
   featureFlagIds!: Types.ObjectId[];
   

@@ -132,7 +132,10 @@ export class FormService {
   }
 
   async findByCode(@Query("code") code: string) {
-    return this.model.findOne({ code: Number(code) }).exec();
+    return this.model
+      .findOne({ code: Number(code) })
+      .populate('organizationId', 'logo name')
+      .exec();
   }
 
   async delete(id: string) {

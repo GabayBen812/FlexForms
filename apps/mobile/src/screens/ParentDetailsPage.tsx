@@ -16,50 +16,50 @@ import { Feather } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 
 import type { KidsStackParamList } from '../navigation/AppNavigator';
-import { fetchKidById, fetchParentById, Kid, Parent } from '../api/kids';
+import { fetchParentById, fetchKidById, Parent, Kid } from '../api/kids';
 
-type KidDetailsRouteProp = RouteProp<KidsStackParamList, 'KidDetails'>;
+type ParentDetailsRouteProp = RouteProp<KidsStackParamList, 'ParentDetails'>;
 
-const KidDetailsPage = () => {
+const ParentDetailsPage = () => {
   const navigation = useNavigation<NativeStackNavigationProp<KidsStackParamList>>();
-  const route = useRoute<KidDetailsRouteProp>();
-  const { kidId } = route.params;
+  const route = useRoute<ParentDetailsRouteProp>();
+  const { parentId } = route.params;
 
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
-  const [parents, setParents] = useState<Parent[]>([]);
-  const [loadingParents, setLoadingParents] = useState(false);
+  const [kids, setKids] = useState<Kid[]>([]);
+  const [loadingKids, setLoadingKids] = useState(false);
 
-  // Fetch kid details
+  // Fetch parent details
   const {
-    data: kid,
-    isLoading: isLoadingKid,
-    error: kidError,
-  } = useQuery<Kid>({
-    queryKey: ['kid', kidId],
-    queryFn: () => fetchKidById(kidId),
-    enabled: !!kidId,
+    data: parent,
+    isLoading: isLoadingParent,
+    error: parentError,
+  } = useQuery<Parent>({
+    queryKey: ['parent', parentId],
+    queryFn: () => fetchParentById(parentId),
+    enabled: !!parentId,
   });
 
-  // Fetch parents when kid data is available
+  // Fetch kids when parent data is available
   useEffect(() => {
-    if (kid?.linked_parents && kid.linked_parents.length > 0) {
-      setLoadingParents(true);
+    if (parent?.linked_kids && parent.linked_kids.length > 0) {
+      setLoadingKids(true);
       Promise.all(
-        kid.linked_parents.map((parentId) =>
-          fetchParentById(parentId).catch((err) => {
-            console.error(`Failed to fetch parent ${parentId}:`, err);
+        parent.linked_kids.map((kidId) =>
+          fetchKidById(kidId).catch((err) => {
+            console.error(`Failed to fetch kid ${kidId}:`, err);
             return null;
           })
         )
       )
-        .then((parentResults) => {
-          setParents(parentResults.filter((p): p is Parent => p !== null));
+        .then((kidResults) => {
+          setKids(kidResults.filter((k): k is Kid => k !== null));
         })
         .finally(() => {
-          setLoadingParents(false);
+          setLoadingKids(false);
         });
     }
-  }, [kid?.linked_parents]);
+  }, [parent?.linked_kids]);
 
   const getFullName = (firstName?: string, lastName?: string) => {
     const name = [firstName, lastName].filter(Boolean).join(' ').trim();
@@ -73,24 +73,24 @@ const KidDetailsPage = () => {
     return String(value);
   };
 
-  const handleParentPress = (parentId: string) => {
-    navigation.navigate('ParentDetails', { parentId });
+  const handleKidPress = (kidId: string) => {
+    navigation.navigate('KidDetails', { kidId });
   };
 
-  if (isLoadingKid) {
+  if (isLoadingParent) {
     return (
       <LinearGradient colors={['#FFFFFF', '#F0FDFC', '#FFFFFF']} style={styles.root}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.centerContainer}>
             <ActivityIndicator size="large" color="#14B8A6" />
-            <Text style={styles.stateText}>טוען פרטי ילד...</Text>
+            <Text style={styles.stateText}>טוען פרטי הורה...</Text>
           </View>
         </SafeAreaView>
       </LinearGradient>
     );
   }
 
-  if (kidError || !kid) {
+  if (parentError || !parent) {
     return (
       <LinearGradient colors={['#FFFFFF', '#F0FDFC', '#FFFFFF']} style={styles.root}>
         <SafeAreaView style={styles.safeArea}>
@@ -103,7 +103,7 @@ const KidDetailsPage = () => {
             </Pressable>
             <View style={styles.centerContainer}>
               <Feather name="alert-circle" size={48} color="#E85A3F" />
-              <Text style={[styles.stateText, styles.errorText]}>שגיאה בטעינת פרטי הילד</Text>
+              <Text style={[styles.stateText, styles.errorText]}>שגיאה בטעינת פרטי ההורה</Text>
             </View>
           </View>
         </SafeAreaView>
@@ -111,8 +111,8 @@ const KidDetailsPage = () => {
     );
   }
 
-  const shouldShowFallback = !kid.profileImageUrl || imageLoadFailed;
-  const dynamicFieldsEntries = kid.dynamicFields ? Object.entries(kid.dynamicFields) : [];
+  const shouldShowFallback = !parent.profileImageUrl || imageLoadFailed;
+  const dynamicFieldsEntries = parent.dynamicFields ? Object.entries(parent.dynamicFields) : [];
 
   return (
     <LinearGradient colors={['#FFFFFF', '#F0FDFC', '#FFFFFF']} style={styles.root}>
@@ -135,21 +135,21 @@ const KidDetailsPage = () => {
               </View>
             ) : (
               <Image
-                source={{ uri: kid.profileImageUrl }}
+                source={{ uri: parent.profileImageUrl }}
                 style={styles.profileImage}
                 onError={() => setImageLoadFailed(true)}
               />
             )}
           </View>
 
-          {/* Kid Name */}
-          <Text style={styles.kidName}>{getFullName(kid.firstname, kid.lastname)}</Text>
+          {/* Parent Name */}
+          <Text style={styles.parentName}>{getFullName(parent.firstname, parent.lastname)}</Text>
 
-          {/* Child Type Badge */}
+          {/* Parent Type Badge */}
           <View style={styles.typeBadgeContainer}>
             <View style={styles.typeBadge}>
               <Feather name="user" size={16} color="#14B8A6" />
-              <Text style={styles.typeBadgeText}>ילד</Text>
+              <Text style={styles.typeBadgeText}>הורה</Text>
             </View>
           </View>
 
@@ -160,55 +160,49 @@ const KidDetailsPage = () => {
               <Text style={styles.sectionTitle}>מידע בסיסי</Text>
             </View>
             <View style={styles.card}>
-              {kid.idNumber && (
+              {parent.idNumber && (
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>מספר זהות:</Text>
-                  <Text style={styles.infoValue}>{kid.idNumber}</Text>
+                  <Text style={styles.infoValue}>{parent.idNumber}</Text>
                 </View>
               )}
-              {kid.address && (
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>כתובת:</Text>
-                  <Text style={styles.infoValue}>{kid.address}</Text>
-                </View>
-              )}
-              {!kid.idNumber && !kid.address && (
+              {!parent.idNumber && (
                 <Text style={styles.emptyText}>אין מידע בסיסי נוסף</Text>
               )}
             </View>
           </View>
 
-          {/* Linked Parents Section */}
+          {/* Linked Kids Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Feather name="users" size={20} color="#14B8A6" />
-              <Text style={styles.sectionTitle}>הורים מקושרים</Text>
+              <Text style={styles.sectionTitle}>ילדים מקושרים</Text>
             </View>
-            {loadingParents ? (
+            {loadingKids ? (
               <View style={styles.card}>
                 <ActivityIndicator size="small" color="#14B8A6" />
-                <Text style={styles.emptyText}>טוען פרטי הורים...</Text>
+                <Text style={styles.emptyText}>טוען פרטי ילדים...</Text>
               </View>
-            ) : parents.length > 0 ? (
-              <View style={styles.parentsContainer}>
-                {parents.map((parent) => (
+            ) : kids.length > 0 ? (
+              <View style={styles.kidsContainer}>
+                {kids.map((kid) => (
                   <Pressable
-                    key={parent._id}
-                    onPress={() => handleParentPress(parent._id)}
+                    key={kid._id}
+                    onPress={() => handleKidPress(kid._id)}
                     style={({ pressed }) => [
-                      styles.parentCard,
-                      pressed && styles.parentCardPressed,
+                      styles.kidCard,
+                      pressed && styles.kidCardPressed,
                     ]}
                   >
-                    <View style={styles.parentIcon}>
+                    <View style={styles.kidIcon}>
                       <Feather name="user" size={20} color="#14B8A6" />
                     </View>
-                    <View style={styles.parentInfo}>
-                      <Text style={styles.parentName}>
-                        {getFullName(parent.firstname, parent.lastname)}
+                    <View style={styles.kidInfo}>
+                      <Text style={styles.kidName}>
+                        {getFullName(kid.firstname, kid.lastname)}
                       </Text>
-                      {parent.idNumber && (
-                        <Text style={styles.parentDetail}>ת.ז: {parent.idNumber}</Text>
+                      {kid.idNumber && (
+                        <Text style={styles.kidDetail}>ת.ז: {kid.idNumber}</Text>
                       )}
                     </View>
                     <Feather name="chevron-left" size={20} color="#94A3B8" />
@@ -217,7 +211,7 @@ const KidDetailsPage = () => {
               </View>
             ) : (
               <View style={styles.card}>
-                <Text style={styles.emptyText}>אין הורים מקושרים</Text>
+                <Text style={styles.emptyText}>אין ילדים מקושרים</Text>
               </View>
             )}
           </View>
@@ -329,7 +323,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
-  kidName: {
+  parentName: {
     fontSize: 28,
     fontWeight: '700',
     color: '#1e293b',
@@ -410,10 +404,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
   },
-  parentsContainer: {
+  kidsContainer: {
     gap: 12,
   },
-  parentCard: {
+  kidCard: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 12,
@@ -429,11 +423,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  parentCardPressed: {
+  kidCardPressed: {
     opacity: 0.7,
     transform: [{ scale: 0.98 }],
   },
-  parentIcon: {
+  kidIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -441,17 +435,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  parentInfo: {
+  kidInfo: {
     flex: 1,
     gap: 4,
   },
-  parentName: {
+  kidName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1e293b',
     textAlign: 'right',
   },
-  parentDetail: {
+  kidDetail: {
     fontSize: 13,
     color: '#64748B',
     textAlign: 'right',
@@ -469,5 +463,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default KidDetailsPage;
+export default ParentDetailsPage;
 

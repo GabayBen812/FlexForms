@@ -11,7 +11,10 @@ import { useTranslation } from "react-i18next";
 import { OrganizationsContext } from "@/contexts/OrganizationsContext";
 import { ThemeContext } from "@/contexts/ThemeContext";
 import { useOrganization } from "@/hooks/useOrganization";
-import { handleLogoUpload } from "@/lib/formUtils";
+import { uploadFile } from "@/lib/imageUtils";
+import { updateOrganization } from "@/api/organizations";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 import { resolveTheme } from "@/lib/themeUtils";
 
 const themeColors = ["blue", "dark", "green", "red", "gray"] as const;
@@ -27,10 +30,10 @@ type FormValues = z.infer<typeof schema>;
 export default function GeneralSettings() {
   const { organization } = useContext(OrganizationsContext);
   const { resolvedTheme, setTheme } = useContext(ThemeContext);
-  //@ts-ignore
-  const { updateOrganization, refetchOrganization } = useOrganization();
+  const { refetchOrganization } = useOrganization();
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
 
   const {
     register,
@@ -81,32 +84,71 @@ export default function GeneralSettings() {
   }, [organization]);
 
   const onSubmit = async (data: FormValues) => {
-    if (!organization) return;
-
-    let logoPath: string | undefined =
-      typeof organization.logo === "string" ? organization.logo : undefined;
-
-    if (data.logo && data.logo instanceof File) {
-      logoPath = await handleLogoUpload(data.logo, `${organization.id}/logo`);
+    if (!organization?._id) {
+      toast({
+        title: "Error",
+        description: "Organization information is missing.",
+        variant: "destructive",
+      });
+      return;
     }
 
-    // Add this later, something like this:
-    // const fullImagePath = `${process.env.NEXT_PUBLIC_CDN_URL}/${logoPath}`;
-    const fullImagePath = ""
+    try {
+      // Upload logo to Supabase if it's a File object
+      let logoUrl = typeof organization.logo === "string" ? organization.logo : undefined;
 
-    const updated = await updateOrganization({
-      organizationId: organization.id,
-      name: data.name,
-      logo: fullImagePath,
-      customStyles: {
-        ...organization.customStyles,
-        accentColor: data.theme,
-      },
-    });
+      if (data.logo && data.logo instanceof File) {
+        try {
+          const timestamp = Date.now();
+          const uuid = crypto.randomUUID();
+          const filename = data.logo.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+          // Use the same pattern as kids profile images
+          const path = `uploads/organizations/profile-images/${timestamp}_${uuid}_${filename}`;
+          console.log("Uploading logo to path:", path);
+          logoUrl = await uploadFile(data.logo, path);
+          console.log("Logo uploaded successfully, URL:", logoUrl);
+        } catch (uploadError) {
+          console.error("Error uploading logo:", uploadError);
+          toast({
+            title: "Upload Error",
+            description: "Failed to upload logo. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
 
-    if (updated) {
-      await refetchOrganization();
-      reset({ ...data, logo: undefined });
+      // Update organization with the logo URL
+      const updateResult = await updateOrganization(organization._id, {
+        name: data.name,
+        logo: logoUrl,
+        customStyles: {
+          ...organization.customStyles,
+          accentColor: data.theme,
+        },
+      });
+
+      if (updateResult.status === 200) {
+        // Invalidate and refetch organization data to update the UI
+        await queryClient.invalidateQueries({ queryKey: ["organization"] });
+        await refetchOrganization();
+        reset({ ...data, logo: undefined });
+        
+        toast({
+          title: t("success"),
+          description: "Organization settings have been updated.",
+        });
+      } else {
+        throw new Error("Failed to update organization");
+      }
+    } catch (error: unknown) {
+      console.error("Error updating organization:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      toast({
+        title: "Error",
+        description: `Failed to update organization settings: ${errorMessage}`,
+        variant: "destructive",
+      });
     }
   };
 

@@ -5,7 +5,7 @@ export type Form = {
   title: string;
   description: string;
   fields: FieldConfig[];
-  organizationId: string;
+  organizationId: string | { _id: string; logo?: string; name?: string };
   isActive: boolean;
   code: number;
   paymentSum?: number;

@@ -45,6 +45,9 @@ export class User {
   name!: string;
 
   @Prop({ required: false })
+  logo?: string;
+
+  @Prop({ required: false })
   passwordResetToken?: string;
 
   @Prop({ required: false })

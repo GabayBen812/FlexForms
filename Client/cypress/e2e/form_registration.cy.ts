@@ -102,7 +102,8 @@ describe("Form Registration", () => {
     // Verify data is preserved
     cy.get('[data-cy="field-input-fullName"]').should("have.value", "משתמש טסט");
     cy.get('[data-cy="field-input-email"]').should("have.value", "invalid-email");
-    cy.get('[data-cy="field-input-phone"]').should("have.value", "0501234567");
+    // Phone is now formatted with dashes
+    cy.get('[data-cy="field-input-phone"]').should("have.value", "050-123-4567");
   });
 
   it("handles dynamic fields correctly", () => {

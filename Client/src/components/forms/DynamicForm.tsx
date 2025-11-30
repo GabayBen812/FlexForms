@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ZodObject } from "zod";
 import { Input } from "@/components/ui/Input";
 import { DateInput } from "@/components/ui/date-input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import FieldConfigEditor from "./FieldConfigEditor";
 import SignatureCanvas from "react-signature-canvas";
 import { useRef, useState, useEffect } from "react";
@@ -332,23 +333,38 @@ export default function DynamicForm({
             )}
           />
         );
+      case "phone":
+        return (
+          <Controller
+            name={field.name}
+            control={control}
+            render={({ field: formField }) => (
+              <PhoneInput
+                value={formField.value || ""}
+                onChange={(value) => {
+                  formField.onChange(value);
+                }}
+                onBlur={formField.onBlur}
+                disabled={mode !== "registration"}
+                required={field.isRequired}
+                name={formField.name}
+                data-cy={`field-input-${field.name}`}
+              />
+            )}
+          />
+        );
       case "text":
       case "email":
-      case "phone":
       case "idNumber":
         return (
           <Input
             type={
               field.type === "email"
                 ? "email"
-                : field.type === "phone"
-                ? "tel"
                 : "text"
             }
             inputMode={
-              field.type === "phone"
-                ? "tel"
-                : field.type === "idNumber"
+              field.type === "idNumber"
                 ? "numeric"
                 : undefined
             }
@@ -721,6 +737,24 @@ export default function DynamicForm({
                   {...register(field.name)}
                   disabled={mode !== "registration"}
                   data-cy={`field-input-${field.name}`}
+                />
+              ) : field.type === "phone" ? (
+                <Controller
+                  name={field.name}
+                  control={control}
+                  render={({ field: formField }) => (
+                    <PhoneInput
+                      value={formField.value || ""}
+                      onChange={(value) => {
+                        formField.onChange(value);
+                      }}
+                      onBlur={formField.onBlur}
+                      disabled={mode !== "registration"}
+                      required={field.isRequired}
+                      name={formField.name}
+                      data-cy={`field-input-${field.name}`}
+                    />
+                  )}
                 />
               ) : field.type === "date" ? (
                 // <Input

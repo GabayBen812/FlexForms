@@ -54,7 +54,8 @@ export default function DynamicForm({
   extraButtons,
   isPreview = false,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === "he";
   const sigCanvasRefs = useRef<Record<string, SignatureCanvas | null>>({});
   const [uploadingFields, setUploadingFields] = useState<Record<string, boolean>>({});
   const blobUrlRefs = useRef<Record<string, string>>({});
@@ -408,7 +409,9 @@ export default function DynamicForm({
                         isSelected
                           ? "border-primary bg-primary/5 shadow-sm"
                           : "border-gray-200 hover:border-primary/50 hover:bg-gray-50"
-                      } ${mode !== "registration" ? "opacity-60 cursor-not-allowed" : ""}`}
+                      } ${mode !== "registration" ? "opacity-60 cursor-not-allowed" : ""} ${
+                        isRTL ? "flex-row-reverse" : ""
+                      }`}
                       data-cy={`field-radio-option-${field.name}-${opt.value}`}
                     >
                       <RadioGroupItem
@@ -417,7 +420,9 @@ export default function DynamicForm({
                         data-cy={`field-radio-input-${field.name}-${opt.value}`}
                         className="shrink-0"
                       />
-                      <span className={`text-sm sm:text-base flex-1 ${isSelected ? "font-medium text-primary" : "text-gray-700"}`}>
+                      <span className={`text-sm sm:text-base flex-1 ${isSelected ? "font-medium text-primary" : "text-gray-700"} ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}>
                         {opt.label}
                       </span>
                     </label>
@@ -800,7 +805,9 @@ export default function DynamicForm({
                               isSelected
                                 ? "border-primary bg-primary/5 shadow-sm"
                                 : "border-gray-200 hover:border-primary/50 hover:bg-gray-50"
-                            } ${mode !== "registration" ? "opacity-60 cursor-not-allowed" : ""}`}
+                            } ${mode !== "registration" ? "opacity-60 cursor-not-allowed" : ""} ${
+                              isRTL ? "flex-row-reverse" : ""
+                            }`}
                             data-cy={`field-radio-option-${field.name}-${opt.value}`}
                           >
                             <RadioGroupItem
@@ -809,7 +816,9 @@ export default function DynamicForm({
                               data-cy={`field-radio-input-${field.name}-${opt.value}`}
                               className="shrink-0"
                             />
-                            <span className={`text-sm sm:text-base flex-1 ${isSelected ? "font-medium text-primary" : "text-gray-700"}`}>
+                            <span className={`text-sm sm:text-base flex-1 ${isSelected ? "font-medium text-primary" : "text-gray-700"} ${
+                              isRTL ? "text-right" : "text-left"
+                            }`}>
                               {opt.label}
                             </span>
                           </label>

@@ -27,6 +27,7 @@ import {
   Minus,
   Phone,
   IdCard,
+  CircleDot,
 } from "lucide-react";
 import FieldConfigEditor from "./FieldConfigEditor";
 import MobilePreview from "./MobilePreview";
@@ -108,6 +109,7 @@ const fieldTypeIcons = {
   terms: FileText,
   freeText: FileText,
   select: ListFilter,
+  radio: CircleDot,
   multiselect: ListIcon,
   signature: PenLine,
   image: Image,
@@ -125,7 +127,7 @@ const fieldTypeCategories = {
   },
   selection: {
     label: "Selection Fields",
-    types: ["select", "multiselect", "checkbox"] as const,
+    types: ["select", "radio", "multiselect", "checkbox"] as const,
   },
   media: {
     label: "Media & Files",
@@ -171,6 +173,7 @@ const configCompatibilityKeys: Partial<
   Record<FieldType, "options" | "text">
 > = {
   select: "options",
+  radio: "options",
   multiselect: "options",
   terms: "text",
   freeText: "text",
@@ -184,6 +187,7 @@ const getDefaultConfigForType = (
 ): FieldConfig["config"] | undefined => {
   switch (type) {
     case "select":
+    case "radio":
     case "multiselect":
       return { options: [] };
     case "terms":

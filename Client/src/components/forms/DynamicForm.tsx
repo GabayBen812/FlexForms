@@ -19,6 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
 export interface FieldConfig {
@@ -96,6 +98,7 @@ export default function DynamicForm({
       case "phone":
       case "idNumber":
       case "select":
+      case "radio":
       case "signature":
       case "image":
       case "file":
@@ -281,8 +284,8 @@ export default function DynamicForm({
     fields.forEach((field) => {
       const value = processedData[field.name];
       if (value !== undefined) {
-        // For select fields, preserve empty strings as null if not required
-        if (field.type === "select" && value === "" && !field.isRequired) {
+        // For select and radio fields, preserve empty strings as null if not required
+        if ((field.type === "select" || field.type === "radio") && value === "" && !field.isRequired) {
           cleanedData[field.name] = null;
         } else {
           cleanedData[field.name] = value;
@@ -381,6 +384,48 @@ export default function DynamicForm({
               </option>
             ))}
           </select>
+        );
+      case "radio":
+        return (
+          <Controller
+            name={field.name}
+            control={control}
+            defaultValue=""
+            render={({ field: formField }) => (
+              <RadioGroup
+                value={formField.value || ""}
+                onValueChange={formField.onChange}
+                disabled={mode !== "registration"}
+                className="grid gap-3 sm:gap-2"
+              >
+                {field.config?.options?.map((opt: any, i: number) => {
+                  const isSelected = formField.value === (opt.value || opt.label || "");
+                  return (
+                    <label
+                      key={i}
+                      htmlFor={`${field.name}-${i}`}
+                      className={`flex items-center gap-3 p-3 sm:p-3.5 rounded-lg border-2 cursor-pointer transition-all ${
+                        isSelected
+                          ? "border-primary bg-primary/5 shadow-sm"
+                          : "border-gray-200 hover:border-primary/50 hover:bg-gray-50"
+                      } ${mode !== "registration" ? "opacity-60 cursor-not-allowed" : ""}`}
+                      data-cy={`field-radio-option-${field.name}-${opt.value}`}
+                    >
+                      <RadioGroupItem
+                        value={opt.value || opt.label || ""}
+                        id={`${field.name}-${i}`}
+                        data-cy={`field-radio-input-${field.name}-${opt.value}`}
+                        className="shrink-0"
+                      />
+                      <span className={`text-sm sm:text-base flex-1 ${isSelected ? "font-medium text-primary" : "text-gray-700"}`}>
+                        {opt.label}
+                      </span>
+                    </label>
+                  );
+                })}
+              </RadioGroup>
+            )}
+          />
         );
       case "checkbox":
         return (
@@ -732,6 +777,46 @@ export default function DynamicForm({
                       </Select>
                     );
                   }}
+                />
+              ) : field.type === "radio" ? (
+                <Controller
+                  name={field.name}
+                  control={control}
+                  defaultValue=""
+                  render={({ field: formField }) => (
+                    <RadioGroup
+                      value={formField.value || ""}
+                      onValueChange={formField.onChange}
+                      disabled={mode !== "registration"}
+                      className="grid gap-3 sm:gap-2"
+                    >
+                      {field.config?.options?.map((opt: any, i: number) => {
+                        const isSelected = formField.value === (opt.value || opt.label || "");
+                        return (
+                          <label
+                            key={i}
+                            htmlFor={`${field.name}-form-${i}`}
+                            className={`flex items-center gap-3 p-3 sm:p-3.5 rounded-lg border-2 cursor-pointer transition-all ${
+                              isSelected
+                                ? "border-primary bg-primary/5 shadow-sm"
+                                : "border-gray-200 hover:border-primary/50 hover:bg-gray-50"
+                            } ${mode !== "registration" ? "opacity-60 cursor-not-allowed" : ""}`}
+                            data-cy={`field-radio-option-${field.name}-${opt.value}`}
+                          >
+                            <RadioGroupItem
+                              value={opt.value || opt.label || ""}
+                              id={`${field.name}-form-${i}`}
+                              data-cy={`field-radio-input-${field.name}-${opt.value}`}
+                              className="shrink-0"
+                            />
+                            <span className={`text-sm sm:text-base flex-1 ${isSelected ? "font-medium text-primary" : "text-gray-700"}`}>
+                              {opt.label}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </RadioGroup>
+                  )}
                 />
               ) : field.type === "checkbox" ? (
                 <label

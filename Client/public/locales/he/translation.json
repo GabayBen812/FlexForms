@@ -235,6 +235,7 @@
   "field_type_checkbox": "תיבת סימון",
   "field_type_terms": "שדה תקנון",
   "field_type_select": "שדה בחירה",
+  "field_type_radio": "שדה בחירה עגולה",
   "field_type_multiselect": "שדה בחירה מרובה",
   "field_type_signature": "שדה חתימה",
   "field_type_image": "שדה תמונה",

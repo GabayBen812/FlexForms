@@ -74,7 +74,7 @@ export default function FieldConfigEditor({ field, onChange }: Props) {
     );
   }
 
-  if (field.type === "select" || field.type === "multiselect") {
+  if (field.type === "select" || field.type === "radio" || field.type === "multiselect") {
     return (
       <div className="mt-2 space-y-2">
         <label className="font-semibold">

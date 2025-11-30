@@ -127,6 +127,7 @@ export default function FormRegistration() {
             .boolean()
             .refine((val) => val === true, { message: t("required_field") });
         case "select":
+        case "radio":
           return z.string().min(1, { message: t("required_field") });
         case "multiselect":
           return z.array(z.string()).min(1, { message: t("required_field") });

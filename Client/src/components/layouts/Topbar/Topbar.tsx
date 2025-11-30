@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Hotel, LogOut, Search } from "lucide-react";
+import { Hotel, LogOut, Search, Settings } from "lucide-react";
 import { CommandDialogDemo } from "./WebSearch";
 import { TabBar } from "./TabBar";
 import LanguagePicker from "@/components/LanguagePicker";
@@ -188,6 +188,16 @@ function Topbar() {
           </div>
 
           <div className="flex-1 flex items-center justify-end gap-3">
+            {user?.role === "system_admin" && (
+              <button
+                onClick={() => navigate("/organization-settings")}
+                className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-60 hover:opacity-100 ml-2"
+                title={t("organization_settings") || "הגדרות ארגון"}
+                aria-label={t("organization_settings") || "הגדרות ארגון"}
+              >
+                <Settings size={24} />
+              </button>
+            )}
             <span className="text-sm font-semibold">Version: {APP_VERSION}</span>
             <LanguagePicker />
             <button

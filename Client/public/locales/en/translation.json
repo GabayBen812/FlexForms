@@ -190,6 +190,7 @@
   "field_type_checkbox": "Checkbox Field",
   "field_type_terms": "Terms Field",
   "field_type_select": "Select Field",
+  "field_type_radio": "Radio Button Field",
   "field_type_multiselect": "Multi Select Field",
   "field_type_signature": "Signature Field",
   "field_type_image": "Image Field",

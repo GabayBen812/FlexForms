@@ -473,7 +473,13 @@ const CourseAttendancePage = () => {
 
                 return (
                   <View style={styles.participantCard}>
-                    <View style={styles.participantHeader}>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.participantHeader,
+                        pressed && styles.participantHeaderPressed,
+                      ]}
+                      onPress={() => navigation.navigate('KidDetails', { kidId: item.kidId })}
+                    >
                       <View style={styles.participantInfoContainer}>
                         <ProfileImage
                           imageUrl={item.profileImageUrl}
@@ -487,7 +493,8 @@ const CourseAttendancePage = () => {
                           <Text style={styles.participantName}>{item.kidName}</Text>
                         </View>
                       </View>
-                    </View>
+                      <Feather name="chevron-left" size={20} color="#94A3B8" />
+                    </Pressable>
 
                     <View style={styles.participantControls}>
                       {/* Modern Switch-style Toggle */}
@@ -583,7 +590,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backButton: {
-    alignSelf: 'flex-start',
+    alignSelf: 'flex-end',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 10,
@@ -734,12 +741,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   participantHeader: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  participantHeaderPressed: {
+    opacity: 0.7,
+    backgroundColor: '#E0F2FE',
   },
   participantInfoContainer: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 10,
     flex: 1,
@@ -763,11 +780,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   nameBadge: {
+    flex: 1,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
-    flex: 1,
     alignItems: 'center',
   },
   participantName: {

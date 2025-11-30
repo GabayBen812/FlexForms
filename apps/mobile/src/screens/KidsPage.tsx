@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
 
 import { api } from '../api/client';
 import type { KidsStackParamList } from '../navigation/AppNavigator';
@@ -63,16 +64,6 @@ const KidsPage = () => {
     return fullName || 'ללא שם';
   };
 
-  const getKidInitials = (kid: Kid) => {
-    const first = (kid.firstName ?? kid.firstname)?.toString().trim();
-    const last = (kid.lastName ?? kid.lastname)?.toString().trim();
-    
-    const firstInitial = first?.[0]?.toUpperCase() || '';
-    const lastInitial = last?.[0]?.toUpperCase() || '';
-    
-    return (firstInitial + lastInitial) || '?';
-  };
-
   const handleImageError = (imageUrl: string) => {
     setFailedImages((prev) => new Set(prev).add(imageUrl));
   };
@@ -113,13 +104,24 @@ const KidsPage = () => {
               contentContainerStyle={styles.listContent}
               renderItem={({ item }) => {
                 const shouldShowFallback = !item.profileImageUrl || failedImages.has(item.profileImageUrl);
+                const kidId = String(item._id ?? item.id ?? '');
                 
                 return (
-                  <View style={styles.kidCard}>
+                  <Pressable
+                    onPress={() => {
+                      if (kidId) {
+                        navigation.navigate('KidDetails', { kidId });
+                      }
+                    }}
+                    style={({ pressed }) => [
+                      styles.kidCard,
+                      pressed && styles.kidCardPressed,
+                    ]}
+                  >
                     <View style={styles.kidCardContent}>
                       {shouldShowFallback ? (
                         <View style={styles.kidImageFallback}>
-                          <Text style={styles.kidImageFallbackText}>{getKidInitials(item)}</Text>
+                          <Feather name="user" size={28} color="#94A3B8" />
                         </View>
                       ) : (
                         <Image
@@ -130,7 +132,7 @@ const KidsPage = () => {
                       )}
                       <Text style={styles.kidName}>{getKidName(item)}</Text>
                     </View>
-                  </View>
+                  </Pressable>
                 );
               }}
             />
@@ -214,6 +216,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
+  kidCardPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+  },
   kidCardContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -229,14 +235,11 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#14B8A6',
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  kidImageFallbackText: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '600',
   },
   kidName: {
     flex: 1,

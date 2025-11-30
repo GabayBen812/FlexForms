@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -210,7 +210,11 @@ const HomeScreen = () => {
         <View style={styles.glowTop} />
         <View style={styles.glowBottom} />
 
-        <View style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
+        >
           <Text style={styles.devLabel}>HomeScreen</Text>
           <View style={styles.header}>
             <Pressable
@@ -288,7 +292,7 @@ const HomeScreen = () => {
               labelStyle={styles.logoutLabel}
             />
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -301,10 +305,13 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  container: {
+  scrollView: {
     flex: 1,
+  },
+  container: {
     paddingHorizontal: 24,
     paddingVertical: 32,
+    paddingBottom: 24,
   },
   header: {
     flexDirection: 'row',
@@ -372,7 +379,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   logoutSection: {
-    marginTop: 'auto',
+    marginTop: 20,
     alignItems: 'center',
     paddingBottom: 24,
   },

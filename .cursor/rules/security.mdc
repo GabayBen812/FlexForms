@@ -1,0 +1,11 @@
+---
+description: Security best practices and guidelines
+alwaysApply: true
+---
+
+## Security
+
+- Never commit sensitive data (API keys, tokens, passwords)
+- Always validate user input on the server side
+- Use environment variables for configuration
+- Sanitize user inputs before rendering

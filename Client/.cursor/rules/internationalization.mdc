@@ -1,0 +1,11 @@
+---
+description: Internationalization patterns for Client
+alwaysApply: false
+---
+
+## Internationalization
+
+- All user-facing text must be internationalized using i18next
+- Use translation keys in the format: `namespace:key` (e.g., `common:save`)
+- Keep translation keys organized by feature/namespace
+- Support both RTL (Hebrew) and LTR (English) layouts

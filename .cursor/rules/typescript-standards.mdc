@@ -1,0 +1,27 @@
+---
+description: TypeScript coding standards and conventions
+alwaysApply: true
+---
+
+## TypeScript Standards
+
+- Use strict TypeScript configuration
+- Always define explicit types for function parameters and return values
+- Prefer interfaces over types for object shapes that might be extended
+- Use type inference only when the type is obvious from context
+- Avoid `any` - use `unknown` if the type is truly unknown, then narrow it
+
+## File Naming Conventions
+
+- React components: PascalCase (e.g., `UserProfile.tsx`)
+- Hooks: camelCase with `use` prefix (e.g., `useAuth.ts`)
+- Utilities: camelCase (e.g., `formUtils.ts`)
+- Types/interfaces: PascalCase (e.g., `User.ts`)
+- Constants: UPPER_SNAKE_CASE (e.g., `API_BASE_URL`)
+
+## Folder Organization
+
+- Group related files by feature, not by type
+- Keep feature-specific files together (components, hooks, types, utils)
+- Shared utilities go in `/lib` or `/utils`
+- API-related code goes in `/api` with clear subfolder structure

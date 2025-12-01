@@ -1,0 +1,50 @@
+---
+description: React and TypeScript code style for Client directory
+alwaysApply: false
+---
+
+## React/TypeScript (Client)
+
+- Use functional components with hooks
+- Follow React hooks rules strictly
+- Use TypeScript for all components and utilities
+- Prefer named exports over default exports
+- Component files should use PascalCase (e.g., `UserProfile.tsx`)
+- Use React Query for all server state management
+- Use React Query cache
+- Regarding state: avoid duplicate states, prefer derived state over local
+- Invalidate queries instead of manual refetch
+- Single source of truth
+- Keep components small and focused - extract logic into custom hooks when needed
+- Use React.memo() sparingly, only when performance profiling shows it's needed
+
+## State Management
+
+- Server state: React Query (@tanstack/react-query)
+- Local component state: useState/useReducer
+- Form state: React Hook Form
+- Global client state: Context API (sparingly, only when truly needed)
+
+## Common Patterns
+
+### React Component with API
+```typescript
+// Use React Query for data fetching
+const { data, isLoading, error } = useQuery({
+  queryKey: ['users'],
+  queryFn: () => fetchAllUsers()
+});
+
+// Use mutations for data updates
+const mutation = useMutation({
+  mutationFn: updateUser,
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+  }
+});
+```
+
+### Form Handling
+- Use React Hook Form with Zod validation
+- Use `@hookform/resolvers` for Zod integration
+- Extract form logic into custom hooks when reused

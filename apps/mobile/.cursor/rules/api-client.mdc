@@ -1,0 +1,19 @@
+---
+description: API client patterns and best practices for Mobile
+alwaysApply: false
+---
+
+## API Client
+
+- Use the centralized API client (`api/client.ts` for Mobile) for all HTTP requests
+- Organize API functions by feature in subfolders
+- Always handle errors appropriately
+- Use React Query hooks for data fetching and mutations
+- Use SecureStore for auth cookies, handle cookie management in API interceptors
+
+## Error Handling
+
+- Always handle errors at the appropriate level
+- Use React Query's error handling for API errors
+- Display user-friendly error messages (internationalized)
+- Log errors appropriately for debugging

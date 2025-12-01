@@ -1,0 +1,76 @@
+---
+description: React Native and TypeScript code style for Mobile app
+alwaysApply: false
+---
+
+## React Native/TypeScript (Mobile)
+
+- Use functional components with hooks (same as Client)
+- Follow React hooks rules strictly
+- Use TypeScript for all components and utilities
+- Prefer named exports over default exports
+- Component files should use PascalCase (e.g., `HomeScreen.tsx`)
+- Use React Query for all server state management (same patterns as Client)
+- Always use SafeAreaView for screens to handle notches/status bars
+- Use Pressable with pressed states for interactive elements (not TouchableOpacity)
+- Type navigation params using React Navigation's type system
+- Keep components focused on mobile screen sizes (320px - 428px width)
+
+## State Management
+
+- Server state: React Query (@tanstack/react-query)
+- Local component state: useState/useReducer
+- Form state: React Hook Form
+- Global client state: Context API (sparingly, only when truly needed)
+
+## Common Patterns
+
+### React Native Screen with API
+```typescript
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
+import { StyleSheet } from 'react-native';
+
+const HomeScreen = () => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['employees', 'count'],
+    queryFn: fetchEmployeesCount,
+  });
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Screen content */}
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 24,
+  },
+});
+```
+
+### React Navigation Pattern
+```typescript
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { HomeStackParamList } from '../navigation/AppNavigator';
+
+const MyScreen = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
+  
+  const handleNavigate = () => {
+    navigation.navigate('EmployeesPage');
+  };
+  
+  return (/* ... */);
+};
+```
+
+### Form Handling
+- Use React Hook Form with Zod validation
+- Use `@hookform/resolvers` for Zod integration
+- Extract form logic into custom hooks when reused
+- Use native TextInput components, ensure proper keyboard handling and safe area considerations

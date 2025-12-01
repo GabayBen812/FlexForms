@@ -1,0 +1,23 @@
+---
+description: Styling guidelines for Mobile React Native application
+alwaysApply: false
+---
+
+## Styling (Mobile - React Native)
+
+- Use NativeWind for Tailwind-like utility classes (when convenient)
+- Use StyleSheet.create() for component styles (preferred for performance)
+- Use Gluestack UI components for complex UI elements (not shadcn/ui)
+- Support RTL layouts - use `textAlign: 'right'` and `flexDirection: 'row-reverse'` for Hebrew
+- Use SafeAreaView for all screens to handle device notches and status bars
+- Ensure touch targets are at least 44x44 points for accessibility
+- Use elevation and shadowColor for Android, shadowOpacity/shadowRadius for iOS
+- Prefer flexbox layouts - mobile screens are constrained (320-428px width)
+- Use LinearGradient from expo-linear-gradient for gradient buttons/backgrounds
+
+## Performance Considerations
+
+- Use StyleSheet.create() outside render for better performance
+- Avoid inline styles in render functions
+- Use FlatList/ScrollView for long lists, implement proper keyExtractor
+- Consider image optimization and lazy loading for mobile data constraints

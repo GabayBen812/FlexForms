@@ -1,0 +1,93 @@
+---
+description: Core project overview, developer profile, and communication preferences
+alwaysApply: true
+---
+
+# Paradize Project Overview
+
+## The profile of the developers using Cursor
+The developers using the cursor IDE are professional developers so they understand code very well. You can ask them questions about architecture if you're not sure.
+Very important for us is that you do not do anything that we won't fully understand.
+Always talk to the developer in English.
+and ask him questions.
+**TREAT ME AS AN EXPERT.**
+
+## What is Paradize?
+
+Paradize is a comprehensive multi-tenant ERP/CRM platform specifically designed for education organizations. It provides a complete management solution for kindergartens, schools, courses, and educational institutions.
+
+### Platform Purpose
+Paradize helps education organizations manage:
+- **Student/Child Management**: Enrollment, attendance tracking, profiles, and records
+- **Course Management**: Course creation, scheduling, sessions, and enrollments
+- **Employee Management**: Teachers, instructors, coaches, and staff management
+- **Parent/Contact Management**: Communication with parents and guardians
+- **Financial Management**: Invoicing, payments, and financial tracking
+- **Forms & Requests**: Custom form creation and request management
+- **Messaging & Communication**: Internal chat and communication tools
+- **Rooms & Facilities**: Room booking and facility management
+- **Seasons & Scheduling**: Academic seasons, schedules, and calendar management
+- **Accounts & Organizations**: Multi-tenant organization management
+
+### Technology Stack
+Paradize is built with:
+- **Frontend**: React 18+ with TypeScript, Vite, Tailwind CSS, Radix UI, and shadcn/ui
+- **Backend**: NestJS with Express, MongoDB with Mongoose
+- **Mobile**: React Native with Expo (SDK 54), NativeWind, Gluestack UI
+- **State Management**: React Query (@tanstack/react-query) for server state
+- **Analytics**: Mixpanel, Google Analytics
+- **Communication**: SendGrid for email services
+
+### Key Features
+- Multi-tenant architecture (each organization has isolated data)
+- JWT-based authentication with organization scoping
+- Internationalization support (English and Hebrew with RTL)
+- Feature flags for gradual feature rollouts
+- Real-time updates and notifications
+- Mobile app for iOS and Android
+
+**Multi-tenant:** All endpoints must use the organizationId from the JWT token to ensure data isolation between organizations.
+
+**Note:** When "FF" is written (to the agent), it usually refers to FeatureFlag.
+
+## The target audience of the project
+The project currently is for:
+Kindergarten, teachers, courses instructors, coaches.
+
+## Cursor preferences behavior
+- Ask me questions before you start (always in English)
+- Ask me if anything is unclear (always in English)
+- Before writing code, list assumptions
+- Before writing code, list missing information
+- Ask for confirmation before applying major changes
+- Always talk to the developer in English.
+
+## Language Rules
+- Always respond in English unless explicitly asked otherwise.
+- Even if the user writes in Hebrew or any other language, reply in English.
+
+## Project Structure
+
+### Client (`/Client`)
+- **Frontend Framework:** React 18+ with TypeScript
+- **Build Tool:** Vite
+- **Styling:** Tailwind CSS with Radix UI components - also shadcn/ui
+- **State Management:** React Query (@tanstack/react-query) for server state
+- **Routing:** React Router v7
+- **Internationalization:** i18next with support for English (en) and Hebrew (he)
+- **Testing:** Cypress for E2E testing
+
+### Server (`/Server`)
+- **Backend Framework:** NestJS with Express
+- **Database:** MongoDB with Mongoose
+- **Authentication:** JWT-based authentication
+- **Validation:** class-validator and class-transformer
+
+### Mobile (`/apps/mobile`)
+- **Framework:** React Native with Expo (SDK 54)
+- **Styling:** NativeWind (Tailwind for React Native) + StyleSheet API
+- **UI Components:** Gluestack UI (not shadcn/ui)
+- **State Management:** React Query (@tanstack/react-query) for server state
+- **Navigation:** React Navigation (Native Stack + Bottom Tabs)
+- **Internationalization:** Support for English (en) and Hebrew (he) with RTL
+- **Authentication:** JWT via SecureStore cookies

@@ -1,0 +1,35 @@
+---
+description: Dependencies to prefer and avoid
+alwaysApply: true
+---
+
+## Dependencies to Prefer
+
+- **UI Components (Client):** shadcn/ui or Radix UI primitives
+- **UI Components (Mobile):** Gluestack UI, React Native core components
+- **Forms:** React Hook Form + Zod
+- **HTTP Client:** Axios (via apiClient)
+- **Date Handling:** date-fns or dayjs
+- **Icons (Client):** lucide-react
+- **Icons (Mobile):** @expo/vector-icons (Feather, etc.)
+- **Animations (Client):** framer-motion (when needed)
+- **Animations (Mobile):** react-native-reanimated (already included)
+
+## Dependencies to Avoid
+
+- Avoid adding new state management libraries (use React Query + Context)
+- Avoid jQuery or other DOM manipulation libraries
+- Avoid class-based React components
+- Avoid `any` in production code
+
+## Performance Considerations
+
+- Use React Query's caching effectively
+- Implement proper loading and error states
+- Lazy load routes when appropriate
+- Optimize images and assets
+- Use React.memo() only when profiling shows benefit
+- Mobile: Use StyleSheet.create() outside render for better performance
+- Mobile: Avoid inline styles in render functions
+- Mobile: Use FlatList/ScrollView for long lists, implement proper keyExtractor
+- Mobile: Consider image optimization and lazy loading for mobile data constraints

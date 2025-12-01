@@ -1,0 +1,18 @@
+---
+description: Git workflow and commit message standards
+alwaysApply: true
+---
+
+## Git Workflow
+
+- Write small simple commit messages
+- Keep commits focused and atomic
+- Use feature branches for new work
+- Update documentation when adding features
+
+## Documentation
+
+- Document complex business logic
+- Add JSDoc comments for public APIs
+- Keep README files updated
+- Document environment variables needed

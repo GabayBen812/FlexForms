@@ -1,0 +1,18 @@
+---
+description: API client patterns and best practices for Client
+alwaysApply: false
+---
+
+## API Client
+
+- Use the centralized API client (`apiClient.ts` for Client) for all HTTP requests
+- Organize API functions by feature in subfolders
+- Always handle errors appropriately
+- Use React Query hooks for data fetching and mutations
+
+## Error Handling
+
+- Always handle errors at the appropriate level
+- Use React Query's error handling for API errors
+- Display user-friendly error messages (internationalized)
+- Log errors appropriately for debugging

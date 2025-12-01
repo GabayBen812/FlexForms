@@ -1,0 +1,13 @@
+---
+description: Feature flag usage patterns and best practices
+alwaysApply: true
+---
+
+## Feature Flags
+
+- Use the `useFeatureFlag(key)` hook for single-flag checks and `useFeatureFlags(keys[])` when multiple flags are needed.
+- Feature flag keys live on each route/component handle; derive the relevant keys once (e.g., via `useMemo`) and feed them into the hook.
+- The hooks share a cache and automatically scope checks by `organizationId`, so reuse them everywhere (routing, menus, tab bars, dialogs) instead of bespoke logic.
+- When filtering UI (like the Topbar command palette), only show entries whose `handle.featureFlag` resolves to `true`, and default to visible if no flag is attached.
+
+**Note:** When "FF" is written, it usually refers to FeatureFlag.

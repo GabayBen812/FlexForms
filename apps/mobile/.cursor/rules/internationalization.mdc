@@ -1,0 +1,9 @@
+---
+description: Internationalization patterns for Mobile app
+alwaysApply: false
+---
+
+## Internationalization
+
+- Support for English (en) and Hebrew (he) with RTL
+- Ensure text alignment and flex direction support RTL properly

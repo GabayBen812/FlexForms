@@ -1,0 +1,19 @@
+---
+description: Date formatting standards - always use DD/MM/YYYY format
+alwaysApply: true
+---
+
+## Date Formatting
+
+- **All dates displayed in the UI must use DD/MM/YYYY format**
+- Use the centralized date utilities from `@/lib/dateUtils`:
+  - `formatDateForDisplay()` - Formats dates as DD/MM/YYYY
+  - `formatDateTimeForDisplay()` - Formats dates as DD/MM/YYYY HH:mm
+  - `isDateValue()` - Checks if a value is a date
+- **Never format dates directly** - always use these utilities
+- When defining table columns with date fields, mark them with `meta: { isDate: true }`
+- The data-table component automatically formats dates when:
+  1. Column is marked with `meta: { isDate: true }`, OR
+  2. The value matches date patterns (detected automatically via `isDateValue()`)
+- **Server/DB date format**: Dates are stored as ISO strings in the database - do NOT change this
+- **Client display format**: Always DD/MM/YYYY for dates, DD/MM/YYYY HH:mm for date-time

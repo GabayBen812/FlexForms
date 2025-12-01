@@ -1,0 +1,13 @@
+---
+description: Styling guidelines for Client web application
+alwaysApply: false
+---
+
+## Styling (Client - Web)
+
+- Use shadcn/ui and Radix UI components
+- Use Tailwind CSS utility classes
+- Prefer Radix UI components for complex UI elements
+- Use Tailwind's RTL support for Hebrew language support
+- Keep custom CSS minimal - use Tailwind configuration for design tokens
+- Use `cn()` utility (from `clsx` + `tailwind-merge`) for conditional classes

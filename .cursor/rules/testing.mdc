@@ -1,0 +1,11 @@
+---
+description: Testing standards and best practices
+alwaysApply: true
+---
+
+## Testing
+
+- Write E2E tests with Cypress for critical user flows
+- Test file naming: `*.cy.ts` (e.g., `form_registration.cy.ts`)
+- Focus tests on user interactions and business logic
+- Keep tests maintainable and readable

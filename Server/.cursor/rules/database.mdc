@@ -1,0 +1,13 @@
+---
+description: Database patterns and best practices for MongoDB/Mongoose
+alwaysApply: false
+---
+
+## Database
+
+- Use Mongoose schemas for all database models
+- Always validate data before saving to database
+- Use transactions for operations that must be atomic
+- Index frequently queried fields
+- All data in the type of files should be saved in Supabase
+- Avoid using base64 and saving them in the DB!

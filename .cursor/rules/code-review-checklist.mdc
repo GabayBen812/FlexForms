@@ -1,0 +1,16 @@
+---
+description: Code review checklist for quality assurance
+alwaysApply: true
+---
+
+## Code Review Checklist
+
+- [ ] TypeScript types are properly defined
+- [ ] All user-facing text is internationalized
+- [ ] API errors are handled appropriately
+- [ ] Components are properly typed
+- [ ] No console.log statements in production code
+- [ ] Environment variables are used (not hardcoded)
+- [ ] DTOs are used for API endpoints (server)
+- [ ] Input validation is present (server)
+- [ ] Authentication/authorization is checked (server)

@@ -50,7 +50,8 @@ import Rooms from "@/pages/Rooms";
 import Courses from "@/pages/Courses";
 import CreateCourse from "@/pages/Courses/createPage";
 import CourseManagement from "@/pages/Courses/managePage";
-import { DoorOpen } from "lucide-react";
+import { DoorOpen, Calendar } from "lucide-react";
+import SeasonsPage from "@/pages/Seasons";
 
 export const router = createBrowserRouter([
   {
@@ -263,6 +264,16 @@ export const router = createBrowserRouter([
           icon: TasksIcon,
           showInSidebar: true,
           featureFlag: "IS_SHOW_TASKS"
+        },
+      },
+      {
+        path: "seasons",
+        element: <SeasonsPage />,
+        handle: {
+          title: "seasons",
+          icon: Calendar,
+          showInSidebar: true,
+          featureFlag: "IS_SHOW_SEASONS"
         },
       },
       {

@@ -11,13 +11,7 @@ import { useAuth } from '../providers/AuthProvider';
 import type { HomeStackParamList } from '../navigation/AppNavigator';
 import { courseAttendanceApi } from '../api/course-attendance';
 import { fetchChatGroups, fetchChatMessages, type ChatGroup, type ChatMessage } from '../api/chat';
-
-const mockEmployeeReports = [
-  { name: 'רות', checkInTime: '07:55', hasCheckedIn: true },
-  { name: 'מיכל', checkInTime: null, hasCheckedIn: false },
-  { name: 'דני', checkInTime: '08:10', hasCheckedIn: true },
-];
-
+import { fetchAttendanceByOrganization, type AttendanceShift } from '../api/attendance';
 
 const mockFinanceData = {
   income: 24650,
@@ -62,33 +56,93 @@ const TodayInKindergartenCard = ({ onPress, arrived, notArrived }: TodayInKinder
 
 type EmployeeReportsCardProps = {
   onPress?: () => void;
+  currentDate: string; // DD/MM/YYYY format
+  organizationId?: string;
 };
 
-const EmployeeReportsCard = ({ onPress }: EmployeeReportsCardProps) => (
-  <Pressable
-    onPress={onPress}
-    disabled={!onPress}
-    style={({ pressed }) => [
-      styles.dashboardCard,
-      styles.employeesCard,
-      onPress && pressed && styles.dashboardCardPressed,
-    ]}
-  >
-    <Text style={styles.dashboardCardTitle}>דיווחי עובדים היום</Text>
-    <View style={styles.employeeReportsList}>
-      {mockEmployeeReports.slice(0, 3).map((employee, index) => (
-        <View key={index} style={styles.employeeReportItem}>
-          <Text style={styles.employeeReportName}>{employee.name}</Text>
-          <Text style={styles.employeeReportStatus}>
-            {employee.hasCheckedIn
-              ? `הגיעה ${employee.checkInTime}`
-              : 'טרם דווח'}
-          </Text>
-        </View>
-      ))}
-    </View>
-  </Pressable>
-);
+const EmployeeReportsCard = ({ onPress, currentDate, organizationId }: EmployeeReportsCardProps) => {
+  const { data: attendanceData = [], isLoading } = useQuery({
+    queryKey: ['employee-attendance', organizationId],
+    queryFn: () => {
+      if (!organizationId) {
+        return Promise.resolve([]);
+      }
+      return fetchAttendanceByOrganization(organizationId);
+    },
+    enabled: !!organizationId,
+  });
+
+  // Filter to today's records and transform data
+  const todayEmployeeReports = useMemo(() => {
+    if (!attendanceData || attendanceData.length === 0) {
+      return [];
+    }
+
+    // Filter to today's records (reportedDate is in DD/MM/YYYY format)
+    const todayRecords = attendanceData.filter((shift) => shift.reportedDate === currentDate);
+
+    // Transform to display format
+    const transformed = todayRecords.map((shift) => {
+      const hasCheckedIn = !!shift.startTime;
+      // Extract HH:MM from HH:MM:SS format
+      const checkInTime = shift.startTime ? shift.startTime.substring(0, 5) : null;
+
+      return {
+        name: shift.employeeName,
+        checkInTime,
+        hasCheckedIn,
+      };
+    });
+
+    // Sort by check-in time (earliest first), then by name
+    transformed.sort((a, b) => {
+      if (a.hasCheckedIn && !b.hasCheckedIn) return -1;
+      if (!a.hasCheckedIn && b.hasCheckedIn) return 1;
+      if (a.hasCheckedIn && b.hasCheckedIn && a.checkInTime && b.checkInTime) {
+        return a.checkInTime.localeCompare(b.checkInTime);
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+    return transformed;
+  }, [attendanceData, currentDate]);
+
+  const displayReports = todayEmployeeReports.slice(0, 3);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      style={({ pressed }) => [
+        styles.dashboardCard,
+        styles.employeesCard,
+        onPress && pressed && styles.dashboardCardPressed,
+      ]}
+    >
+      <Text style={styles.dashboardCardTitle}>דיווחי עובדים היום</Text>
+      <View style={styles.employeeReportsList}>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#64748B" />
+          </View>
+        ) : displayReports.length === 0 ? (
+          <Text style={styles.emptyMessageText}>אין דיווחים היום</Text>
+        ) : (
+          displayReports.map((employee, index) => (
+            <View key={index} style={styles.employeeReportItem}>
+              <Text style={styles.employeeReportName}>{employee.name}</Text>
+              <Text style={styles.employeeReportStatus}>
+                {employee.hasCheckedIn
+                  ? `הגיעה ${employee.checkInTime}`
+                  : 'טרם דווח'}
+              </Text>
+            </View>
+          ))
+        )}
+      </View>
+    </Pressable>
+  );
+};
 
 type ParentMessagesCardProps = {
   onPress?: () => void;
@@ -320,29 +374,13 @@ const HomeScreen = () => {
               arrived={kidsAttendance.arrived}
               notArrived={kidsAttendance.notArrived}
             />
-            <EmployeeReportsCard onPress={navigateToEmployees} />
+            <EmployeeReportsCard 
+              onPress={navigateToEmployees} 
+              currentDate={currentDayData.formattedDate}
+              organizationId={user?.organizationId}
+            />
             <ParentMessagesCard onPress={navigateToMessages} />
             <MonthlyFinanceCard onPress={navigateToFinance} />
-          </View>
-
-          <View style={styles.financeCard}>
-            <Text style={styles.financeCardTitle}>המצב הפיננסי</Text>
-            <View style={styles.financeItemsRow}>
-              <View style={styles.financeItem}>
-                <Text style={styles.financeItemLabel}>תשלומים שהתקבלו</Text>
-                <Text style={styles.financeItemValue}>₪18,200</Text>
-              </View>
-              <View style={styles.financeItem}>
-                <Text style={styles.financeItemLabel}>הכנסות החודש</Text>
-                <Text style={styles.financeItemValue}>₪24,650</Text>
-              </View>
-              <View style={styles.financeItem}>
-                <Text style={[styles.financeItemLabel, styles.financeItemLabelWarning]}>
-                  תשלומים שלא עברו
-                </Text>
-                <Text style={[styles.financeItemValue, styles.financeItemValueWarning]}>₪3,400</Text>
-              </View>
-            </View>
           </View>
 
           <View style={styles.actionsCard}>
@@ -626,57 +664,6 @@ const styles = StyleSheet.create({
   },
   financeSummaryValueProfit: {
     color: '#10B981',
-  },
-  financeCard: {
-    width: '100%',
-    paddingHorizontal: 24,
-    paddingVertical: 26,
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000000',
-    shadowOpacity: 0.08,
-    shadowRadius: 26,
-    shadowOffset: { width: 0, height: 20 },
-    elevation: 14,
-    marginBottom: 20,
-  },
-  financeCardTitle: {
-    textAlign: 'right',
-    color: '#1e293b',
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 18,
-  },
-  financeItemsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  financeItem: {
-    flex: 1,
-    alignItems: 'flex-end',
-    paddingHorizontal: 12,
-  },
-  financeItemLabel: {
-    color: '#64748B',
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 6,
-    textAlign: 'right',
-  },
-  financeItemValue: {
-    color: '#1e293b',
-    fontSize: 20,
-    fontWeight: '700',
-    textAlign: 'right',
-  },
-  financeItemLabelWarning: {
-    color: '#E85A3F',
-  },
-  financeItemValueWarning: {
-    color: '#FF6B4D',
   },
   actionsCard: {
     width: '100%',

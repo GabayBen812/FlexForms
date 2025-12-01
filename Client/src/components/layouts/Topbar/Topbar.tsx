@@ -13,6 +13,13 @@ import { updateOrganizationName } from "@/api/organizations";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { t } from "i18next";
 import { useNavigate } from "react-router-dom";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function Topbar() {
   const { organization, isOrganizationFetching, refetchOrganization } = useOrganization();
@@ -22,10 +29,14 @@ function Topbar() {
   const [name, setName] = useState(organization?.name || "");
   const [loading, setLoading] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [selectedSeason, setSelectedSeason] = useState<string>("");
   const { toast } = useToast();
   
   // Allow editing if user is system_admin OR if feature flag is enabled
   const canEdit = useFeatureFlag("is_edit_org_name").isEnabled || user?.role === "system_admin";
+  
+  // Check if seasons feature flag is enabled
+  const showSeasons = useFeatureFlag("IS_SHOW_SEASONS").isEnabled;
 
   // Keyboard shortcut: Cmd/Ctrl+K to open command palette
   useEffect(() => {
@@ -188,6 +199,22 @@ function Topbar() {
           </div>
 
           <div className="flex-1 flex items-center justify-end gap-3">
+            {showSeasons && (
+              <Select 
+                value={selectedSeason} 
+                onValueChange={setSelectedSeason}
+              >
+                <SelectTrigger 
+                  disabled={true}
+                  className="w-[160px] h-9 border-muted bg-muted/30 transition-colors"
+                >
+                  <SelectValue placeholder={t("select_season") || "בחר עונה"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* Empty for now */}
+                </SelectContent>
+              </Select>
+            )}
             {user?.role === "system_admin" && (
               <button
                 onClick={() => navigate("/organization-settings")}

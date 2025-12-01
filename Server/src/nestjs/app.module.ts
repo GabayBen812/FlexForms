@@ -28,6 +28,7 @@ import { InvoiceModule } from './modules/invoice.module';
 import { EmailModule } from './modules/email.module';
 import { CourseModule } from './modules/course.module';
 import { CourseAttendanceModule } from './modules/course-attendance.module';
+import { SeasonModule } from './modules/season.module';
 dotenv.config();
 @Module({
   imports: [
@@ -55,7 +56,8 @@ dotenv.config();
     InvoiceModule,
     EmailModule,
     CourseModule,
-    CourseAttendanceModule
+    CourseAttendanceModule,
+    SeasonModule
   ],
   controllers: [AuthController, HealthController],
   providers: [AuthService],

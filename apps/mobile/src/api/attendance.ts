@@ -38,6 +38,17 @@ export type AttendanceRecord = {
   timestamp: string; // ISO 8601 format
 };
 
+export type AttendanceShift = {
+  _id?: string;
+  employeeName: string;
+  reportedDate: string; // DD/MM/YYYY
+  startTime: string; // HH:MM:SS
+  pauseTime: string | null; // HH:MM:SS
+  resumeTime: string | null; // HH:MM:SS
+  stopTime: string | null; // HH:MM:SS
+  totalTime: string; // HH:MM:SS
+};
+
 export async function fetchAttendanceRecords(
   userId: string,
   date: string // ISO date string (YYYY-MM-DD)
@@ -53,6 +64,15 @@ export async function fetchAttendanceRecords(
 
 export async function recordShiftAction(payload: ShiftActionPayload): Promise<ShiftActionResponse> {
   const response = await api.post<ShiftActionResponse>('/emp/attendance', payload);
+  return response.data;
+}
+
+export async function fetchAttendanceByOrganization(
+  organizationId: string
+): Promise<AttendanceShift[]> {
+  const response = await api.get<AttendanceShift[]>(
+    `/emp/attendance/organization/${organizationId}`
+  );
   return response.data;
 }
 

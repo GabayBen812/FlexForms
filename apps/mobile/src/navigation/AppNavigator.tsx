@@ -17,6 +17,8 @@ import KidDetailsPage from '../screens/KidDetailsPage';
 import ParentDetailsPage from '../screens/ParentDetailsPage';
 import MessagesPage from '../screens/MessagesPage';
 import FinancePage from '../screens/FinancePage';
+import IncomeListPage from '../screens/IncomeListPage';
+import ExpensesListPage from '../screens/ExpensesListPage';
 import CoursesPage from '../screens/CoursesPage';
 import CourseAttendancePage from '../screens/CourseAttendancePage';
 
@@ -58,6 +60,8 @@ export type MessagesStackParamList = {
 
 export type FinanceStackParamList = {
   FinancePage: undefined;
+  IncomeList: undefined;
+  ExpensesList: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -109,6 +113,8 @@ const MessagesStackNavigator = () => (
 const FinanceStackNavigator = () => (
   <FinanceStack.Navigator screenOptions={{ headerShown: false }}>
     <FinanceStack.Screen name="FinancePage" component={FinancePage} />
+    <FinanceStack.Screen name="IncomeList" component={IncomeListPage} />
+    <FinanceStack.Screen name="ExpensesList" component={ExpensesListPage} />
   </FinanceStack.Navigator>
 );
 

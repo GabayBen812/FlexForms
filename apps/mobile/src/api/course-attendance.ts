@@ -22,6 +22,11 @@ export type CreateCourseAttendanceDto = {
   notes?: string;
 };
 
+export type AggregatedAttendance = {
+  arrived: number;
+  notArrived: number;
+};
+
 export const courseAttendanceApi = {
   fetchByCourseAndDate: async (
     courseId: string,
@@ -43,6 +48,16 @@ export const courseAttendanceApi = {
       data
     );
     return response.data;
+  },
+
+  fetchAggregatedAttendance: async (
+    date: string
+  ): Promise<AggregatedAttendance> => {
+    // The server extracts organizationId from JWT token in req.user
+    const response = await api.get<AggregatedAttendance>(
+      `/course-attendance/aggregate/${date}`
+    );
+    return response.data ?? { arrived: 0, notArrived: 0 };
   },
 };
 

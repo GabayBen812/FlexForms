@@ -1,106 +1,213 @@
-import { useMemo } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { useQuery } from '@tanstack/react-query';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 
 import type { MessagesStackParamList } from '../navigation/AppNavigator';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { fetchChatGroups } from '../api/chat';
+import { useAuth } from '../providers/AuthProvider';
+import {
+  useChatMessages,
+  useSendChatMessage,
+} from '../features/chat/chatQueries';
+import type { ChatMessage } from '../api/chat';
 
-type ChatListItemProps = {
-  name: string;
-  subtitle?: string | null;
-  unreadCount?: number;
-  updatedAt?: string;
+type ChatPageRouteProp = RouteProp<MessagesStackParamList, 'ChatPage'>;
+type ChatPageNavProp = NativeStackNavigationProp<MessagesStackParamList>;
+
+const ChatBubble = ({
+  message,
+  isOwn,
+}: {
+  message: ChatMessage;
+  isOwn: boolean;
+}) => {
+  const timeLabel = useMemo(() => {
+    const date = new Date(message.createdAt);
+    return date.toLocaleTimeString('he-IL', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }, [message.createdAt]);
+
+  return (
+    <View
+      style={[
+        styles.messageRow,
+        isOwn ? styles.messageRowOwn : styles.messageRowOther,
+      ]}
+    >
+      <View
+        style={[
+          styles.messageBubble,
+          isOwn ? styles.messageBubbleOwn : styles.messageBubbleOther,
+        ]}
+      >
+        <Text style={styles.messageText}>{message.content}</Text>
+        <Text style={styles.messageMeta}>{timeLabel}</Text>
+      </View>
+    </View>
+  );
 };
 
-const ChatListItem = ({ name, subtitle, unreadCount, updatedAt }: ChatListItemProps) => (
-  <View style={styles.chatItem}>
-    <View style={styles.chatItemTextGroup}>
-      <Text style={styles.chatItemTitle}>{name}</Text>
-      {subtitle ? <Text style={styles.chatItemSubtitle}>{subtitle}</Text> : null}
-    </View>
-    <View style={styles.chatItemMetaGroup}>
-      {updatedAt ? <Text style={styles.chatItemMeta}>{updatedAt}</Text> : null}
-      {typeof unreadCount === 'number' && unreadCount > 0 ? (
-        <View style={styles.unreadBadge}>
-          <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
-        </View>
-      ) : null}
-    </View>
-  </View>
-);
-
 const ChatPage = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<MessagesStackParamList>>();
+  const navigation = useNavigation<ChatPageNavProp>();
+  const route = useRoute<ChatPageRouteProp>();
+  const { groupId, groupName } = route.params;
+  const { user } = useAuth();
 
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['chat', 'groups'],
-    queryFn: fetchChatGroups,
+  const [inputValue, setInputValue] = useState('');
+  const listRef = useRef<FlatList<ChatMessage> | null>(null);
+
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useChatMessages(groupId, {
+    limit: 50,
   });
 
-  const groups = data ?? [];
+  const sendMessageMutation = useSendChatMessage();
 
-  const emptyState = useMemo(
-    () => (
-      <View style={styles.emptyState}>
-        <Text style={styles.emptyStateTitle}>אין קבוצות צ'אט זמינות</Text>
-        <Text style={styles.emptyStateSubtitle}>צור קבוצה חדשה או נסה לרענן מאוחר יותר.</Text>
-      </View>
-    ),
-    []
-  );
+  const messages: ChatMessage[] =
+    data?.pages.flatMap((page) => page.messages) ?? [];
+
+  useEffect(() => {
+    if (messages.length === 0) {
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      if (listRef.current) {
+        listRef.current.scrollToEnd({ animated: true });
+      }
+    }, 100);
+
+    return () => clearTimeout(timeout);
+  }, [messages.length]);
+
+  const handleSend = async () => {
+    const trimmed = inputValue.trim();
+    if (!trimmed || sendMessageMutation.isPending) {
+      return;
+    }
+
+    try {
+      await sendMessageMutation.mutateAsync({
+        groupId,
+        content: trimmed,
+      });
+      setInputValue('');
+    } catch {
+      // errors are handled by the hook's consumers if needed
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+    }
+  };
+
+  const renderItem = ({ item }: { item: ChatMessage }) => {
+    const isOwn = item.senderId === user?.id;
+    return <ChatBubble message={item} isOwn={isOwn} />;
+  };
 
   return (
     <LinearGradient colors={['#FFFFFF', '#F0F9FF', '#FFFFFF']} style={styles.root}>
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Pressable
-              onPress={() => navigation.goBack()}
-              style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
-            >
-              <Text style={styles.backButtonLabel}>חזרה</Text>
-            </Pressable>
-            <Text style={styles.headerTitle}>צ'אט</Text>
-          </View>
-
-          {isLoading ? (
-            <View style={styles.centerContent}>
-              <ActivityIndicator size="large" color="#457B9D" />
-              <Text style={styles.statusText}>טוען קבוצות…</Text>
-            </View>
-          ) : isError ? (
-            <View style={styles.centerContent}>
-              <Text style={styles.errorText}>אירעה שגיאה בטעינת הקבוצות.</Text>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+        >
+          <View style={styles.container}>
+            <View style={styles.header}>
               <Pressable
-                onPress={() => refetch()}
-                style={({ pressed }) => [styles.retryButton, pressed && styles.retryButtonPressed]}
+                onPress={() => navigation.goBack()}
+                style={({ pressed }) => [
+                  styles.backButton,
+                  pressed && styles.backButtonPressed,
+                ]}
               >
-                <Text style={styles.retryButtonLabel}>נסה שוב</Text>
+                <Text style={styles.backButtonLabel}>חזרה</Text>
+              </Pressable>
+              <View style={styles.headerTextGroup}>
+                <Text style={styles.headerTitle}>{groupName}</Text>
+                <Text style={styles.headerSubtitle}>צ'אט קבוצה</Text>
+              </View>
+            </View>
+
+            {isLoading ? (
+              <View style={styles.centerContent}>
+                <ActivityIndicator size="large" color="#457B9D" />
+                <Text style={styles.centerText}>טוען הודעות…</Text>
+              </View>
+            ) : (
+              <FlatList
+                ref={listRef}
+                data={messages}
+                keyExtractor={(item) => item.id}
+                renderItem={renderItem}
+                contentContainerStyle={styles.messagesList}
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.2}
+                ListFooterComponent={
+                  hasNextPage ? (
+                    <View style={styles.loadMoreContainer}>
+                      <ActivityIndicator size="small" color="#94A3B8" />
+                      <Text style={styles.loadMoreText}>טוען הודעות קודמות…</Text>
+                    </View>
+                  ) : null
+                }
+              />
+            )}
+
+            <View style={styles.composerContainer}>
+              <TextInput
+                value={inputValue}
+                onChangeText={setInputValue}
+                placeholder="כתוב הודעה…"
+                placeholderTextColor="#9CA3AF"
+                multiline
+                style={styles.composerInput}
+              />
+              <Pressable
+                onPress={handleSend}
+                disabled={
+                  inputValue.trim().length === 0 || sendMessageMutation.isPending
+                }
+                style={({ pressed }) => [
+                  styles.sendButton,
+                  (pressed || sendMessageMutation.isPending) &&
+                    styles.sendButtonPressed,
+                  (inputValue.trim().length === 0 ||
+                    sendMessageMutation.isPending) &&
+                    styles.sendButtonDisabled,
+                ]}
+              >
+                <Text style={styles.sendButtonLabel}>
+                  {sendMessageMutation.isPending ? 'שולח…' : 'שלח'}
+                </Text>
               </Pressable>
             </View>
-          ) : groups.length === 0 ? (
-            emptyState
-          ) : (
-            <FlatList
-              data={groups}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <ChatListItem
-                  name={item.name}
-                  subtitle={item.lastMessagePreview}
-                  unreadCount={item.unreadCount}
-                  updatedAt={item.updatedAt}
-                />
-              )}
-              ItemSeparatorComponent={() => <View style={styles.chatItemSeparator} />}
-              contentContainerStyle={styles.chatList}
-            />
-          )}
-        </View>
+          </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -113,27 +220,40 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  flex: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 32,
+    paddingHorizontal: 16,
+    paddingVertical: 24,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
+  },
+  headerTextGroup: {
+    flex: 1,
+    alignItems: 'flex-end',
+    marginLeft: 12,
   },
   headerTitle: {
-    flex: 1,
-    textAlign: 'right',
     color: '#1e293b',
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
+    textAlign: 'right',
+  },
+  headerSubtitle: {
+    marginTop: 4,
+    color: '#64748B',
+    fontSize: 13,
+    textAlign: 'right',
   },
   backButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#D1D5DB',
@@ -148,112 +268,105 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  chatList: {
-    paddingBottom: 32,
-  },
-  chatItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  chatItemSeparator: {
-    height: 14,
-  },
-  chatItemTextGroup: {
-    flex: 1,
-    alignItems: 'flex-end',
-  },
-  chatItemTitle: {
-    color: '#1e293b',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  chatItemSubtitle: {
-    marginTop: 6,
-    color: '#64748B',
-    fontSize: 14,
-  },
-  chatItemMetaGroup: {
-    alignItems: 'flex-end',
-    gap: 6,
-    marginLeft: 16,
-  },
-  chatItemMeta: {
-    color: '#94A3B8',
-    fontSize: 12,
-  },
-  unreadBadge: {
-    minWidth: 28,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: '#FF6B4D',
-  },
-  unreadBadgeText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
   centerContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 18,
+    gap: 16,
   },
-  statusText: {
+  centerText: {
     color: '#64748B',
     fontSize: 16,
   },
-  errorText: {
-    color: '#E85A3F',
-    fontSize: 16,
-    textAlign: 'center',
+  messagesList: {
+    paddingVertical: 8,
+    paddingBottom: 12,
   },
-  retryButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+  messageRow: {
+    flexDirection: 'row',
+    marginVertical: 4,
+  },
+  messageRowOwn: {
+    justifyContent: 'flex-end',
+  },
+  messageRowOther: {
+    justifyContent: 'flex-start',
+  },
+  messageBubble: {
+    maxWidth: '78%',
     borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#FFD4C4',
-    backgroundColor: '#FFF5F3',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
-  retryButtonPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.97 }],
+  messageBubbleOwn: {
+    backgroundColor: '#e0f2fe',
+    borderTopRightRadius: 4,
   },
-  retryButtonLabel: {
-    color: '#FF6B4D',
-    fontSize: 16,
-    fontWeight: '600',
+  messageBubbleOther: {
+    backgroundColor: '#f3f4f6',
+    borderTopLeftRadius: 4,
   },
-  emptyState: {
-    flex: 1,
+  messageText: {
+    color: '#0f172a',
+    fontSize: 15,
+  },
+  messageMeta: {
+    marginTop: 4,
+    color: '#94A3B8',
+    fontSize: 11,
+    textAlign: 'left',
+  },
+  loadMoreContainer: {
+    paddingVertical: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 6,
   },
-  emptyStateTitle: {
-    color: '#1e293b',
-    fontSize: 20,
+  loadMoreText: {
+    color: '#94A3B8',
+    fontSize: 12,
+  },
+  composerContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingHorizontal: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+  },
+  composerInput: {
+    flex: 1,
+    maxHeight: 120,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    textAlign: 'right',
+    color: '#0f172a',
+    fontSize: 15,
+  },
+  sendButton: {
+    marginLeft: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: '#457B9D',
+  },
+  sendButtonPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.97 }],
+  },
+  sendButtonDisabled: {
+    backgroundColor: '#CBD5F5',
+  },
+  sendButtonLabel: {
+    color: '#FFFFFF',
+    fontSize: 15,
     fontWeight: '600',
-  },
-  emptyStateSubtitle: {
-    color: '#64748B',
-    fontSize: 14,
-    textAlign: 'center',
-    paddingHorizontal: 20,
   },
 });
 

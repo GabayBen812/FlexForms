@@ -128,6 +128,43 @@ export default function MessagesPage() {
     [groups, selectedGroupId]
   );
 
+  const chatParticipants = useMemo(
+    () => {
+      if (!selectedGroup) return [];
+
+      const memberIdSet = new Set(
+        selectedGroup.memberIds.map((id) =>
+          typeof id === "number" ? String(id) : String(id)
+        )
+      );
+
+      return organizationUsers
+        .map((item) => {
+          const id =
+            item._id ??
+            (typeof item.id === "number"
+              ? String(item.id)
+              : item.id ?? "");
+
+          if (!id || !memberIdSet.has(id)) {
+            return null;
+          }
+
+          const label = item.name || (item as any).email || "";
+          if (!label) return null;
+
+          return {
+            id,
+            label,
+          };
+        })
+        .filter(
+          (option): option is { id: string; label: string } => option !== null
+        );
+    },
+    [organizationUsers, selectedGroup]
+  );
+
   const memberOptions = useMemo(
     () =>
       organizationUsers
@@ -306,6 +343,8 @@ export default function MessagesPage() {
                 isSending={sendMessageMutation.isPending}
                 disabled={!selectedGroupId}
                 placeholder={t("chat:composer_placeholder")}
+                enableMentions={Boolean(selectedGroup) && chatParticipants.length > 0}
+                mentionUsers={chatParticipants}
                 sendLabel={
                   sendMessageMutation.isPending
                     ? t("chat:sending_label")

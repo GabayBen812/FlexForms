@@ -42,6 +42,15 @@ export class CourseAttendanceController {
     }
     return this.courseAttendanceService.findByCourseAndDate(user.organizationId, courseId, date);
   }
+
+  @Get('aggregate/:date')
+  async aggregateAttendance(@Param('date') date: string, @Req() req: Request) {
+    const user = req.user as { organizationId?: string };
+    if (!user || !user.organizationId) {
+      throw new Error('User organizationId not found');
+    }
+    return this.courseAttendanceService.aggregateAttendanceByDate(user.organizationId, date);
+  }
 }
 
 

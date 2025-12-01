@@ -1,19 +1,16 @@
 import { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+import { useQuery, useQueries } from '@tanstack/react-query';
 
 import GradientButton from '../components/ui/GradientButton';
 import { useAuth } from '../providers/AuthProvider';
 import type { HomeStackParamList } from '../navigation/AppNavigator';
-
-// Mock data
-const mockKidsAttendance = {
-  arrived: 12,
-  notArrived: 3,
-};
+import { courseAttendanceApi } from '../api/course-attendance';
+import { fetchChatGroups, fetchChatMessages, type ChatGroup, type ChatMessage } from '../api/chat';
 
 const mockEmployeeReports = [
   { name: 'רות', checkInTime: '07:55', hasCheckedIn: true },
@@ -21,11 +18,6 @@ const mockEmployeeReports = [
   { name: 'דני', checkInTime: '08:10', hasCheckedIn: true },
 ];
 
-const mockParentMessages = [
-  { parent: 'אמא של נויה', message: 'לא תגיע מחר' },
-  { parent: 'אבא של דניאל', message: 'איחור של 10 דק\'' },
-  { parent: 'אמא של שירה', message: 'תגיע ב-09:00' },
-];
 
 const mockFinanceData = {
   income: 24650,
@@ -36,9 +28,11 @@ const mockFinanceData = {
 // Card Components
 type TodayInKindergartenCardProps = {
   onPress?: () => void;
+  arrived: number;
+  notArrived: number;
 };
 
-const TodayInKindergartenCard = ({ onPress }: TodayInKindergartenCardProps) => (
+const TodayInKindergartenCard = ({ onPress, arrived, notArrived }: TodayInKindergartenCardProps) => (
   <Pressable
     onPress={onPress}
     disabled={!onPress}
@@ -51,12 +45,12 @@ const TodayInKindergartenCard = ({ onPress }: TodayInKindergartenCardProps) => (
     <Text style={styles.dashboardCardTitle}>היום בגן</Text>
     <View style={styles.kidsAttendanceRow}>
       <View style={styles.kidsAttendanceItem}>
-        <Text style={styles.kidsAttendanceValue}>{mockKidsAttendance.arrived}</Text>
+        <Text style={styles.kidsAttendanceValue}>{arrived}</Text>
         <Text style={styles.kidsAttendanceLabel}>הגיעו</Text>
       </View>
       <View style={styles.kidsAttendanceItem}>
         <Text style={[styles.kidsAttendanceValue, styles.kidsAttendanceValueWarning]}>
-          {mockKidsAttendance.notArrived}
+          {notArrived}
         </Text>
         <Text style={[styles.kidsAttendanceLabel, styles.kidsAttendanceLabelWarning]}>
           טרם הגיעו
@@ -100,28 +94,98 @@ type ParentMessagesCardProps = {
   onPress?: () => void;
 };
 
-const ParentMessagesCard = ({ onPress }: ParentMessagesCardProps) => (
-  <Pressable
-    onPress={onPress}
-    disabled={!onPress}
-    style={({ pressed }) => [
-      styles.dashboardCard,
-      styles.messagesCard,
-      onPress && pressed && styles.dashboardCardPressed,
-    ]}
-  >
-    <Text style={styles.dashboardCardTitle}>הודעות מההורים</Text>
-    <View style={styles.parentMessagesList}>
-      {mockParentMessages.slice(0, 3).map((msg, index) => (
-        <View key={index} style={styles.parentMessageItem}>
-          <Text style={styles.parentMessageText}>
-            {msg.parent}: {msg.message}
-          </Text>
-        </View>
-      ))}
-    </View>
-  </Pressable>
-);
+const ParentMessagesCard = ({ onPress }: ParentMessagesCardProps) => {
+  const { data: groups = [], isLoading: isGroupsLoading } = useQuery({
+    queryKey: ['chat-groups'],
+    queryFn: fetchChatGroups,
+  });
+
+  // Fetch latest message for each non-archived group using useQueries
+  // Only fetch if lastMessagePreview is not available
+  const activeGroups = useMemo(
+    () => groups.filter((group) => !group.isArchived && group.id),
+    [groups]
+  );
+
+  const groupMessagesQueries = useQueries({
+    queries: activeGroups.map((group) => ({
+      queryKey: ['chat-messages', group.id, 'latest'],
+      queryFn: () => fetchChatMessages(group.id, { limit: 1 }),
+      enabled: !!group.id && !group.lastMessagePreview, // Only fetch if preview is missing
+    })),
+  });
+
+  // Combine groups with their latest messages
+  const messagesWithGroups = useMemo(() => {
+    const combined: Array<{ group: ChatGroup; message: ChatMessage | null }> = [];
+
+    activeGroups.forEach((group, index) => {
+      const messagesQuery = groupMessagesQueries[index];
+      const latestMessage = messagesQuery?.data?.messages?.[0] || null;
+      const lastPreview = group.lastMessagePreview;
+
+      // Prefer actual message, fallback to preview
+      const messageContent = latestMessage?.content || lastPreview;
+
+      if (messageContent) {
+        combined.push({
+          group,
+          message: latestMessage || {
+            id: '',
+            groupId: group.id,
+            senderId: '',
+            content: lastPreview || '',
+            createdAt: group.updatedAt,
+            updatedAt: group.updatedAt,
+            readBy: [],
+          },
+        });
+      }
+    });
+
+    // Sort by most recent (by updatedAt or createdAt)
+    return combined.sort((a, b) => {
+      const dateA = new Date(a.message?.createdAt || a.group.updatedAt).getTime();
+      const dateB = new Date(b.message?.createdAt || b.group.updatedAt).getTime();
+      return dateB - dateA; // Most recent first
+    });
+  }, [activeGroups, groupMessagesQueries]);
+
+  const isLoadingMessages = groupMessagesQueries.some((query) => query.isLoading);
+  const isLoading = isGroupsLoading || isLoadingMessages;
+  const displayMessages = messagesWithGroups.slice(0, 3);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      style={({ pressed }) => [
+        styles.dashboardCard,
+        styles.messagesCard,
+        onPress && pressed && styles.dashboardCardPressed,
+      ]}
+    >
+      <Text style={styles.dashboardCardTitle}>הודעות מההורים</Text>
+      <View style={styles.parentMessagesList}>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#64748B" />
+          </View>
+        ) : displayMessages.length === 0 ? (
+          <Text style={styles.emptyMessageText}>אין הודעות</Text>
+        ) : (
+          displayMessages.map((item, index) => (
+            <View key={item.group.id || index} style={styles.parentMessageItem}>
+              <Text style={styles.parentMessageText}>
+                {item.group.name}: {item.message?.content || ''}
+              </Text>
+            </View>
+          ))
+        )}
+      </View>
+    </Pressable>
+  );
+};
 
 type MonthlyFinanceCardProps = {
   onPress?: () => void;
@@ -198,11 +262,28 @@ const HomeScreen = () => {
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const year = String(now.getFullYear()).slice(-2);
 
+    // Format date as ISO string (YYYY-MM-DD) for API
+    const isoDate = `${now.getFullYear()}-${month}-${day}`;
+
     return {
       dayName,
       formattedDate: `${day}/${month}/${year}`,
+      isoDate,
     };
   }, []);
+
+  // Fetch kids attendance for today
+  const { data: attendanceData, isLoading: isLoadingAttendance } = useQuery({
+    queryKey: ['kids-attendance', currentDayData.isoDate],
+    queryFn: () => courseAttendanceApi.fetchAggregatedAttendance(currentDayData.isoDate),
+  });
+
+  const kidsAttendance = useMemo(() => {
+    if (isLoadingAttendance || !attendanceData) {
+      return { arrived: 0, notArrived: 0 };
+    }
+    return attendanceData;
+  }, [attendanceData, isLoadingAttendance]);
 
   return (
     <LinearGradient colors={['#FFFFFF', '#F0F9FF', '#FFFFFF']} style={styles.root}>
@@ -234,7 +315,11 @@ const HomeScreen = () => {
           </View>
 
           <View style={styles.dashboardGrid}>
-            <TodayInKindergartenCard onPress={navigateToCourses} />
+            <TodayInKindergartenCard 
+              onPress={navigateToCourses} 
+              arrived={kidsAttendance.arrived}
+              notArrived={kidsAttendance.notArrived}
+            />
             <EmployeeReportsCard onPress={navigateToEmployees} />
             <ParentMessagesCard onPress={navigateToMessages} />
             <MonthlyFinanceCard onPress={navigateToFinance} />
@@ -495,6 +580,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     lineHeight: 22,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+  },
+  emptyMessageText: {
+    textAlign: 'right',
+    color: '#64748B',
+    fontSize: 14,
+    fontWeight: '500',
+    paddingVertical: 8,
   },
   // Monthly Finance Card Styles (dashboard card)
   monthlyFinanceCard: {

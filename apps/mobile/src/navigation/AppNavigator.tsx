@@ -53,7 +53,7 @@ export type KidsStackParamList = {
 
 export type MessagesStackParamList = {
   MessagesPage: undefined;
-  ChatPage: undefined;
+  ChatPage: { groupId: string; groupName: string };
 };
 
 export type FinanceStackParamList = {

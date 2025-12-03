@@ -45,6 +45,12 @@ export class Contact {
   @Prop()
   profileImageUrl?: string;
 
+  @Prop()
+  birthDate?: Date;
+
+  @Prop()
+  gender?: string;
+
   @Prop({ type: String, enum: Object.values(ContactStatus), default: ContactStatus.ACTIVE })
   status!: ContactStatus;
 

@@ -60,6 +60,14 @@ export class KidService {
         kidData.idNumber = createKidDto.idNumber;
       }
 
+      if (createKidDto.birthDate) {
+        kidData.birthDate = createKidDto.birthDate;
+      }
+
+      if (createKidDto.gender) {
+        kidData.gender = createKidDto.gender;
+      }
+
       if (contactId) {
         kidData.contactId = contactId;
       }
@@ -92,10 +100,21 @@ export class KidService {
     }
   }
 
-  async findAll(organizationId: string, query: Record<string, any> = {}): Promise<Kid[]> {
+  async findAll(organizationId: string, query: Record<string, any> = {}, userRole?: string, userId?: string): Promise<Kid[]> {
     const filter: Record<string, unknown> = {
       organizationId: new Types.ObjectId(organizationId),
     };
+
+    // If user is a parent, filter to show only their kids
+    if (userRole === 'parent' && userId) {
+      const userDoc = await this.parentService.findByUserId(userId);
+      if (userDoc && userDoc.linked_kids && userDoc.linked_kids.length > 0) {
+        filter._id = { $in: userDoc.linked_kids };
+      } else {
+        // Parent has no linked kids, return empty array
+        return [];
+      }
+    }
 
     if (query.firstname) {
       filter.firstname = { $regex: query.firstname, $options: 'i' };
@@ -173,6 +192,12 @@ export class KidService {
       }
       if (updateKidDto.idNumber !== undefined) {
         updateData.idNumber = updateKidDto.idNumber;
+      }
+      if (updateKidDto.birthDate !== undefined) {
+        updateData.birthDate = updateKidDto.birthDate;
+      }
+      if (updateKidDto.gender !== undefined) {
+        updateData.gender = updateKidDto.gender;
       }
       if (updateKidDto.profileImageUrl !== undefined) {
         updateData.profileImageUrl = updateKidDto.profileImageUrl;

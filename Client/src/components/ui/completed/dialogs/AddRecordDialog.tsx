@@ -696,9 +696,12 @@ export function AddRecordDialog({
               ? form[accessorKey]
               : (defaultValues[accessorKey] ?? "");
             const dynamicFieldName = isDynamic ? getDynamicFieldName(accessorKey) : null;
-            const isRelationshipField = relationshipFields?.[accessorKey];
-            const relationshipOptions = isRelationshipField?.options || [];
             const columnForRelationship = dataColumns.find((col) => (col as any).accessorKey === accessorKey);
+            // Check relationshipFields prop first, then fall back to column meta
+            const relationshipFieldFromProp = relationshipFields?.[accessorKey];
+            const relationshipOptionsFromMeta = columnForRelationship && (columnForRelationship.meta as any)?.relationshipOptions;
+            const isRelationshipField = relationshipFieldFromProp || relationshipOptionsFromMeta;
+            const relationshipOptions = relationshipFieldFromProp?.options || relationshipOptionsFromMeta || [];
             const isSingleSelectRelationship = isRelationshipField && columnForRelationship && (columnForRelationship.meta as any)?.singleSelect === true;
 
             return (

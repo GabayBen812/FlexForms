@@ -2,6 +2,7 @@ import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ClientSession, Model, Types } from 'mongoose';
 import { Parent, ParentDocument } from '../schemas/parent.schema';
+import { User, UserDocument } from '../schemas/user.schema';
 import { CreateParentDto, UpdateParentDto } from '../dto/parent.dto';
 import { KidService } from './kid.service';
 import { ContactService } from './contact.service';
@@ -15,6 +16,7 @@ import { isUnifiedContactsEnabled } from '../utils/feature-flags.util';
 export class ParentService {
   constructor(
     @InjectModel(Parent.name) private readonly parentModel: Model<ParentDocument>,
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @Inject(forwardRef(() => KidService))
     private readonly kidService: KidService,
     private readonly contactService: ContactService,
@@ -90,6 +92,14 @@ export class ParentService {
 
   async findOne(id: string): Promise<Parent | null> {
     return this.parentModel.findById(id).exec();
+  }
+
+  async findByUserId(userId: string): Promise<Parent | null> {
+    const user = await this.userModel.findById(userId).exec();
+    if (!user || !user.linked_parent_id) {
+      return null;
+    }
+    return this.parentModel.findById(user.linked_parent_id).exec();
   }
 
   async update(id: string, updateParentDto: UpdateParentDto): Promise<Parent | null> {

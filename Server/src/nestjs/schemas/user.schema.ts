@@ -14,6 +14,9 @@ export class User {
   @Prop({ type: Types.ObjectId, ref: 'Organization', required: true })
   organizationId!: Types.ObjectId;  
 
+  @Prop({ type: Types.ObjectId, ref: 'Parent', required: false })
+  linked_parent_id?: Types.ObjectId;
+
   @Prop({
     default: 'parent',
     enum: [

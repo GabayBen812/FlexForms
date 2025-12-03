@@ -27,11 +27,11 @@ export class KidController {
 
   @Get()
   findAll(@Req() req: Request, @Query() query: any) {
-    const user = req.user as { organizationId?: string };
+    const user = req.user as { organizationId?: string; role?: string; id?: string };
     if (!user || !user.organizationId) {
       throw new Error('User organizationId not found');
     }
-    return this.kidService.findAll(user.organizationId, query);
+    return this.kidService.findAll(user.organizationId, query, user.role, user.id);
   }
 
   @Get('count')

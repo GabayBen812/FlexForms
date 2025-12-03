@@ -29,6 +29,7 @@ import { EmailModule } from './modules/email.module';
 import { CourseModule } from './modules/course.module';
 import { CourseAttendanceModule } from './modules/course-attendance.module';
 import { SeasonModule } from './modules/season.module';
+import { TeamModule } from './modules/team.module';
 dotenv.config();
 @Module({
   imports: [
@@ -57,7 +58,8 @@ dotenv.config();
     EmailModule,
     CourseModule,
     CourseAttendanceModule,
-    SeasonModule
+    SeasonModule,
+    TeamModule
   ],
   controllers: [AuthController, HealthController],
   providers: [AuthService],

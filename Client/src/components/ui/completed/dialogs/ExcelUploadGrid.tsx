@@ -82,6 +82,64 @@ export function ExcelUploadGrid({ columns, onSave, excludeFields = [] }: ExcelUp
         typeof column.header === "string"
           ? column.header
           : accessorKey || "";
+      
+      const meta = column.meta as Record<string, any> | undefined;
+      const isDateColumn = meta?.isDate === true;
+      
+      // For date columns, add custom paste handler
+      if (isDateColumn) {
+        return {
+          ...keyColumn(accessorKey || "", {
+            ...textColumn,
+            // Custom paste handler for date columns
+            pasteValue: ({ value }: { value: string }) => {
+              // Handle Excel date serial numbers (e.g., 45567)
+              if (/^\d{5,}$/.test(value.trim())) {
+                const serialNumber = parseInt(value.trim(), 10);
+                // Excel date serial: days since 1900-01-01 (with a bug for 1900 being a leap year)
+                const excelEpoch = new Date(1899, 11, 30); // Dec 30, 1899
+                const date = new Date(excelEpoch.getTime() + serialNumber * 86400000);
+                
+                if (!isNaN(date.getTime())) {
+                  const day = String(date.getDate()).padStart(2, '0');
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                  const year = date.getFullYear();
+                  return `${day}/${month}/${year}`;
+                }
+              }
+              
+              // Handle dates with dots (DD.MM.YYYY)
+              if (/^\d{2}\.\d{2}\.\d{4}$/.test(value.trim())) {
+                const parts = value.trim().split('.');
+                if (parts.length === 3) {
+                  const [day, month, year] = parts;
+                  return `${day}/${month}/${year}`;
+                }
+              }
+              
+              // Handle dates that are already in DD/MM/YYYY format
+              if (/^\d{2}\/\d{2}\/\d{4}$/.test(value.trim())) {
+                return value.trim();
+              }
+              
+              // Try to parse other date formats
+              const dateValue = new Date(value);
+              if (!isNaN(dateValue.getTime()) && value.trim() !== "" && value.trim().length > 4) {
+                const day = String(dateValue.getDate()).padStart(2, '0');
+                const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+                const year = dateValue.getFullYear();
+                return `${day}/${month}/${year}`;
+              }
+              
+              // Return as-is for text input
+              return value;
+            },
+          }),
+          title,
+        };
+      }
+      
+      // For non-date columns, use default text column
       return {
         ...keyColumn(accessorKey || "", textColumn),
         title,
@@ -119,12 +177,12 @@ export function ExcelUploadGrid({ columns, onSave, excludeFields = [] }: ExcelUp
         const data = await file.arrayBuffer();
         setProgress((prev) => ({ ...prev, current: 10, stage: "parsing" }));
 
-        const workbook = XLSX.read(data, { cellDates: true });
+        const workbook = XLSX.read(data, { cellDates: true, dateNF: 'dd/mm/yyyy' });
         const firstSheet = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheet];
-        const sheetRows = XLSX.utils.sheet_to_json<(string | number)[]>(worksheet, {
+        const sheetRows = XLSX.utils.sheet_to_json<(string | number | Date)[]>(worksheet, {
           header: 1,
-          raw: false,
+          raw: true,  // Keep dates as Date objects
           defval: "",
         });
 
@@ -191,10 +249,20 @@ export function ExcelUploadGrid({ columns, onSave, excludeFields = [] }: ExcelUp
                 columnMappings.forEach(({ index, key }) => {
                   const value = row[index];
                   if (value !== undefined && value !== null && value !== "") {
-                    const stringValue = value.toString().trim();
-                    if (stringValue !== "") {
-                      baseRow[key] = stringValue;
+                    // Handle Date objects from Excel
+                    if (value instanceof Date) {
+                      // Format date as DD/MM/YYYY for display in the grid
+                      const day = String(value.getDate()).padStart(2, '0');
+                      const month = String(value.getMonth() + 1).padStart(2, '0');
+                      const year = value.getFullYear();
+                      baseRow[key] = `${day}/${month}/${year}`;
                       hasAnyValue = true;
+                    } else {
+                      const stringValue = value.toString().trim();
+                      if (stringValue !== "") {
+                        baseRow[key] = stringValue;
+                        hasAnyValue = true;
+                      }
                     }
                   }
                 });

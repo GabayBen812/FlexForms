@@ -82,12 +82,21 @@ export class UserService {
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
-    const { organizationId, ...rest } = updateUserDto;
+    const { organizationId, linked_parent_id, ...rest } = updateUserDto;
 
     const updateData: Partial<User> = { ...rest };
 
     if (organizationId) {
       updateData.organizationId = new Types.ObjectId(organizationId);
+    }
+
+    if (linked_parent_id !== undefined) {
+      // Allow null/empty string to unlink parent
+      if (linked_parent_id === null || linked_parent_id === '') {
+        updateData.linked_parent_id = undefined;
+      } else {
+        updateData.linked_parent_id = new Types.ObjectId(linked_parent_id);
+      }
     }
 
     return this.userModel

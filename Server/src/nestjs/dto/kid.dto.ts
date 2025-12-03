@@ -27,6 +27,14 @@ export class CreateKidDto {
   @IsValidIsraeliID()
   idNumber?: string;
 
+  @IsDateString()
+  @IsOptional()
+  birthDate?: string;
+
+  @IsString()
+  @IsOptional()
+  gender?: string;
+
   @IsMongoId()
   @IsNotEmpty()
   organizationId!: string;
@@ -60,6 +68,14 @@ export class UpdateKidDto {
   @IsOptional()
   @IsValidIsraeliID()
   idNumber?: string;
+
+  @IsDateString()
+  @IsOptional()
+  birthDate?: string;
+
+  @IsString()
+  @IsOptional()
+  gender?: string;
 
   @IsOptional()
   dynamicFields?: Record<string, any>;

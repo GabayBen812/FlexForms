@@ -25,6 +25,7 @@ import MessagesPage from "@/pages/MessagesPage";
 import EmployeesPage from "@/pages/EmployeesPage";
 import TasksPage from "@/pages/TasksPage";
 import SchedulePage from "@/pages/SchedulePage";
+import TeamsPage from "@/pages/TeamsPage";
 
 
 
@@ -264,6 +265,16 @@ export const router = createBrowserRouter([
           icon: TasksIcon,
           showInSidebar: true,
           featureFlag: "IS_SHOW_TASKS"
+        },
+      },
+      {
+        path: "teams",
+        element: <TeamsPage />,
+        handle: {
+          title: "teams",
+          icon: PeopleIcon,
+          showInSidebar: true,
+          featureFlag: "IS_SHOW_TEAMS"
         },
       },
       {

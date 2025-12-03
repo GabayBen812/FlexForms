@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -19,13 +19,67 @@ import type { RouteProp } from '@react-navigation/native';
 import type { MessagesStackParamList } from '../navigation/AppNavigator';
 import { useAuth } from '../providers/AuthProvider';
 import {
+  useChatGroups,
   useChatMessages,
   useSendChatMessage,
 } from '../features/chat/chatQueries';
+import { useOrganizationUsers } from '../features/chat/useOrganizationUsers';
 import type { ChatMessage } from '../api/chat';
 
 type ChatPageRouteProp = RouteProp<MessagesStackParamList, 'ChatPage'>;
 type ChatPageNavProp = NativeStackNavigationProp<MessagesStackParamList>;
+
+type MessagePart = {
+  type: 'mention' | 'text';
+  value: string;
+};
+
+// Parse message content and extract mentions (format: @Name)
+function parseMessageContent(content: string): MessagePart[] {
+  const parts: MessagePart[] = [];
+  // Match @ followed by word characters (letters, numbers, underscores, Hebrew chars)
+  // Stop at whitespace or end of string
+  const mentionRegex = /@([\w\u0590-\u05FF]+)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = mentionRegex.exec(content)) !== null) {
+    // Add text before mention
+    if (match.index > lastIndex) {
+      const textBefore = content.slice(lastIndex, match.index);
+      if (textBefore) {
+        parts.push({
+          type: 'text',
+          value: textBefore,
+        });
+      }
+    }
+    // Add mention
+    parts.push({
+      type: 'mention',
+      value: match[1], // The name without @
+    });
+    lastIndex = mentionRegex.lastIndex;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    const remainingText = content.slice(lastIndex);
+    if (remainingText) {
+      parts.push({
+        type: 'text',
+        value: remainingText,
+      });
+    }
+  }
+
+  // If no mentions found, return the whole content as text
+  if (parts.length === 0) {
+    parts.push({ type: 'text', value: content });
+  }
+
+  return parts;
+}
 
 const ChatBubble = ({
   message,
@@ -42,6 +96,11 @@ const ChatBubble = ({
     });
   }, [message.createdAt]);
 
+  const messageParts = useMemo(
+    () => parseMessageContent(message.content),
+    [message.content]
+  );
+
   return (
     <View
       style={[
@@ -55,11 +114,38 @@ const ChatBubble = ({
           isOwn ? styles.messageBubbleOwn : styles.messageBubbleOther,
         ]}
       >
-        <Text style={styles.messageText}>{message.content}</Text>
+        <View style={styles.messageContent}>
+          {messageParts.map((part, idx) => {
+            if (part.type === 'mention') {
+              return (
+                <View key={idx} style={styles.mentionCard}>
+                  <Text style={styles.mentionCardText}>@{part.value}</Text>
+                </View>
+              );
+            }
+            // Split text by newlines to preserve line breaks
+            const lines = part.value.split('\n');
+            return (
+              <Text key={idx} style={styles.messageText}>
+                {lines.map((line, lineIdx) => (
+                  <Text key={lineIdx}>
+                    {line}
+                    {lineIdx < lines.length - 1 && '\n'}
+                  </Text>
+                ))}
+              </Text>
+            );
+          })}
+        </View>
         <Text style={styles.messageMeta}>{timeLabel}</Text>
       </View>
     </View>
   );
+};
+
+type MentionUser = {
+  id: string;
+  label: string;
 };
 
 const ChatPage = () => {
@@ -69,7 +155,14 @@ const ChatPage = () => {
   const { user } = useAuth();
 
   const [inputValue, setInputValue] = useState('');
+  const [selectedMention, setSelectedMention] = useState<MentionUser | null>(
+    null
+  );
+  const [isMentionOpen, setIsMentionOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
   const listRef = useRef<FlatList<ChatMessage> | null>(null);
+  const inputRef = useRef<TextInput | null>(null);
 
   const {
     data,
@@ -81,10 +174,59 @@ const ChatPage = () => {
     limit: 50,
   });
 
+  const { data: groups = [] } = useChatGroups();
+  const { data: organizationUsers = [] } = useOrganizationUsers();
   const sendMessageMutation = useSendChatMessage();
 
   const messages: ChatMessage[] =
     data?.pages.flatMap((page) => page.messages) ?? [];
+
+  const currentGroup = useMemo(
+    () => groups.find((group) => group.id === groupId) ?? null,
+    [groups, groupId]
+  );
+
+  const chatParticipants = useMemo(() => {
+    if (!currentGroup) return [];
+
+    const memberIdSet = new Set(
+      currentGroup.memberIds.map((id) =>
+        typeof id === 'number' ? String(id) : String(id)
+      )
+    );
+
+    return organizationUsers
+      .map((item) => {
+        const id =
+          item._id ??
+          (typeof item.id === 'number' ? String(item.id) : item.id ?? '');
+
+        if (!id || !memberIdSet.has(id)) {
+          return null;
+        }
+
+        const label = item.name || item.email || '';
+        if (!label) return null;
+
+        return {
+          id,
+          label,
+        };
+      })
+      .filter(
+        (option): option is MentionUser => option !== null
+      );
+  }, [organizationUsers, currentGroup]);
+
+  const filteredMentions = useMemo(() => {
+    if (!chatParticipants.length) return [];
+    if (!mentionQuery) return chatParticipants;
+
+    const query = mentionQuery.toLowerCase();
+    return chatParticipants.filter((option) =>
+      option.label.toLowerCase().includes(query)
+    );
+  }, [chatParticipants, mentionQuery]);
 
   useEffect(() => {
     if (messages.length === 0) {
@@ -100,8 +242,44 @@ const ChatPage = () => {
     return () => clearTimeout(timeout);
   }, [messages.length]);
 
+  useEffect(() => {
+    if (!chatParticipants.length || selectedMention) {
+      setIsMentionOpen(false);
+      setMentionQuery('');
+      return;
+    }
+
+    if (inputValue.startsWith('@')) {
+      const firstToken = inputValue.slice(1).split(/\s/)[0] ?? '';
+      setMentionQuery(firstToken);
+      setIsMentionOpen(true);
+      setHighlightedIndex(0);
+      return;
+    }
+
+    setIsMentionOpen(false);
+    setMentionQuery('');
+  }, [inputValue, chatParticipants.length, selectedMention]);
+
+  const insertMention = useCallback(
+    (mentionUser: MentionUser) => {
+      if (!mentionUser) return;
+      // Remove "@" and the query text, keep the rest
+      const remaining = inputValue.slice(mentionQuery.length + 1); // +1 for '@'
+      setSelectedMention(mentionUser);
+      setInputValue(remaining.trimStart());
+      setIsMentionOpen(false);
+      setMentionQuery('');
+    },
+    [mentionQuery.length, inputValue]
+  );
+
   const handleSend = async () => {
-    const trimmed = inputValue.trim();
+    const composed =
+      selectedMention && selectedMention.label
+        ? `@${selectedMention.label} ${inputValue}`
+        : inputValue;
+    const trimmed = composed.trim();
     if (!trimmed || sendMessageMutation.isPending) {
       return;
     }
@@ -112,8 +290,22 @@ const ChatPage = () => {
         content: trimmed,
       });
       setInputValue('');
+      setSelectedMention(null);
     } catch {
       // errors are handled by the hook's consumers if needed
+    }
+  };
+
+  const handleInputChange = (text: string) => {
+    setInputValue(text);
+  };
+
+  const handleRemoveMention = () => {
+    if (selectedMention) {
+      setInputValue((prev) =>
+        prev ? `@${selectedMention.label} ${prev}` : `@${selectedMention.label} `
+      );
+      setSelectedMention(null);
     }
   };
 
@@ -179,26 +371,76 @@ const ChatPage = () => {
             )}
 
             <View style={styles.composerContainer}>
-              <TextInput
-                value={inputValue}
-                onChangeText={setInputValue}
-                placeholder="כתוב הודעה…"
-                placeholderTextColor="#9CA3AF"
-                multiline
-                style={styles.composerInput}
-              />
+              <View style={styles.composerInputWrapper}>
+                {selectedMention && (
+                  <View style={styles.mentionBadgeContainer}>
+                    <Pressable
+                      onPress={handleRemoveMention}
+                      style={styles.mentionBadge}
+                    >
+                      <Text style={styles.mentionBadgeText}>
+                        @{selectedMention.label}
+                      </Text>
+                      <Text style={styles.mentionBadgeClose}>×</Text>
+                    </Pressable>
+                  </View>
+                )}
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    ref={inputRef}
+                    value={inputValue}
+                    onChangeText={handleInputChange}
+                    placeholder="כתוב הודעה…"
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                    style={styles.composerInput}
+                  />
+                  {isMentionOpen && filteredMentions.length > 0 && (
+                    <View style={styles.mentionDropdown}>
+                      <FlatList
+                        data={filteredMentions}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item, index }) => (
+                          <Pressable
+                            onPress={() => insertMention(item)}
+                            style={[
+                              styles.mentionItem,
+                              index === highlightedIndex &&
+                                styles.mentionItemHighlighted,
+                            ]}
+                          >
+                            <Text style={styles.mentionItemText}>
+                              @{item.label}
+                            </Text>
+                          </Pressable>
+                        )}
+                        style={styles.mentionList}
+                        nestedScrollEnabled
+                      />
+                    </View>
+                  )}
+                </View>
+              </View>
               <Pressable
                 onPress={handleSend}
                 disabled={
-                  inputValue.trim().length === 0 || sendMessageMutation.isPending
+                  (selectedMention
+                    ? `@${selectedMention.label} ${inputValue}`.trim().length ===
+                      0
+                    : inputValue.trim().length === 0) ||
+                  sendMessageMutation.isPending
                 }
                 style={({ pressed }) => [
                   styles.sendButton,
                   (pressed || sendMessageMutation.isPending) &&
                     styles.sendButtonPressed,
-                  (inputValue.trim().length === 0 ||
-                    sendMessageMutation.isPending) &&
-                    styles.sendButtonDisabled,
+                  (selectedMention
+                    ? `@${selectedMention.label} ${inputValue}`.trim().length ===
+                      0
+                    : inputValue.trim().length === 0) ||
+                    sendMessageMutation.isPending
+                    ? styles.sendButtonDisabled
+                    : null,
                 ]}
               >
                 <Text style={styles.sendButtonLabel}>
@@ -306,9 +548,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     borderTopLeftRadius: 4,
   },
+  messageContent: {
+    flexDirection: 'row-reverse',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+  },
   messageText: {
     color: '#0f172a',
     fontSize: 15,
+    textAlign: 'right',
+  },
+  mentionCard: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#DBEAFE',
+    borderWidth: 1,
+    borderColor: '#457B9D',
+    marginVertical: 2,
+  },
+  mentionCardText: {
+    color: '#457B9D',
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'right',
   },
   messageMeta: {
     marginTop: 4,
@@ -336,6 +600,39 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E7EB',
     backgroundColor: '#F9FAFB',
   },
+  composerInputWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
+  mentionBadgeContainer: {
+    marginBottom: 8,
+    alignItems: 'flex-end',
+  },
+  mentionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#DBEAFE',
+    borderWidth: 1,
+    borderColor: '#457B9D',
+    gap: 6,
+  },
+  mentionBadgeText: {
+    color: '#457B9D',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  mentionBadgeClose: {
+    color: '#457B9D',
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  inputContainer: {
+    position: 'relative',
+  },
   composerInput: {
     flex: 1,
     maxHeight: 120,
@@ -348,6 +645,42 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     color: '#0f172a',
     fontSize: 15,
+  },
+  mentionDropdown: {
+    position: 'absolute',
+    bottom: '100%',
+    left: 0,
+    right: 0,
+    marginBottom: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+    maxHeight: 200,
+    zIndex: 1000,
+  },
+  mentionList: {
+    maxHeight: 200,
+  },
+  mentionItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  mentionItemHighlighted: {
+    backgroundColor: '#DBEAFE',
+  },
+  mentionItemText: {
+    color: '#1e293b',
+    fontSize: 15,
+    fontWeight: '500',
+    textAlign: 'right',
   },
   sendButton: {
     marginLeft: 8,

@@ -52,6 +52,14 @@ export class CreateContactDto {
   @IsOptional()
   profileImageUrl?: string;
 
+  @IsDateString()
+  @IsOptional()
+  birthDate?: string;
+
+  @IsString()
+  @IsOptional()
+  gender?: string;
+
   @IsEnum(ContactStatus)
   @IsOptional()
   status?: ContactStatus;
@@ -98,6 +106,14 @@ export class UpdateContactDto {
   @IsString()
   @IsOptional()
   profileImageUrl?: string;
+
+  @IsDateString()
+  @IsOptional()
+  birthDate?: string;
+
+  @IsString()
+  @IsOptional()
+  gender?: string;
 
   @IsEnum(ContactStatus)
   @IsOptional()

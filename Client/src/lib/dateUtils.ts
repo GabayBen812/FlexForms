@@ -192,6 +192,20 @@ export function parseDateForSubmit(dateStr: string | null | undefined): string {
     }
   }
   
+  // Try to parse DD.MM.YYYY format (with dots)
+  const ddDotMmDotYyyyMatch = trimmed.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  if (ddDotMmDotYyyyMatch) {
+    const [, day, month, year] = ddDotMmDotYyyyMatch;
+    try {
+      const parsed = dayjs(`${year}-${month}-${day}`);
+      if (parsed.isValid()) {
+        return parsed.format("YYYY-MM-DD");
+      }
+    } catch {
+      return "";
+    }
+  }
+  
   // If already in YYYY-MM-DD format, return as-is if valid
   const yyyyMmDdMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (yyyyMmDdMatch) {

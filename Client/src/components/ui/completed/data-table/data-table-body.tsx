@@ -694,8 +694,13 @@ function EditableCell<T>({
     }
     
     // Process date values
-    if (isDate && value) {
-      processedValue = parseDateForSubmit(value) || value;
+    if (isDate) {
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
+        // If date field is empty, set to null instead of empty string
+        processedValue = null;
+      } else {
+        processedValue = parseDateForSubmit(value) || value;
+      }
     }
     
     // Process time values - ensure HH:MM format

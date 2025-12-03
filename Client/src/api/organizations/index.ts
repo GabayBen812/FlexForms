@@ -20,6 +20,16 @@ export const fetchAllOrganizations = async (params: Record<string, any> = {}): P
   };
 };
 
+export const createOrganization = async (
+  data: { name: string; description?: string; owner?: string }
+): Promise<MutationResponse<Organization>> => {
+  const res = await apiClient.post<Organization>("/organizations", data);
+  return {
+    status: res.status,
+    data: res.data,
+  };
+};
+
 export const assignFeatureFlagsToOrganization = async (orgId: string, featureFlagIds: string[]) => {
   return apiClient.put(`/organizations/${orgId}/feature-flags`, { featureFlagIds });
 };

@@ -550,6 +550,8 @@ export default function KidsPage() {
         profileImageUrl: contact.profileImageUrl,
         idNumber: contact.idNumber,
         address: contact.address,
+        birthDate: contact.birthDate,
+        gender: contact.gender,
         status: contact.status,
         linked_parents: linkedParentIds,
         organizationId: contact.organizationId,
@@ -689,6 +691,33 @@ export default function KidsPage() {
         editable: true,
         relationshipOptions: parentsOptions,
         relationshipChipRenderer: renderParentChip,
+      } 
+    },
+    { 
+      accessorKey: "birthDate", 
+      header: t("birthdate", "תאריך לידה"), 
+      meta: { 
+        editable: true,
+        isDate: true,
+      } 
+    },
+    { 
+      accessorKey: "address", 
+      header: t("address", "כתובת"), 
+      meta: { 
+        editable: true,
+      } 
+    },
+    { 
+      accessorKey: "gender", 
+      header: t("sex", "מין"), 
+      meta: { 
+        editable: true,
+        fieldType: "SELECT",
+        options: [
+          { value: "male", label: "זכר" },
+          { value: "female", label: "נקבה" },
+        ],
       } 
     },
     { accessorKey: "organizationId", header: "", meta: { hidden: true, editable: false } },
@@ -857,6 +886,8 @@ export default function KidsPage() {
         organizationId: organization._id,
         idNumber: data.idNumber,
         address: data.address,
+        birthDate: data.birthDate,
+        gender: data.gender,
         profileImageUrl: data.profileImageUrl,
         dynamicFields: namespaceDynamicFields(
           data.dynamicFields as Record<string, unknown> | undefined,
@@ -934,9 +965,25 @@ export default function KidsPage() {
         if (key.startsWith("dynamicFields.")) {
           const fieldKey = key.replace("dynamicFields.", "");
           if (column?.meta?.isDate) {
-            const parsedDate = parseDateForSubmit(value);
-            if (parsedDate) {
-              dynamicFields[fieldKey] = parsedDate;
+            // Skip invalid date values like ######### from Excel
+            if (value && value.toString().trim() !== "" && !value.toString().includes("#")) {
+              const parsedDate = parseDateForSubmit(value);
+              if (parsedDate) {
+                dynamicFields[fieldKey] = parsedDate;
+                return;
+              }
+            }
+            // If date is invalid or contains ###, skip this field
+            return;
+          }
+          // Handle SELECT fields in dynamic fields
+          if (column?.meta?.fieldType === "SELECT" && column?.meta?.options) {
+            const options = column.meta.options as { value: string; label: string }[];
+            const matchedOption = options.find(
+              (opt) => opt.label === value || opt.value === value
+            );
+            if (matchedOption) {
+              dynamicFields[fieldKey] = matchedOption.value;
               return;
             }
           }
@@ -945,9 +992,26 @@ export default function KidsPage() {
         }
 
         if (column?.meta?.isDate) {
-          const parsedDate = parseDateForSubmit(value);
-          if (parsedDate) {
-            transformed[key] = parsedDate;
+          // Skip invalid date values like ######### from Excel
+          if (value && value.toString().trim() !== "" && !value.toString().includes("#")) {
+            const parsedDate = parseDateForSubmit(value);
+            if (parsedDate) {
+              transformed[key] = parsedDate;
+              return;
+            }
+          }
+          // If date is invalid or contains ###, skip this field
+          return;
+        }
+
+        // Handle SELECT fields (like gender)
+        if (column?.meta?.fieldType === "SELECT" && column?.meta?.options) {
+          const options = column.meta.options as { value: string; label: string }[];
+          const matchedOption = options.find(
+            (opt) => opt.label === value || opt.value === value
+          );
+          if (matchedOption) {
+            transformed[key] = matchedOption.value;
             return;
           }
         }
@@ -966,6 +1030,8 @@ export default function KidsPage() {
 
   const handleExcelImport = useCallback(
     async (excelRows: Record<string, string>[]) => {
+      console.log("handleExcelImport - received rows:", excelRows);
+      
       if (!excelRows.length) {
         toast.error(t("excel_no_rows_to_save", "אין נתונים לשמירה"));
         return;
@@ -974,6 +1040,8 @@ export default function KidsPage() {
       const preparedRows = excelRows
         .map(transformExcelRow)
         .filter((row) => row && Object.keys(row).length > 0);
+
+      console.log("handleExcelImport - prepared rows:", preparedRows);
 
       if (!preparedRows.length) {
         toast.error(t("excel_no_rows_to_save", "אין נתונים לשמירה"));
@@ -985,9 +1053,12 @@ export default function KidsPage() {
 
       for (let index = 0; index < preparedRows.length; index++) {
         try {
+          console.log(`Creating kid ${index + 1}/${preparedRows.length}:`, preparedRows[index]);
           await createKidRecord(preparedRows[index], { skipIdValidation: true });
           successCount++;
+          console.log(`Successfully created kid ${index + 1}`);
         } catch (error) {
+          console.error(`Error creating kid ${index + 1}:`, error);
           const errorMessage =
             error instanceof Error
               ? error.message
@@ -996,6 +1067,8 @@ export default function KidsPage() {
         }
       }
 
+      console.log(`Import complete: ${successCount} success, ${errorMessages.length} errors`);
+
       if (successCount) {
         toast.success(
           t("excel_import_success", {
@@ -1003,6 +1076,7 @@ export default function KidsPage() {
             defaultValue: `ייבוא ${successCount} רשומות הושלם בהצלחה`,
           }),
         );
+        console.log("Calling tableMethods.refresh()");
         tableMethods?.refresh();
       }
 
@@ -1065,6 +1139,8 @@ export default function KidsPage() {
         lastname: data.lastname,
         idNumber: data.idNumber,
         address: data.address,
+        birthDate: data.birthDate,
+        gender: data.gender,
         profileImageUrl: data.profileImageUrl,
         dynamicFields: namespaceDynamicFields(
           data.dynamicFields as Record<string, unknown> | undefined,
@@ -1334,6 +1410,9 @@ export default function KidsPage() {
           firstname: editingKid.firstname,
           lastname: editingKid.lastname,
           idNumber: editingKid.idNumber || "",
+          birthDate: editingKid.birthDate || "",
+          address: editingKid.address || "",
+          gender: editingKid.gender || "",
           profileImageUrl: editingKid.profileImageUrl || "",
           linked_parents: Array.isArray(editingKid.linked_parents) 
             ? editingKid.linked_parents.map((p: any) => typeof p === 'string' ? p : (p?._id || p?.toString() || p))

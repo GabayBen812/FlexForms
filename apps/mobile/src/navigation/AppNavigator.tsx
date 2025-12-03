@@ -7,6 +7,7 @@ import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../providers/AuthProvider';
 import HomeScreen from '../screens/HomeScreen';
 import HomeScreenEmployee from '../screens/HomeScreenEmployee';
+import HomeScreenParent from '../screens/HomeScreenParent';
 import HomeScreenVer2 from '../screens/HomeScreenVer2';
 import LoginScreen from '../screens/LoginScreen';
 import MyTasksScreen from '../screens/MyTasksScreen';
@@ -17,6 +18,7 @@ import KidDetailsPage from '../screens/KidDetailsPage';
 import ParentDetailsPage from '../screens/ParentDetailsPage';
 import MessagesPage from '../screens/MessagesPage';
 import FinancePage from '../screens/FinancePage';
+import PaymentPage from '../screens/PaymentPage';
 import IncomeListPage from '../screens/IncomeListPage';
 import ExpensesListPage from '../screens/ExpensesListPage';
 import CoursesPage from '../screens/CoursesPage';
@@ -39,6 +41,7 @@ export type HomeStackParamList = {
   Home: undefined;
   HomeVer2: undefined;
   HomeEmployee: undefined;
+  HomeParent: undefined;
   MyTasks: undefined;
   EmployeesPage: undefined;
   CoursesPage: undefined;
@@ -60,6 +63,7 @@ export type MessagesStackParamList = {
 
 export type FinanceStackParamList = {
   FinancePage: undefined;
+  PaymentPage: undefined;
   IncomeList: undefined;
   ExpensesList: undefined;
 };
@@ -78,19 +82,28 @@ const LoadingScreen = () => (
 );
 
 // Home Stack Navigator
-const HomeStackNavigator = () => (
-  <HomeStack.Navigator screenOptions={{ headerShown: false }}>
-    <HomeStack.Screen name="Home" component={HomeScreen} />
-    <HomeStack.Screen name="HomeVer2" component={HomeScreenVer2} />
-    <HomeStack.Screen name="HomeEmployee" component={HomeScreenEmployee} />
-    <HomeStack.Screen name="MyTasks" component={MyTasksScreen} />
-    <HomeStack.Screen name="EmployeesPage" component={EmployeesPage} />
-    <HomeStack.Screen name="CoursesPage" component={CoursesPage} />
-    <HomeStack.Screen name="CourseAttendancePage" component={CourseAttendancePage} />
-    <HomeStack.Screen name="KidDetails" component={KidDetailsPage} />
-    <HomeStack.Screen name="ParentDetails" component={ParentDetailsPage} />
-  </HomeStack.Navigator>
-);
+const HomeStackNavigator = () => {
+  const { user } = useAuth();
+  const isParent = user?.role === 'parent';
+
+  return (
+    <HomeStack.Navigator
+      screenOptions={{ headerShown: false }}
+      initialRouteName={isParent ? 'HomeParent' : 'Home'}
+    >
+      <HomeStack.Screen name="Home" component={HomeScreen} />
+      <HomeStack.Screen name="HomeParent" component={HomeScreenParent} />
+      <HomeStack.Screen name="HomeVer2" component={HomeScreenVer2} />
+      <HomeStack.Screen name="HomeEmployee" component={HomeScreenEmployee} />
+      <HomeStack.Screen name="MyTasks" component={MyTasksScreen} />
+      <HomeStack.Screen name="EmployeesPage" component={EmployeesPage} />
+      <HomeStack.Screen name="CoursesPage" component={CoursesPage} />
+      <HomeStack.Screen name="CourseAttendancePage" component={CourseAttendancePage} />
+      <HomeStack.Screen name="KidDetails" component={KidDetailsPage} />
+      <HomeStack.Screen name="ParentDetails" component={ParentDetailsPage} />
+    </HomeStack.Navigator>
+  );
+};
 
 // Kids Stack Navigator
 const KidsStackNavigator = () => (
@@ -110,13 +123,22 @@ const MessagesStackNavigator = () => (
 );
 
 // Finance Stack Navigator
-const FinanceStackNavigator = () => (
-  <FinanceStack.Navigator screenOptions={{ headerShown: false }}>
-    <FinanceStack.Screen name="FinancePage" component={FinancePage} />
-    <FinanceStack.Screen name="IncomeList" component={IncomeListPage} />
-    <FinanceStack.Screen name="ExpensesList" component={ExpensesListPage} />
-  </FinanceStack.Navigator>
-);
+const FinanceStackNavigator = () => {
+  const { user } = useAuth();
+  const isParent = user?.role === 'parent';
+
+  return (
+    <FinanceStack.Navigator
+      screenOptions={{ headerShown: false }}
+      initialRouteName={isParent ? 'PaymentPage' : 'FinancePage'}
+    >
+      <FinanceStack.Screen name="FinancePage" component={FinancePage} />
+      <FinanceStack.Screen name="PaymentPage" component={PaymentPage} />
+      <FinanceStack.Screen name="IncomeList" component={IncomeListPage} />
+      <FinanceStack.Screen name="ExpensesList" component={ExpensesListPage} />
+    </FinanceStack.Navigator>
+  );
+};
 
 // Main Tab Navigator
 const MainTabNavigator = () => (

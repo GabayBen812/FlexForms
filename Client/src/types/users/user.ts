@@ -16,6 +16,7 @@ export interface User {
     | "student"
     | "shift_manager";
   organizationId: string;
+  linked_parent_id?: string;
   logo?: string | File;
   createdAt?: string;
   updatedAt?: string;

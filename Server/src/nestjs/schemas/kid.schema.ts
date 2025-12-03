@@ -23,6 +23,12 @@ export class Kid {
   @Prop()
   idNumber?: string;
 
+  @Prop()
+  birthDate?: Date;
+
+  @Prop()
+  gender?: string;
+
   @Prop({ type: Types.ObjectId, ref: 'Organization', required: true })
   organizationId!: Types.ObjectId;
 

@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../middlewares/jwt-auth.guard';
 import { Request } from 'express';
 import { CustomRequest } from '../dto/CustomRequest';
 import { Types } from 'mongoose';
+import { Organization } from '../schemas/organization.schema';
 
 @UseGuards(JwtAuthGuard)
 @Controller('organizations')
@@ -13,7 +14,19 @@ export class OrganizationController {
 
   @Post()
   create(@Body() dto: CreateOrganizationDto) {
-    return this.organizationService.create(dto);
+    const createData: Partial<Organization> = {
+      name: dto.name,
+      description: dto.description,
+    };
+    
+    if (dto.owner) {
+      if (!Types.ObjectId.isValid(dto.owner)) {
+        throw new BadRequestException('Invalid owner ID');
+      }
+      createData.owner = new Types.ObjectId(dto.owner) as Types.ObjectId;
+    }
+    
+    return this.organizationService.create(createData);
   }
 
   @Get('find')

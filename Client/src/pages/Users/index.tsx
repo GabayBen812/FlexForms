@@ -3,11 +3,13 @@ import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { useNavigate } from "react-router-dom";
 import { useState, useCallback, useMemo } from "react";
 import { Plus } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import DataTable from "@/components/ui/completed/data-table";
 import { TableEditButton } from "@/components/ui/completed/data-table/TableEditButton";
 import { useOrganization } from "@/hooks/useOrganization";
 import { createApiService } from "@/api/utils/apiFactory";
 import { User } from "@/types/users/user";
+import { Parent } from "@/types/parents/parent";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
@@ -18,6 +20,9 @@ import { TableAction } from "@/types/ui/data-table-types";
 import { showConfirm } from "@/utils/swal";
 
 const usersApi = createApiService<User>("/users");
+const parentsApi = createApiService<Parent>("/parents", {
+  includeOrgId: true,
+});
 
 type UserColumnMeta = {
   hidden?: boolean;
@@ -46,6 +51,35 @@ export default function Users() {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [tableRows, setTableRows] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+
+  // Fetch parents for linking
+  const { data: parentsData = [] } = useQuery({
+    queryKey: ["parents-options", organization?._id],
+    queryFn: async () => {
+      if (!organization?._id) return [];
+      const res = await parentsApi.fetchAll({}, false, organization._id);
+      return (res.data || []) as Parent[];
+    },
+    enabled: !!organization?._id,
+  });
+
+  const parentsOptions = useMemo(
+    () =>
+      parentsData.map((parent) => ({
+        value: parent._id || "",
+        label: `${parent.firstname} ${parent.lastname}`.trim(),
+      })),
+    [parentsData],
+  );
+
+  const parentById = useMemo(() => {
+    return parentsData.reduce<Record<string, Parent>>((acc, parent) => {
+      if (parent._id) {
+        acc[parent._id] = parent;
+      }
+      return acc;
+    }, {});
+  }, [parentsData]);
 
   // Custom selection column with edit icon
   const selectionColumn: ColumnDef<User> = {
@@ -148,37 +182,49 @@ export default function Users() {
     [t]
   );
 
-  const columns: ColumnDef<User, any>[] = [
-    selectionColumn,
-    { accessorKey: "name", header: t("user_name") },
-    {
-      accessorKey: "email",
-      header: t("user_email"),
-      meta: {
-        editable: false,
-      } satisfies UserColumnMeta,
-    },
-    {
-      accessorKey: "password",
-      header: t("user_password"),
-      cell: () => "*****",
-      enableSorting: false,
-      meta: {
-        fieldType: "PASSWORD",
-        editable: false,
-        excludeFromSearch: true,
-      } satisfies UserColumnMeta,
-    },
-    {
-      accessorKey: "role",
-      header: t("user_role"),
-      meta: {
-        fieldType: "SELECT",
-        options: roleOptions,
-      } satisfies UserColumnMeta,
-    },
-    { accessorKey: "organizationId", header: "", meta: { hidden: true } },
-  ];
+  const columns: ColumnDef<User, any>[] = useMemo(
+    () => [
+      selectionColumn,
+      { accessorKey: "name", header: t("user_name") },
+      {
+        accessorKey: "email",
+        header: t("user_email"),
+        meta: {
+          editable: false,
+        } satisfies UserColumnMeta,
+      },
+      {
+        accessorKey: "password",
+        header: t("user_password"),
+        cell: () => "*****",
+        enableSorting: false,
+        meta: {
+          fieldType: "PASSWORD",
+          editable: false,
+          excludeFromSearch: true,
+        } satisfies UserColumnMeta,
+      },
+      {
+        accessorKey: "role",
+        header: t("user_role"),
+        meta: {
+          fieldType: "SELECT",
+          options: roleOptions,
+        } satisfies UserColumnMeta,
+      },
+      {
+        accessorKey: "linked_parent_id",
+        header: t("linked_parent", { defaultValue: "Linked Parent" }),
+        meta: {
+          editable: true,
+          relationshipOptions: parentsOptions,
+          singleSelect: true,
+        },
+      },
+      { accessorKey: "organizationId", header: "", meta: { hidden: true } },
+    ],
+    [t, roleOptions, parentsOptions]
+  );
   //@ts-ignore
   const visibleColumns = columns.filter((col) => !col.meta?.hidden);
 
@@ -368,6 +414,11 @@ export default function Users() {
           defaultValues={{
             organizationId: organization?._id || "",
           }}
+          relationshipFields={{
+            linked_parent_id: {
+              options: parentsOptions,
+            },
+          }}
         />
         <AddRecordDialog
           open={isEditDialogOpen}
@@ -387,12 +438,18 @@ export default function Users() {
                   name: editingUser.name,
                   email: editingUser.email,
                   role: editingUser.role,
+                  linked_parent_id: editingUser.linked_parent_id || "",
                 }
               : undefined
           }
           excludeFields={["organizationId", "password"]}
           defaultValues={{
             organizationId: organization?._id || "",
+          }}
+          relationshipFields={{
+            linked_parent_id: {
+              options: parentsOptions,
+            },
           }}
         />
       </>

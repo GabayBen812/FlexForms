@@ -69,4 +69,8 @@ export class UpdateUserDto {
   @IsOptional()
   @IsMongoId()
   organizationId?: string;
+
+  @IsOptional()
+  @IsMongoId()
+  linked_parent_id?: string;
 }

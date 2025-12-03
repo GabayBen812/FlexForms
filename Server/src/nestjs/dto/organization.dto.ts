@@ -9,6 +9,11 @@ export class CreateOrganizationDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsString()
+  @IsMongoId()
+  @IsOptional()
+  owner?: string;
 }
 
 export class AssignFeatureFlagsDto {

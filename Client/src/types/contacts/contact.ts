@@ -13,6 +13,8 @@ export interface Contact {
   phone?: string;
   address?: string;
   profileImageUrl?: string;
+  birthDate?: string;
+  gender?: string;
   status: ContactStatus;
   accountId?: string;
   dynamicFields?: Record<string, unknown>;

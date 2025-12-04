@@ -2,11 +2,15 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Organization, OrganizationDocument } from '../schemas/organization.schema';
+import { Season, SeasonDocument } from '../schemas/season.schema';
 import { UpdateOrganizationDto } from '../dto/organization.dto';
 
 @Injectable()
 export class OrganizationService {
-  constructor(@InjectModel(Organization.name) private model: Model<OrganizationDocument>) {}
+  constructor(
+    @InjectModel(Organization.name) private model: Model<OrganizationDocument>,
+    @InjectModel(Season.name) private seasonModel: Model<SeasonDocument>,
+  ) {}
 
   create(data: Partial<Organization>) {
     return this.model.create(data);
@@ -51,7 +55,28 @@ export class OrganizationService {
   async findById(id: string) {
     console.log("trying to find by id", id);
     
-    return this.model.findById(id).exec();
+    const organization = await this.model.findById(id).exec();
+    
+    if (!organization) {
+      return null;
+    }
+    
+    // Convert to plain object and populate currentSeason manually
+    const orgObj: any = organization.toObject ? organization.toObject() : organization;
+    
+    // Convert currentSeasonId to string if it exists
+    if (orgObj.currentSeasonId) {
+      const seasonIdString = orgObj.currentSeasonId.toString();
+      orgObj.currentSeasonId = seasonIdString;
+      
+      // Manually populate currentSeason
+      const season = await this.seasonModel.findById(seasonIdString).lean().exec();
+      if (season) {
+        orgObj.currentSeason = season;
+      }
+    }
+    
+    return orgObj;
   }
   
   async assignFeatureFlags(orgId: string, featureFlagIds: string[]) {

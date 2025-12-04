@@ -13,6 +13,8 @@ import { updateOrganizationName } from "@/api/organizations";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { t } from "i18next";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { fetchSeasons } from "@/api/seasons";
 import {
   Select,
   SelectContent,
@@ -29,7 +31,6 @@ function Topbar() {
   const [name, setName] = useState(organization?.name || "");
   const [loading, setLoading] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const [selectedSeason, setSelectedSeason] = useState<string>("");
   const { toast } = useToast();
   
   // Allow editing if user is system_admin OR if feature flag is enabled
@@ -37,6 +38,13 @@ function Topbar() {
   
   // Check if seasons feature flag is enabled
   const showSeasons = useFeatureFlag("IS_SHOW_SEASONS").isEnabled;
+
+  // Fetch seasons for the dropdown
+  const { data: seasons = [] } = useQuery({
+    queryKey: ["seasons"],
+    queryFn: fetchSeasons,
+    enabled: showSeasons,
+  });
 
   // Keyboard shortcut: Cmd/Ctrl+K to open command palette
   useEffect(() => {
@@ -201,17 +209,25 @@ function Topbar() {
           <div className="flex-1 flex items-center justify-end gap-3">
             {showSeasons && (
               <Select 
-                value={selectedSeason} 
-                onValueChange={setSelectedSeason}
+                value={organization?.currentSeasonId || ""} 
+                disabled={true}
               >
                 <SelectTrigger 
-                  disabled={true}
-                  className="w-[160px] h-9 border-muted bg-muted/30 transition-colors"
+                  className="w-[180px] h-9 border-muted bg-muted/30 transition-colors"
                 >
-                  <SelectValue placeholder={t("select_season") || "בחר עונה"} />
+                  <SelectValue placeholder={t("seasons:select_season") || "Select season"}>
+                    {organization?.currentSeason?.name || 
+                     seasons.find(s => s._id === organization?.currentSeasonId)?.name ||
+                     t("seasons:no_season_selected") || 
+                     "No season selected"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {/* Empty for now */}
+                  {seasons.map((season) => (
+                    <SelectItem key={season._id} value={season._id}>
+                      {season.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             )}

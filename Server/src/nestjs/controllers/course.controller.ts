@@ -25,12 +25,13 @@ export class CourseController {
   }
 
   @Get()
-  findAll(@Req() req: Request) {
+  findAll(@Req() req: Request & { query?: any }) {
     const user = req.user as { organizationId?: string };
     if (!user || !user.organizationId) {
       throw new Error('User organizationId not found');
     }
-    return this.courseService.findAll(user.organizationId);
+    const seasonId = req.query?.seasonId;
+    return this.courseService.findAll(user.organizationId, seasonId);
   }
 
   @Get(':id')

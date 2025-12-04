@@ -1,18 +1,23 @@
 import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, ChevronUp, ChevronDown, Trash2, Edit2, X, Check } from "lucide-react";
+import { Plus, ChevronUp, ChevronDown, Trash2, Edit2, X, Check, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useOrganization } from "@/hooks/useOrganization";
+import Swal from "sweetalert2";
+import i18n from "@/i18n";
 import {
   fetchSeasons,
   createSeason,
   updateSeason,
   reorderSeason,
   deleteSeason,
+  setCurrentSeason,
   type Season,
 } from "@/api/seasons";
 import {
@@ -30,6 +35,8 @@ export default function SeasonsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { organization } = useOrganization();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string>("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -38,6 +45,7 @@ export default function SeasonsPage() {
   const [newSeasonName, setNewSeasonName] = useState("");
 
   const { isEnabled: hasAccess, isLoading: isFeatureFlagLoading } = useFeatureFlag("IS_SHOW_SEASONS");
+  const isSystemAdmin = user?.role === "system_admin";
 
   const { data: seasons = [], isLoading: queryLoading } = useQuery({
     queryKey: ["seasons"],
@@ -150,6 +158,25 @@ export default function SeasonsPage() {
     },
   });
 
+  const setCurrentMutation = useMutation({
+    mutationFn: (seasonId: string) => setCurrentSeason(seasonId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["seasons"] });
+      queryClient.invalidateQueries({ queryKey: ["organization"] });
+      toast({
+        title: t("success"),
+        description: t("seasons:current_season_set"),
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: t("error"),
+        description: error?.response?.data?.message || error.message || t("seasons:failed_to_set_current"),
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleStartEdit = (season: Season) => {
     setEditingId(season._id);
     setEditingName(season.name);
@@ -205,6 +232,64 @@ export default function SeasonsPage() {
       return;
     }
     createMutation.mutate(newSeasonName.trim());
+  };
+
+  const handleSetCurrent = async (seasonId: string) => {
+    const isRtl = i18n.language === "he";
+
+    const result = await Swal.fire({
+      title: "האם אתה בטוח?",
+      html: `
+        <div style="text-align: ${isRtl ? "right" : "left"}; direction: ${isRtl ? "rtl" : "ltr"};">
+          <p style="margin-bottom: 20px;">הגדרת העונה כנוכחית תחווט את כל המערכת להיות על העונה שנבחרה</p>
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 15px;">
+            <input type="checkbox" id="confirmCheckbox" style="width: 18px; height: 18px; cursor: pointer;">
+            <span>אני מבין את ההשלכות ואני רוצה להמשיך</span>
+          </label>
+        </div>
+      `,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "אישור",
+      cancelButtonText: "ביטול",
+      confirmButtonColor: "#3b82f6",
+      cancelButtonColor: "#6b7280",
+      reverseButtons: isRtl,
+      didOpen: () => {
+        const checkbox = document.getElementById("confirmCheckbox") as HTMLInputElement;
+        const confirmButton = Swal.getConfirmButton();
+        
+        if (checkbox && confirmButton) {
+          confirmButton.disabled = true;
+          confirmButton.style.opacity = "0.5";
+          confirmButton.style.cursor = "not-allowed";
+
+          checkbox.addEventListener("change", () => {
+            if (checkbox.checked) {
+              confirmButton.disabled = false;
+              confirmButton.style.opacity = "1";
+              confirmButton.style.cursor = "pointer";
+            } else {
+              confirmButton.disabled = true;
+              confirmButton.style.opacity = "0.5";
+              confirmButton.style.cursor = "not-allowed";
+            }
+          });
+        }
+      },
+      preConfirm: () => {
+        const checkbox = document.getElementById("confirmCheckbox") as HTMLInputElement;
+        if (!checkbox?.checked) {
+          Swal.showValidationMessage("אנא סמן את התיבה כדי להמשיך");
+          return false;
+        }
+        return true;
+      },
+    });
+
+    if (result.isConfirmed && result.value) {
+      setCurrentMutation.mutate(seasonId);
+    }
   };
 
   if (isFeatureFlagLoading) {
@@ -265,7 +350,7 @@ export default function SeasonsPage() {
                   </Button>
                 </div>
 
-                <div className="flex-1">
+                <div className="flex-1 flex items-center gap-3">
                   {editingId === season._id ? (
                     <div className="flex items-center gap-2">
                       <Input
@@ -295,13 +380,32 @@ export default function SeasonsPage() {
                       </Button>
                     </div>
                   ) : (
-                    <span className="text-lg font-medium">{season.name}</span>
+                    <>
+                      <span className="text-lg font-medium">{season.name}</span>
+                      {organization?.currentSeasonId === season._id && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                          <Star className="h-3 w-3 fill-current" />
+                          {t("seasons:current")}
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
 
                 <div className="flex items-center gap-2">
                   {editingId !== season._id && (
                     <>
+                      {isSystemAdmin && organization?.currentSeasonId !== season._id && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSetCurrent(season._id)}
+                          disabled={setCurrentMutation.isPending}
+                          className="h-8"
+                        >
+                          {t("seasons:set_as_current")}
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"

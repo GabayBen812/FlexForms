@@ -38,6 +38,7 @@ export default function CreateForm() {
       paymentSum: 0,
       isActive: true,
       organizationId: organization_id,
+      seasonId: organization?.currentSeasonId,
       fields: [],
     };
 

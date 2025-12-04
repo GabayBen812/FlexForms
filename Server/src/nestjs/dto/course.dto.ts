@@ -8,6 +8,10 @@ export class CreateCourseDto {
   @IsMongoId()
   @IsNotEmpty()
   organizationId!: string;
+
+  @IsMongoId()
+  @IsOptional()
+  seasonId?: string;
 }
 
 export class UpdateCourseDto {

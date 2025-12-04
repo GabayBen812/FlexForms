@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface MemberOption {
   value: string;
@@ -20,7 +21,7 @@ interface MemberOption {
 interface NewGroupDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (payload: { name: string; memberIds: string[] }) => Promise<void> | void;
+  onSubmit: (payload: { name: string; memberIds: string[]; isReadOnlyForParents?: boolean }) => Promise<void> | void;
   isSubmitting?: boolean;
   membersOptions: MemberOption[];
   title: string;
@@ -30,10 +31,13 @@ interface NewGroupDialogProps {
   nameErrorMessage: string;
   membersLabel: string;
   membersPlaceholder: string;
+  readOnlyLabel?: string;
+  readOnlyDescription?: string;
   cancelLabel: string;
   submitLabel: string;
   initialName?: string;
   initialMemberIds?: string[];
+  initialIsReadOnlyForParents?: boolean;
 }
 
 export function NewGroupDialog({
@@ -48,27 +52,33 @@ export function NewGroupDialog({
   namePlaceholder,
   membersLabel,
   membersPlaceholder,
+  readOnlyLabel,
+  readOnlyDescription,
   cancelLabel,
   submitLabel,
   nameErrorMessage,
   initialName,
   initialMemberIds,
+  initialIsReadOnlyForParents,
 }: NewGroupDialogProps) {
   const [name, setName] = useState("");
   const [memberIds, setMemberIds] = useState<string[]>([]);
+  const [isReadOnlyForParents, setIsReadOnlyForParents] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setName(initialName ?? "");
       setMemberIds(initialMemberIds ?? []);
+      setIsReadOnlyForParents(initialIsReadOnlyForParents ?? false);
       setError(null);
     } else {
       setName("");
       setMemberIds([]);
+      setIsReadOnlyForParents(false);
       setError(null);
     }
-  }, [open, initialName, initialMemberIds]);
+  }, [open, initialName, initialMemberIds, initialIsReadOnlyForParents]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -78,7 +88,7 @@ export function NewGroupDialog({
       return;
     }
     setError(null);
-    await onSubmit({ name: trimmedName, memberIds });
+    await onSubmit({ name: trimmedName, memberIds, isReadOnlyForParents });
   };
 
   return (
@@ -115,6 +125,28 @@ export function NewGroupDialog({
                 className="justify-start"
               />
             </div>
+            {readOnlyLabel && (
+              <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/50 p-4">
+                <Checkbox
+                  id="read-only-parents"
+                  checked={isReadOnlyForParents}
+                  onCheckedChange={(checked) => setIsReadOnlyForParents(checked === true)}
+                />
+                <div className="flex flex-col gap-1">
+                  <Label
+                    htmlFor="read-only-parents"
+                    className="cursor-pointer font-medium leading-none"
+                  >
+                    {readOnlyLabel}
+                  </Label>
+                  {readOnlyDescription && (
+                    <p className="text-xs text-muted-foreground">
+                      {readOnlyDescription}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </DialogBody>
           <DialogFooter className="flex flex-row-reverse gap-2">
             <Button type="submit" disabled={isSubmitting}>

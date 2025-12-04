@@ -6,6 +6,7 @@ export type Form = {
   description: string;
   fields: FieldConfig[];
   organizationId: string | { _id: string; logo?: string; name?: string };
+  seasonId?: string;
   isActive: boolean;
   code: number;
   paymentSum?: number;

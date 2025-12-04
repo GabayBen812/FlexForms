@@ -7,6 +7,7 @@ export type ChatGroup = {
   memberIds: string[];
   createdBy: string;
   isArchived: boolean;
+  isReadOnlyForParents: boolean;
   createdAt: string;
   updatedAt: string;
   /**

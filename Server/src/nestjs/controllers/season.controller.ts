@@ -70,5 +70,17 @@ export class SeasonController {
     }
     return this.seasonService.remove(id, user.organizationId);
   }
+
+  @Put(':id/set-current')
+  setCurrentSeason(@Param('id') id: string, @Req() req: Request) {
+    const user = req.user as { organizationId?: string; role?: string };
+    if (!user || !user.organizationId) {
+      throw new BadRequestException('User organizationId not found');
+    }
+    if (user.role !== 'system_admin') {
+      throw new BadRequestException('Only system_admin users can set the current season');
+    }
+    return this.seasonService.setCurrentSeason(id, user.organizationId);
+  }
 }
 

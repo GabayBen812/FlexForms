@@ -20,6 +20,9 @@ export class Organization {
   @Prop({ type: [Types.ObjectId], ref: 'FeatureFlag', default: [] })
   featureFlagIds!: Types.ObjectId[];
   
+  @Prop({ type: Types.ObjectId, ref: 'Season' })
+  currentSeasonId?: Types.ObjectId;
+  
   @Prop()
   cardcomTerminalNumber?: string;
 

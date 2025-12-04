@@ -186,6 +186,18 @@ const ChatPage = () => {
     [groups, groupId]
   );
 
+  const canSendMessages = useMemo(() => {
+    if (!currentGroup) return false;
+    if (!user) return false;
+    
+    // If group is read-only for parents and user is a parent, they cannot send
+    if (currentGroup.isReadOnlyForParents && user.role === 'parent') {
+      return false;
+    }
+    
+    return true;
+  }, [currentGroup, user]);
+
   const chatParticipants = useMemo(() => {
     if (!currentGroup) return [];
 
@@ -370,84 +382,92 @@ const ChatPage = () => {
               />
             )}
 
-            <View style={styles.composerContainer}>
-              <View style={styles.composerInputWrapper}>
-                {selectedMention && (
-                  <View style={styles.mentionBadgeContainer}>
-                    <Pressable
-                      onPress={handleRemoveMention}
-                      style={styles.mentionBadge}
-                    >
-                      <Text style={styles.mentionBadgeText}>
-                        @{selectedMention.label}
-                      </Text>
-                      <Text style={styles.mentionBadgeClose}>×</Text>
-                    </Pressable>
-                  </View>
-                )}
-                <View style={styles.inputContainer}>
-                  <TextInput
-                    ref={inputRef}
-                    value={inputValue}
-                    onChangeText={handleInputChange}
-                    placeholder="כתוב הודעה…"
-                    placeholderTextColor="#9CA3AF"
-                    multiline
-                    style={styles.composerInput}
-                  />
-                  {isMentionOpen && filteredMentions.length > 0 && (
-                    <View style={styles.mentionDropdown}>
-                      <FlatList
-                        data={filteredMentions}
-                        keyExtractor={(item) => item.id}
-                        renderItem={({ item, index }) => (
-                          <Pressable
-                            onPress={() => insertMention(item)}
-                            style={[
-                              styles.mentionItem,
-                              index === highlightedIndex &&
-                                styles.mentionItemHighlighted,
-                            ]}
-                          >
-                            <Text style={styles.mentionItemText}>
-                              @{item.label}
-                            </Text>
-                          </Pressable>
-                        )}
-                        style={styles.mentionList}
-                        nestedScrollEnabled
-                      />
+            {canSendMessages ? (
+              <View style={styles.composerContainer}>
+                <View style={styles.composerInputWrapper}>
+                  {selectedMention && (
+                    <View style={styles.mentionBadgeContainer}>
+                      <Pressable
+                        onPress={handleRemoveMention}
+                        style={styles.mentionBadge}
+                      >
+                        <Text style={styles.mentionBadgeText}>
+                          @{selectedMention.label}
+                        </Text>
+                        <Text style={styles.mentionBadgeClose}>×</Text>
+                      </Pressable>
                     </View>
                   )}
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      ref={inputRef}
+                      value={inputValue}
+                      onChangeText={handleInputChange}
+                      placeholder="כתוב הודעה…"
+                      placeholderTextColor="#9CA3AF"
+                      multiline
+                      style={styles.composerInput}
+                    />
+                    {isMentionOpen && filteredMentions.length > 0 && (
+                      <View style={styles.mentionDropdown}>
+                        <FlatList
+                          data={filteredMentions}
+                          keyExtractor={(item) => item.id}
+                          renderItem={({ item, index }) => (
+                            <Pressable
+                              onPress={() => insertMention(item)}
+                              style={[
+                                styles.mentionItem,
+                                index === highlightedIndex &&
+                                  styles.mentionItemHighlighted,
+                              ]}
+                            >
+                              <Text style={styles.mentionItemText}>
+                                @{item.label}
+                              </Text>
+                            </Pressable>
+                          )}
+                          style={styles.mentionList}
+                          nestedScrollEnabled
+                        />
+                      </View>
+                    )}
+                  </View>
                 </View>
-              </View>
-              <Pressable
-                onPress={handleSend}
-                disabled={
-                  (selectedMention
-                    ? `@${selectedMention.label} ${inputValue}`.trim().length ===
-                      0
-                    : inputValue.trim().length === 0) ||
-                  sendMessageMutation.isPending
-                }
-                style={({ pressed }) => [
-                  styles.sendButton,
-                  (pressed || sendMessageMutation.isPending) &&
-                    styles.sendButtonPressed,
-                  (selectedMention
-                    ? `@${selectedMention.label} ${inputValue}`.trim().length ===
-                      0
-                    : inputValue.trim().length === 0) ||
+                <Pressable
+                  onPress={handleSend}
+                  disabled={
+                    (selectedMention
+                      ? `@${selectedMention.label} ${inputValue}`.trim().length ===
+                        0
+                      : inputValue.trim().length === 0) ||
                     sendMessageMutation.isPending
-                    ? styles.sendButtonDisabled
-                    : null,
-                ]}
-              >
-                <Text style={styles.sendButtonLabel}>
-                  {sendMessageMutation.isPending ? 'שולח…' : 'שלח'}
+                  }
+                  style={({ pressed }) => [
+                    styles.sendButton,
+                    (pressed || sendMessageMutation.isPending) &&
+                      styles.sendButtonPressed,
+                    (selectedMention
+                      ? `@${selectedMention.label} ${inputValue}`.trim().length ===
+                        0
+                      : inputValue.trim().length === 0) ||
+                      sendMessageMutation.isPending
+                      ? styles.sendButtonDisabled
+                      : null,
+                  ]}
+                >
+                  <Text style={styles.sendButtonLabel}>
+                    {sendMessageMutation.isPending ? 'שולח…' : 'שלח'}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={styles.readOnlyContainer}>
+                <Text style={styles.readOnlyText}>
+                  רק מנהלים יכולים לשלוח הודעות בקבוצה זו
                 </Text>
-              </Pressable>
-            </View>
+              </View>
+            )}
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -700,6 +720,20 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '600',
+  },
+  readOnlyContainer: {
+    paddingTop: 12,
+    paddingBottom: 12,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+    alignItems: 'center',
+  },
+  readOnlyText: {
+    color: '#64748B',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
 

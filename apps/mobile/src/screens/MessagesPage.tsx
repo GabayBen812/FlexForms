@@ -23,7 +23,7 @@ type ChatListItemProps = {
 };
 
 const ChatListItem = ({ group, onPress }: ChatListItemProps) => {
-  const { name, lastMessagePreview, unreadCount, updatedAt } = group;
+  const { name, lastMessagePreview, unreadCount, updatedAt, isReadOnlyForParents } = group;
 
   return (
     <Pressable
@@ -34,7 +34,14 @@ const ChatListItem = ({ group, onPress }: ChatListItemProps) => {
       ]}
     >
       <View style={styles.chatItemTextGroup}>
-        <Text style={styles.chatItemTitle}>{name}</Text>
+        <View style={styles.chatItemTitleRow}>
+          <Text style={styles.chatItemTitle}>{name}</Text>
+          {isReadOnlyForParents && (
+            <View style={styles.readOnlyBadge}>
+              <Text style={styles.readOnlyBadgeText}>קריאה בלבד</Text>
+            </View>
+          )}
+        </View>
         {lastMessagePreview ? (
           <Text style={styles.chatItemSubtitle} numberOfLines={1}>
             {lastMessagePreview}
@@ -257,9 +264,27 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'flex-end',
   },
+  chatItemTitleRow: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 8,
+  },
   chatItemTitle: {
     color: '#1e293b',
     fontSize: 18,
+    fontWeight: '600',
+  },
+  readOnlyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  readOnlyBadgeText: {
+    color: '#6B7280',
+    fontSize: 11,
     fontWeight: '600',
   },
   chatItemSubtitle: {

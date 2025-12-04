@@ -92,6 +92,15 @@ export class FormService {
     if (query.organizationId && query.organizationId !== "") {
       filter.organizationId = new Types.ObjectId(query.organizationId);
     }
+    
+    // Season filtering: show forms matching seasonId OR forms with no season
+    if (query.seasonId && query.seasonId !== "") {
+      filter.$or = [
+        { seasonId: new Types.ObjectId(query.seasonId) },
+        { seasonId: { $exists: false } },
+        { seasonId: null }
+      ];
+    }
 
     // Only add filters if value is not undefined or empty string
     Object.keys(filter).forEach((key) => {

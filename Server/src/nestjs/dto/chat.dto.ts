@@ -2,6 +2,7 @@ import {
   ArrayNotEmpty,
   ArrayUnique,
   IsArray,
+  IsBoolean,
   IsMongoId,
   IsNotEmpty,
   IsOptional,
@@ -20,6 +21,10 @@ export class CreateChatGroupDto {
   @ArrayUnique()
   @IsOptional()
   memberIds?: string[];
+
+  @IsBoolean()
+  @IsOptional()
+  isReadOnlyForParents?: boolean;
 }
 
 export class UpdateChatGroupDto {
@@ -35,6 +40,10 @@ export class UpdateChatGroupDto {
   @IsOptional()
   @ArrayNotEmpty()
   memberIds?: string[];
+
+  @IsBoolean()
+  @IsOptional()
+  isReadOnlyForParents?: boolean;
 }
 
 export class SendChatMessageDto {

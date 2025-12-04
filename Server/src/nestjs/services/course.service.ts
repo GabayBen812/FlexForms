@@ -16,8 +16,19 @@ export class CourseService {
     return createdCourse.save();
   }
 
-  async findAll(organizationId: string): Promise<Course[]> {
-    return this.courseModel.find({ organizationId }).exec();
+  async findAll(organizationId: string, seasonId?: string): Promise<Course[]> {
+    const filter: any = { organizationId };
+    
+    // Season filtering: show courses matching seasonId OR courses with no season
+    if (seasonId) {
+      filter.$or = [
+        { seasonId: seasonId },
+        { seasonId: { $exists: false } },
+        { seasonId: null }
+      ];
+    }
+    
+    return this.courseModel.find(filter).exec();
   }
 
   async findOne(id: string): Promise<Course | null> {

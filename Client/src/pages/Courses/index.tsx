@@ -8,11 +8,20 @@ import DataTable from "@/components/ui/completed/data-table";
 import { useOrganization } from "@/hooks/useOrganization";
 import { coursesApi } from "@/api/courses";
 import { Course } from "@/types/courses/Course";
+import { useQuery } from "@tanstack/react-query";
+import { fetchSeasons } from "@/api/seasons";
 
 export default function Courses() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { organization } = useOrganization();
+
+  // Fetch seasons for the season column
+  const { data: seasons = [] } = useQuery({
+    queryKey: ["seasons", organization?._id],
+    queryFn: fetchSeasons,
+    enabled: !!organization?._id,
+  });
 
   const handleCourseClick = (course: Course) => {
     if (course && course._id) {
@@ -57,7 +66,23 @@ export default function Courses() {
       minSize: 180,
       meta: { editable: false },
     },
-  ], [t]);
+    {
+      accessorKey: "seasonId",
+      header: t("season", "עונה"),
+      cell: ({ row }) => {
+        const course = row.original;
+        const season = seasons.find(s => s._id === course.seasonId);
+        return (
+          <div className="w-full text-center">
+            {season?.name || "-"}
+          </div>
+        );
+      },
+      size: 180,
+      minSize: 140,
+      meta: { editable: false },
+    },
+  ], [t, seasons]);
 
   const wrappedFetchData = useCallback(
     async (params: any) => {
@@ -80,6 +105,7 @@ export default function Courses() {
             pageSize,
             page,
             organizationId: organization._id,
+            seasonId: organization.currentSeasonId,
           },
           false,
           organization._id
@@ -113,6 +139,17 @@ export default function Courses() {
     [organization?._id]
   );
 
+  const handleAddCourse = useCallback(
+    async (data: Partial<Course>) => {
+      return coursesApi.create({
+        ...data,
+        organizationId: organization?._id || "",
+        seasonId: organization?.currentSeasonId,
+      } as any);
+    },
+    [organization]
+  );
+
   const handleUpdateCourse = useCallback(
     async (data: Partial<Course> & { id: string | number }) => {
       return coursesApi.update({ ...data, id: data._id || data.id });
@@ -143,6 +180,7 @@ export default function Courses() {
           <DataTable<Course>
             data={[]}
             fetchData={wrappedFetchData}
+            addData={handleAddCourse}
             updateData={handleUpdateCourse}
             deleteData={handleDeleteCourse}
             columns={columns}

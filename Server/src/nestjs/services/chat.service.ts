@@ -23,6 +23,7 @@ export interface ChatGroupView {
   memberIds: string[];
   createdBy: string;
   isArchived: boolean;
+  isReadOnlyForParents: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -77,6 +78,7 @@ export class ChatService {
       organizationId: organizationObjectId,
       memberIds: memberIds.map((id) => this.toObjectId(id, 'memberIds')),
       createdBy: creatorObjectId,
+      isReadOnlyForParents: dto.isReadOnlyForParents ?? false,
     });
 
     const mapped = this.mapGroup(group.toObject());
@@ -181,6 +183,10 @@ export class ChatService {
       );
     }
 
+    if (dto.isReadOnlyForParents !== undefined) {
+      group.isReadOnlyForParents = dto.isReadOnlyForParents;
+    }
+
     const updated = await group.save();
 
     return {
@@ -222,6 +228,7 @@ export class ChatService {
     dto: SendChatMessageDto,
     organizationId: string,
     senderId: string,
+    userRole?: string,
   ): Promise<ChatMessageView> {
     if (!dto.groupId) {
       throw new BadRequestException('groupId is required');
@@ -232,6 +239,14 @@ export class ChatService {
       organizationId,
       senderId,
     );
+
+    // Check if the group is read-only for parents and user is a parent
+    if (group.isReadOnlyForParents && userRole === 'parent') {
+      throw new ForbiddenException(
+        'Only administrators can send messages in this group.',
+      );
+    }
+
     const senderObjectId = this.toObjectId(senderId, 'senderId');
 
     const content = this.normalizeMessageContent(dto.content);
@@ -349,6 +364,7 @@ export class ChatService {
       ),
       createdBy: plain.createdBy.toString(),
       isArchived: plain.isArchived ?? false,
+      isReadOnlyForParents: plain.isReadOnlyForParents ?? false,
       createdAt: plain.createdAt,
       updatedAt: plain.updatedAt,
     };

@@ -17,6 +17,10 @@ export class CreateFormDto {
   organizationId!: Types.ObjectId;
 
   @IsOptional()
+  @Type(() => Types.ObjectId)
+  seasonId?: Types.ObjectId;
+
+  @IsOptional()
   @IsArray()
   fields: Record<string, any>[] = [];
 

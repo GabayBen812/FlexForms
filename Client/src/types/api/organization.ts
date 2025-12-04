@@ -1,3 +1,5 @@
+import { Season } from '@/api/seasons';
+
 export interface Organization {
   _id: string;
   id?: string;
@@ -8,6 +10,8 @@ export interface Organization {
   createdAt?: string;
   updatedAt?: string;
   featureFlagIds?: string[];
+  currentSeasonId?: string;
+  currentSeason?: Season;
   customStyles?: {
     accentColor?: string;
   };

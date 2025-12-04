@@ -28,6 +28,9 @@ export class ChatGroup {
 
   @Prop({ default: false })
   isArchived!: boolean;
+
+  @Prop({ default: false })
+  isReadOnlyForParents!: boolean;
 }
 
 export const ChatGroupSchema = SchemaFactory.createForClass(ChatGroup);

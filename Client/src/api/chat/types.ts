@@ -5,6 +5,7 @@ export interface ChatGroup {
   memberIds: string[];
   createdBy: string;
   isArchived: boolean;
+  isReadOnlyForParents: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -27,11 +28,13 @@ export interface ChatMessagesResponse {
 export interface CreateChatGroupInput {
   name: string;
   memberIds?: string[];
+  isReadOnlyForParents?: boolean;
 }
 
 export interface UpdateChatGroupInput {
   name?: string;
   memberIds?: string[];
+  isReadOnlyForParents?: boolean;
 }
 
 export interface SendChatMessageInput {

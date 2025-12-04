@@ -17,6 +17,9 @@ export class Form {
   @Prop({ type: Types.ObjectId, ref: 'Organization', required: true })
   organizationId!: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, ref: 'Season' })
+  seasonId?: Types.ObjectId;
+
   @Prop({ type: [Object], default: [] })
   fields!: Record<string, any>[];
 

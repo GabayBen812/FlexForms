@@ -64,11 +64,12 @@ export default function Home() {
   });
 
   const { data: forms = [], isLoading: formsLoading } = useQuery({
-    queryKey: ["forms", organization?._id],
+    queryKey: ["forms", organization?._id, organization?.currentSeasonId],
     queryFn: async () => {
       const res = await apiClient.get("/forms", {
         params: {
           organizationId: organization?._id,
+          seasonId: organization?.currentSeasonId,
         },
       });
       return res.data;

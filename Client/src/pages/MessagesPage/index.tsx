@@ -201,6 +201,18 @@ export default function MessagesPage() {
     return map;
   }, [organizationUsers, user, t]);
 
+  const canSendMessages = useMemo(() => {
+    if (!selectedGroup) return false;
+    if (!user) return false;
+    
+    // If group is read-only for parents and user is a parent, they cannot send
+    if (selectedGroup.isReadOnlyForParents && user.role === 'parent') {
+      return false;
+    }
+    
+    return true;
+  }, [selectedGroup, user]);
+
   const handleSendMessage = async (content: string) => {
     if (!selectedGroupId) return;
     await sendMessageMutation.mutateAsync({ groupId: selectedGroupId, content });
@@ -227,6 +239,7 @@ export default function MessagesPage() {
   const handleGroupDialogSubmit = async (payload: {
     name: string;
     memberIds: string[];
+    isReadOnlyForParents?: boolean;
   }) => {
     if (groupDialogMode === "create") {
       await createGroupMutation.mutateAsync(payload);
@@ -338,19 +351,27 @@ export default function MessagesPage() {
                 loadMoreLabel={t("chat:load_previous_messages")}
               />
 
-              <ChatComposer
-                onSend={handleSendMessage}
-                isSending={sendMessageMutation.isPending}
-                disabled={!selectedGroupId}
-                placeholder={t("chat:composer_placeholder")}
-                enableMentions={Boolean(selectedGroup) && chatParticipants.length > 0}
-                mentionUsers={chatParticipants}
-                sendLabel={
-                  sendMessageMutation.isPending
-                    ? t("chat:sending_label")
-                    : t("chat:send_label")
-                }
-              />
+              {canSendMessages ? (
+                <ChatComposer
+                  onSend={handleSendMessage}
+                  isSending={sendMessageMutation.isPending}
+                  disabled={!selectedGroupId}
+                  placeholder={t("chat:composer_placeholder")}
+                  enableMentions={Boolean(selectedGroup) && chatParticipants.length > 0}
+                  mentionUsers={chatParticipants}
+                  sendLabel={
+                    sendMessageMutation.isPending
+                      ? t("chat:sending_label")
+                      : t("chat:send_label")
+                  }
+                />
+              ) : (
+                <div className="border-t border-border bg-muted/50 px-6 py-4 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    {t("chat:read_only_message", "Only administrators can send messages in this group")}
+                  </p>
+                </div>
+              )}
             </>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
@@ -399,6 +420,8 @@ export default function MessagesPage() {
         nameErrorMessage={t("chat:group_name_error")}
         membersLabel={t("chat:members_label")}
         membersPlaceholder={t("chat:members_placeholder")}
+        readOnlyLabel={t("chat:read_only_for_parents_label", "Only admins can send messages")}
+        readOnlyDescription={t("chat:read_only_for_parents_description", "Parents will only be able to read messages in this group")}
         cancelLabel={t("common:cancel")}
         submitLabel={
           groupDialogMode === "create"
@@ -407,6 +430,7 @@ export default function MessagesPage() {
         }
         initialName={groupDialogMode === "edit" ? groupToEdit?.name : ""}
         initialMemberIds={groupDialogMode === "edit" ? groupToEdit?.memberIds : []}
+        initialIsReadOnlyForParents={groupDialogMode === "edit" ? groupToEdit?.isReadOnlyForParents : false}
       />
     </div>
   );

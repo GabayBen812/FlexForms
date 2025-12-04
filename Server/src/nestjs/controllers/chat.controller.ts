@@ -24,6 +24,7 @@ import { ChatGateway } from '../gateways/chat.gateway';
 interface RequestUser {
   id: string;
   organizationId?: string;
+  role?: string;
 }
 
 @Controller('chat')
@@ -140,6 +141,7 @@ export class ChatController {
       payload,
       user.organizationId,
       user.id,
+      user.role,
     );
 
     this.chatGateway.emitMessage(message);
@@ -147,7 +149,7 @@ export class ChatController {
     return message;
   }
 
-  private getUserFromRequest(req: Request): Required<RequestUser> {
+  private getUserFromRequest(req: Request): RequestUser & { id: string; organizationId: string } {
     const user = req.user as RequestUser | undefined;
     if (!user?.organizationId) {
       throw new BadRequestException('User organizationId not found');
@@ -158,6 +160,7 @@ export class ChatController {
     return {
       id: user.id,
       organizationId: user.organizationId,
+      role: user.role,
     };
   }
 }

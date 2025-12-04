@@ -2,12 +2,14 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Season, SeasonDocument } from '../schemas/season.schema';
+import { Organization, OrganizationDocument } from '../schemas/organization.schema';
 import { CreateSeasonDto, UpdateSeasonDto, ReorderSeasonDto } from '../dto/season.dto';
 
 @Injectable()
 export class SeasonService {
   constructor(
     @InjectModel(Season.name) private seasonModel: Model<SeasonDocument>,
+    @InjectModel(Organization.name) private organizationModel: Model<OrganizationDocument>,
   ) {}
 
   async create(createSeasonDto: CreateSeasonDto): Promise<Season> {
@@ -184,6 +186,34 @@ export class SeasonService {
     if (desiredOrder < 0) return 0;
     if (desiredOrder > count) return count;
     return desiredOrder;
+  }
+
+  async setCurrentSeason(seasonId: string, organizationId: string): Promise<Organization | null> {
+    const orgObjectId = this.asObjectId(organizationId);
+    const seasonObjectId = this.asObjectId(seasonId);
+
+    // Verify that the season belongs to this organization
+    const season = await this.seasonModel.findOne({
+      _id: seasonObjectId,
+      organizationId: orgObjectId,
+    });
+
+    if (!season) {
+      throw new NotFoundException('Season not found or does not belong to this organization');
+    }
+
+    // Update the organization's currentSeasonId
+    const organization = await this.organizationModel.findByIdAndUpdate(
+      orgObjectId,
+      { currentSeasonId: seasonObjectId },
+      { new: true }
+    ).exec();
+
+    if (!organization) {
+      throw new NotFoundException('Organization not found');
+    }
+
+    return organization;
   }
 }
 

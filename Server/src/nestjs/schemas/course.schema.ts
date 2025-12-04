@@ -9,6 +9,9 @@ export class Course extends Document {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Organization', required: true })
   organizationId!: MongooseSchema.Types.ObjectId;
 
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Season' })
+  seasonId?: MongooseSchema.Types.ObjectId;
+
   @Prop({ default: '#3b82f6' })
   color?: string;
 }

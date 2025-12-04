@@ -33,3 +33,7 @@ export async function deleteSeason(id: string): Promise<void> {
   await apiClient.delete(`/seasons/${id}`);
 }
 
+export async function setCurrentSeason(seasonId: string): Promise<void> {
+  await apiClient.put(`/seasons/${seasonId}/set-current`);
+}
+

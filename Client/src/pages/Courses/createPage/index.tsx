@@ -31,6 +31,7 @@ export default function CreateCourse() {
       const res = await coursesApi.create({
         name: name.trim(),
         organizationId: organization._id,
+        seasonId: organization?.currentSeasonId,
       });
 
       // Check for errors first

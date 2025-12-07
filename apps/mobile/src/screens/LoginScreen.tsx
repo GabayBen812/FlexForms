@@ -23,16 +23,21 @@ const LoginScreen = () => {
   const [formError, setFormError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
+    console.log('[LoginScreen] handleSubmit called');
     if (!email.trim() || !password.trim()) {
+      console.log('[LoginScreen] Validation failed - empty fields');
       setFormError('נא למלא אימייל וסיסמה');
       return;
     }
 
+    console.log('[LoginScreen] Validation passed, calling login');
     setFormError(null);
 
     try {
       await login({ email: email.trim(), password });
-    } catch {
+      console.log('[LoginScreen] Login completed successfully');
+    } catch (error) {
+      console.log('[LoginScreen] Login catch block:', error);
       // errors handled via context state
     }
   };

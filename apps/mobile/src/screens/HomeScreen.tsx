@@ -129,7 +129,7 @@ const EmployeeReportsCard = ({ onPress, currentDate, organizationId }: EmployeeR
           <Text style={styles.emptyMessageText}>אין דיווחים היום</Text>
         ) : (
           displayReports.map((employee, index) => (
-            <View key={index} style={styles.employeeReportItem}>
+            <View key={`employee-${employee.name}-${index}`} style={styles.employeeReportItem}>
               <Text style={styles.employeeReportName}>{employee.name}</Text>
               <Text style={styles.employeeReportStatus}>
                 {employee.hasCheckedIn
@@ -157,7 +157,7 @@ const ParentMessagesCard = ({ onPress }: ParentMessagesCardProps) => {
   // Fetch latest message for each non-archived group using useQueries
   // Only fetch if lastMessagePreview is not available
   const activeGroups = useMemo(
-    () => groups.filter((group) => !group.isArchived && group.id),
+    () => Array.isArray(groups) ? groups.filter((group) => !group.isArchived && group.id) : [],
     [groups]
   );
 

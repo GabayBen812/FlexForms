@@ -218,9 +218,14 @@ const MainTabNavigator = () => (
 export const AppNavigator = () => {
   const { user, isLoadingUser } = useAuth();
 
+  console.log('[AppNavigator] Rendering with:', { user, isLoadingUser });
+
   if (isLoadingUser) {
+    console.log('[AppNavigator] Showing loading screen');
     return <LoadingScreen />;
   }
+
+  console.log('[AppNavigator] Showing:', user ? 'HomeScreen' : 'LoginScreen');
 
   return (
     <NavigationContainer>

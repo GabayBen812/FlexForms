@@ -21,6 +21,7 @@ const getWebStorage = () => {
 
 export async function getAuthCookie(): Promise<string | null> {
   if (inMemoryCookie !== undefined) {
+    console.log('[authCookie] getAuthCookie from memory:', inMemoryCookie ? `${inMemoryCookie.substring(0, 20)}...` : 'null');
     return inMemoryCookie;
   }
 
@@ -28,15 +29,18 @@ export async function getAuthCookie(): Promise<string | null> {
     const storage = getWebStorage();
     const stored = storage?.getItem(AUTH_COOKIE_KEY) ?? null;
     inMemoryCookie = stored;
+    console.log('[authCookie] getAuthCookie from web storage:', stored ? `${stored.substring(0, 20)}...` : 'null');
     return stored;
   }
 
   const stored = await SecureStore.getItemAsync(AUTH_COOKIE_KEY);
   inMemoryCookie = stored ?? null;
+  console.log('[authCookie] getAuthCookie from SecureStore:', stored ? `${stored.substring(0, 20)}...` : 'null');
   return inMemoryCookie;
 }
 
 export async function setAuthCookie(cookie: string): Promise<void> {
+  console.log('[authCookie] setAuthCookie:', cookie.substring(0, 30) + '...');
   inMemoryCookie = cookie;
   if (isWeb) {
     const storage = getWebStorage();
@@ -45,6 +49,7 @@ export async function setAuthCookie(cookie: string): Promise<void> {
   }
 
   await SecureStore.setItemAsync(AUTH_COOKIE_KEY, cookie);
+  console.log('[authCookie] Cookie saved to SecureStore');
 }
 
 export async function clearAuthCookie(): Promise<void> {

@@ -114,7 +114,7 @@ const ParentMessagesCard = ({ onPress }: ParentMessagesCardProps) => {
   // Fetch latest message for each non-archived group using useQueries
   // Only fetch if lastMessagePreview is not available
   const activeGroups = useMemo(
-    () => groups.filter((group) => !group.isArchived && group.id),
+    () => Array.isArray(groups) ? groups.filter((group) => !group.isArchived && group.id) : [],
     [groups]
   );
 

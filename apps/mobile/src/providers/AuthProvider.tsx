@@ -26,33 +26,66 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   useEffect(() => {
     const bootstrap = async () => {
+      // Clear any stale cache on startup
+      queryClient.removeQueries({ queryKey: AUTH_QUERY_KEY });
       await getAuthCookie();
       setIsReady(true);
     };
 
     bootstrap();
-  }, []);
+  }, [queryClient]);
 
   const {
     data: user,
     isLoading: isFetchingUser,
     isFetching,
+    error,
   } = useQuery({
     queryKey: AUTH_QUERY_KEY,
-    queryFn: fetchCurrentUser,
+    queryFn: async () => {
+      try {
+        const userData = await fetchCurrentUser();
+        console.log('[AuthProvider] fetchCurrentUser succeeded:', userData);
+        return userData;
+      } catch (error) {
+        // If fetch fails (401, network error, etc), return null
+        console.log('[AuthProvider] fetchCurrentUser failed:', error);
+        return null;
+      }
+    },
     enabled: isReady,
     retry: false,
+    staleTime: Infinity, // Keep data fresh, don't auto-refetch
+    gcTime: Infinity, // Keep in cache
+    refetchOnMount: false, // Don't refetch when component mounts
+    refetchOnWindowFocus: false, // Don't refetch when app comes to focus
+    refetchOnReconnect: false, // Don't refetch on network reconnect
+  });
+
+  // Debug logging
+  console.log('[AuthProvider] State:', { 
+    isReady, 
+    isFetchingUser, 
+    isFetching, 
+    user, 
+    isLoadingUser: !isReady || isFetchingUser || isFetching 
   });
 
   const loginMutation = useMutation({
-    mutationFn: login,
+    mutationFn: async (payload) => {
+      console.log('[AuthProvider] Login attempt with:', payload.email);
+      return await login(payload);
+    },
     onMutate: async () => {
+      console.log('[AuthProvider] Login started');
       setLoginError(null);
     },
     onSuccess: async () => {
+      console.log('[AuthProvider] Login successful, fetching user data');
       await queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
     },
     onError: (error) => {
+      console.log('[AuthProvider] Login failed:', error);
       setLoginError(extractErrorMessage(error));
     },
   });
@@ -60,6 +93,9 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: async () => {
+      // Clear all cached data
+      queryClient.clear();
+      // Explicitly set user to null
       queryClient.setQueryData(AUTH_QUERY_KEY, null);
     },
   });

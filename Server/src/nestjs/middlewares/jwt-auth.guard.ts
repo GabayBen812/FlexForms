@@ -19,8 +19,19 @@ interface DecodedToken {
 export class JwtAuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<CustomRequest>();
-    //@ts-ignore
-    const token = req.cookies.jwt ?? req.headers.authorization ?? '';
+    
+    // Try to get token from cookie first, then from Authorization header
+    let token = req.cookies?.jwt;
+    
+    // If not in cookie, check Authorization header (for mobile apps)
+    if (!token && req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      // Support both "Bearer TOKEN" and just "TOKEN"
+      token = authHeader.startsWith('Bearer ') 
+        ? authHeader.substring(7) 
+        : authHeader;
+    }
+    
     if (!token) throw new UnauthorizedException('Missing token');
 
     const secret = process.env.ACCESS_TOKEN_SECRET;

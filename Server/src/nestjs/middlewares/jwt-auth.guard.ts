@@ -24,8 +24,8 @@ export class JwtAuthGuard implements CanActivate {
     let token = req.cookies?.jwt;
     
     // If not in cookie, check Authorization header (for mobile apps)
-    if (!token && req.headers.authorization) {
-      const authHeader = req.headers.authorization;
+    const authHeader = req.headers['authorization'];
+    if (!token && authHeader) {
       // Support both "Bearer TOKEN" and just "TOKEN"
       token = authHeader.startsWith('Bearer ') 
         ? authHeader.substring(7) 

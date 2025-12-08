@@ -10,6 +10,7 @@ import {
   Modal,
   ScrollView,
   Image,
+  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,13 +32,14 @@ type RouteParams = {
   courseId: string;
 };
 
+type AttendanceState = 'unmarked' | 'attended' | 'absent';
+
 interface AttendanceRow {
   _id?: string;
   kidId: string;
   kidName: string;
   profileImageUrl?: string;
-  attended: boolean;
-  notes?: string;
+  attendanceState: AttendanceState;
   enrollment: CourseEnrollment;
 }
 
@@ -54,7 +56,7 @@ const ProfileImage = ({
   if (!imageUrl || imageError) {
     return (
       <View style={[styles.profileImagePlaceholder, style]}>
-        <Feather name="user" size={24} color="#94A3B8" />
+        <Feather name="user" size={20} color="#94A3B8" />
       </View>
     );
   }
@@ -78,7 +80,8 @@ const CourseAttendancePage = () => {
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [datePickerVisible, setDatePickerVisible] = useState(false);
-  const [localAttendance, setLocalAttendance] = useState<Map<string, { attended: boolean; notes: string }>>(new Map());
+  const [localAttendance, setLocalAttendance] = useState<Map<string, AttendanceState>>(new Map());
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Configure dayjs locale for Hebrew
   useEffect(() => {
@@ -185,14 +188,19 @@ const CourseAttendancePage = () => {
       const profileImageUrl = kidData && 'profileImageUrl' in kidData ? kidData.profileImageUrl : undefined;
 
       const attendance = attendanceMap.get(kidId);
+      
+      // Convert boolean attended to AttendanceState
+      let attendanceState: AttendanceState = 'unmarked';
+      if (attendance) {
+        attendanceState = attendance.attended ? 'attended' : 'absent';
+      }
 
       return {
         _id: attendance?._id,
         kidId,
         kidName,
         profileImageUrl,
-        attended: attendance?.attended ?? false,
-        notes: attendance?.notes ?? '',
+        attendanceState,
         enrollment,
       };
     });
@@ -201,12 +209,9 @@ const CourseAttendancePage = () => {
   // Update local state when attendance data changes
   useEffect(() => {
     if (tableData.length > 0) {
-      const newLocalAttendance = new Map<string, { attended: boolean; notes: string }>();
+      const newLocalAttendance = new Map<string, AttendanceState>();
       tableData.forEach((row) => {
-        newLocalAttendance.set(row.kidId, {
-          attended: row.attended,
-          notes: row.notes || '',
-        });
+        newLocalAttendance.set(row.kidId, row.attendanceState);
       });
       setLocalAttendance(newLocalAttendance);
     }
@@ -232,14 +237,26 @@ const CourseAttendancePage = () => {
     },
   });
 
-  // Handle attendance checkbox change
-  const handleAttendanceChange = useCallback(
-    (kidId: string, attended: boolean) => {
+  // Handle attendance toggle - cycles through unmarked → attended ↔ absent
+  const handleAttendanceToggle = useCallback(
+    (kidId: string) => {
+      const currentState = localAttendance.get(kidId) || 'unmarked';
+      
+      // Cycle through states: unmarked → attended, attended ↔ absent
+      let nextState: AttendanceState;
+      if (currentState === 'unmarked') {
+        nextState = 'attended';
+      } else if (currentState === 'attended') {
+        nextState = 'absent';
+      } else {
+        // If absent, go back to attended (easy correction)
+        nextState = 'attended';
+      }
+
       // Update local state optimistically
       setLocalAttendance((prev) => {
         const newMap = new Map(prev);
-        const current = newMap.get(kidId) || { attended: false, notes: '' };
-        newMap.set(kidId, { ...current, attended });
+        newMap.set(kidId, nextState);
         return newMap;
       });
 
@@ -248,62 +265,17 @@ const CourseAttendancePage = () => {
         return;
       }
 
-      const row = tableData.find((r) => r.kidId === kidId);
-      if (!row) {
-        return;
-      }
-
-      const current = localAttendance.get(kidId) || { attended: false, notes: '' };
-
       const attendanceDto: CreateCourseAttendanceDto = {
         organizationId: user.organizationId!,
         courseId,
         kidId,
         date: selectedDateISO,
-        attended,
-        notes: current.notes,
+        attended: nextState === 'attended',
+        notes: '',
       };
-
       saveAttendanceMutation.mutate(attendanceDto);
     },
-    [user?.organizationId, selectedDateISO, courseId, tableData, localAttendance, saveAttendanceMutation]
-  );
-
-  // Handle notes change
-  const handleNotesChange = useCallback(
-    (kidId: string, notes: string) => {
-      // Update local state optimistically
-      setLocalAttendance((prev) => {
-        const newMap = new Map(prev);
-        const current = newMap.get(kidId) || { attended: false, notes: '' };
-        newMap.set(kidId, { ...current, notes });
-        return newMap;
-      });
-
-      // Save to server
-      if (!user?.organizationId || !selectedDateISO) {
-        return;
-      }
-
-      const row = tableData.find((r) => r.kidId === kidId);
-      if (!row) {
-        return;
-      }
-
-      const current = localAttendance.get(kidId) || { attended: false, notes: '' };
-
-      const attendanceDto: CreateCourseAttendanceDto = {
-        organizationId: user.organizationId!,
-        courseId,
-        kidId,
-        date: selectedDateISO,
-        attended: current.attended,
-        notes,
-      };
-
-      saveAttendanceMutation.mutate(attendanceDto);
-    },
-    [user?.organizationId, selectedDateISO, courseId, tableData, localAttendance, saveAttendanceMutation]
+    [user?.organizationId, selectedDateISO, courseId, localAttendance, saveAttendanceMutation]
   );
 
   const handleDateChange = (date: Date) => {
@@ -322,6 +294,46 @@ const CourseAttendancePage = () => {
     const dayName = dayjs(date).format('dddd');
     return `${dateStr} - ${dayName}`;
   };
+
+  // Filter table data based on search query
+  const filteredData = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return tableData;
+    }
+    const query = searchQuery.toLowerCase().trim();
+    return tableData.filter((row) => 
+      row.kidName.toLowerCase().includes(query)
+    );
+  }, [tableData, searchQuery]);
+
+  // Calculate summary statistics
+  const summaryStats = useMemo(() => {
+    const total = tableData.length;
+    let attended = 0;
+    let absent = 0;
+    let unmarked = 0;
+
+    tableData.forEach((row) => {
+      const state = localAttendance.get(row.kidId) || row.attendanceState;
+      if (state === 'attended') {
+        attended++;
+      } else if (state === 'absent') {
+        absent++;
+      } else {
+        unmarked++;
+      }
+    });
+
+    const attendancePercentage = total > 0 ? (attended / total) * 100 : 0;
+
+    return {
+      total,
+      attended,
+      absent,
+      unmarked,
+      attendancePercentage,
+    };
+  }, [tableData, localAttendance]);
 
   const isLoading = isLoadingSchedule || isLoadingEnrollments || isLoadingAttendance;
 
@@ -459,113 +471,132 @@ const CourseAttendancePage = () => {
             </View>
           </Modal>
 
-          {/* Participants List */}
+          {/* Search Bar */}
+          {selectedDate && (
+            <View style={styles.searchContainer}>
+              <View style={styles.searchIconContainer}>
+                <Feather name="search" size={20} color="#457B9D" />
+              </View>
+              <TextInput
+                style={styles.searchInput}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="חיפוש מהיר..."
+                placeholderTextColor="#94A3B8"
+                textAlign="center"
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+              {searchQuery.length > 0 && (
+                <Pressable
+                  onPress={() => setSearchQuery('')}
+                  style={styles.searchClearButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Feather name="x-circle" size={18} color="#64748B" />
+                </Pressable>
+              )}
+            </View>
+          )}
+
+          {/* Summary Statistics */}
+          {selectedDate && (
+            <View style={styles.summaryContainer}>
+              <View style={styles.summaryHeader}>
+                <Text style={styles.summaryText}>
+                  {summaryStats.attended} מתוך {summaryStats.total} הגיעו
+                </Text>
+                <Text style={styles.summaryPercentage}>
+                  {summaryStats.attendancePercentage.toFixed(0)}%
+                </Text>
+              </View>
+              <View style={styles.progressBarContainer}>
+                <View
+                  style={[
+                    styles.progressBar,
+                    {
+                      width: `${summaryStats.attendancePercentage}%`,
+                      backgroundColor:
+                        summaryStats.attendancePercentage >= 80
+                          ? '#10B981'
+                          : summaryStats.attendancePercentage >= 50
+                          ? '#F59E0B'
+                          : '#EF4444',
+                    },
+                  ]}
+                />
+              </View>
+              <View style={styles.summaryStats}>
+                <View style={styles.statItem}>
+                  <View style={[styles.statDot, { backgroundColor: '#10B981' }]} />
+                  <Text style={styles.statText}>{summaryStats.attended} הגיעו</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <View style={[styles.statDot, { backgroundColor: '#EF4444' }]} />
+                  <Text style={styles.statText}>{summaryStats.absent} לא הגיעו</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <View style={[styles.statDot, { backgroundColor: '#94A3B8' }]} />
+                  <Text style={styles.statText}>{summaryStats.unmarked} לא סומנו</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Participants Grid */}
           {selectedDate && (
             <FlatList
-              data={tableData}
+              data={filteredData}
               keyExtractor={(item) => item.kidId}
-              contentContainerStyle={styles.listContent}
+              numColumns={3}
+              columnWrapperStyle={styles.gridRow}
+              contentContainerStyle={styles.gridContent}
               renderItem={({ item }) => {
-                const localData = localAttendance.get(item.kidId) || {
-                  attended: item.attended,
-                  notes: item.notes || '',
-                };
+                const state = localAttendance.get(item.kidId) || item.attendanceState;
+
+                // Determine card style based on state
+                let cardStyle = styles.gridCardUnmarked;
+                let iconName: 'check-circle' | 'x-circle' | 'circle' = 'circle';
+                let iconColor = '#94A3B8';
+                let textColor = '#334155';
+
+                if (state === 'attended') {
+                  cardStyle = styles.gridCardAttended;
+                  iconName = 'check-circle';
+                  iconColor = '#FFFFFF';
+                  textColor = '#FFFFFF';
+                } else if (state === 'absent') {
+                  cardStyle = styles.gridCardAbsent;
+                  iconName = 'x-circle';
+                  iconColor = '#FFFFFF';
+                  textColor = '#FFFFFF';
+                }
 
                 return (
-                  <View style={styles.participantCard}>
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.participantHeader,
-                        pressed && styles.participantHeaderPressed,
-                      ]}
-                      onPress={() => navigation.navigate('KidDetails', { kidId: item.kidId })}
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.gridCard,
+                      cardStyle,
+                      pressed && styles.gridCardPressed,
+                    ]}
+                    onPress={() => handleAttendanceToggle(item.kidId)}
+                    onLongPress={() => navigation.navigate('KidDetails', { kidId: item.kidId })}
+                  >
+                    <ProfileImage
+                      imageUrl={item.profileImageUrl}
+                      style={styles.gridProfileImage}
+                    />
+                    <Text
+                      style={[styles.gridKidName, { color: textColor }]}
+                      numberOfLines={2}
+                      ellipsizeMode="tail"
                     >
-                      <View style={styles.participantInfoContainer}>
-                        <ProfileImage
-                          imageUrl={item.profileImageUrl}
-                        />
-                        <View
-                          style={[
-                            styles.nameBadge,
-                            { backgroundColor: '#E0F2FE', borderColor: '#0284C7' },
-                          ]}
-                        >
-                          <Text style={styles.participantName}>{item.kidName}</Text>
-                        </View>
-                      </View>
-                      <Feather name="chevron-left" size={20} color="#94A3B8" />
-                    </Pressable>
-
-                    <View style={styles.participantControls}>
-                      {/* Modern Switch-style Toggle */}
-                      <View style={styles.attendanceSwitchContainer}>
-                        <Pressable
-                          onPress={() => handleAttendanceChange(item.kidId, false)}
-                          style={({ pressed }) => [
-                            styles.switchOption,
-                            styles.switchOptionLeft,
-                            !localData.attended && styles.switchOptionActive,
-                            !localData.attended && styles.switchOptionAbsentActive,
-                            pressed && styles.switchOptionPressed,
-                          ]}
-                        >
-                          <Feather
-                            name="x-circle"
-                            size={18}
-                            color={!localData.attended ? '#FFFFFF' : '#94A3B8'}
-                          />
-                          <Text
-                            style={[
-                              styles.switchOptionText,
-                              !localData.attended && styles.switchOptionTextActive,
-                            ]}
-                          >
-                            לא הגיע
-                          </Text>
-                        </Pressable>
-                        
-                        <View style={styles.switchDivider} />
-                        
-                        <Pressable
-                          onPress={() => handleAttendanceChange(item.kidId, true)}
-                          style={({ pressed }) => [
-                            styles.switchOption,
-                            styles.switchOptionRight,
-                            localData.attended && styles.switchOptionActive,
-                            localData.attended && styles.switchOptionPresentActive,
-                            pressed && styles.switchOptionPressed,
-                          ]}
-                        >
-                          <Feather
-                            name="check-circle"
-                            size={18}
-                            color={localData.attended ? '#FFFFFF' : '#94A3B8'}
-                          />
-                          <Text
-                            style={[
-                              styles.switchOptionText,
-                              localData.attended && styles.switchOptionTextActive,
-                            ]}
-                          >
-                            הגיע
-                          </Text>
-                        </Pressable>
-                      </View>
-
-                      <View style={styles.notesContainer}>
-                        <Text style={styles.notesLabel}>הערות:</Text>
-                        <TextInput
-                          style={styles.notesInput}
-                          value={localData.notes}
-                          onChangeText={(text) => handleNotesChange(item.kidId, text)}
-                          placeholder="הזן הערות..."
-                          placeholderTextColor="#94A3B8"
-                          multiline
-                          textAlign="right"
-                        />
-                      </View>
+                      {item.kidName}
+                    </Text>
+                    <View style={styles.gridIconContainer}>
+                      <Feather name={iconName} size={20} color={iconColor} />
                     </View>
-                  </View>
+                  </Pressable>
                 );
               }}
             />
@@ -585,9 +616,9 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 10,
   },
   backButton: {
     alignSelf: 'flex-end',
@@ -619,7 +650,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     textAlign: 'right',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   stateContainer: {
     flex: 1,
@@ -632,18 +663,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   dateSelectorContainer: {
-    gap: 6,
+    gap: 4,
   },
   dateLabel: {
     color: '#334155',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     textAlign: 'right',
   },
   dateSelectorButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#D1D5DB',
     backgroundColor: '#FFFFFF',
@@ -654,8 +685,8 @@ const styles = StyleSheet.create({
   },
   dateSelectorText: {
     color: '#1e293b',
-    fontSize: 20,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
     textAlign: 'center',
   },
   modalOverlay: {
@@ -722,157 +753,162 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  listContent: {
-    paddingBottom: 16,
+  // Search Container
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#457B9D',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     gap: 10,
+    shadowColor: '#457B9D',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
-  participantCard: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  searchIconContainer: {
+    padding: 2,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1e293b',
+    paddingVertical: 2,
+    textAlign: 'center',
+  },
+  searchClearButton: {
+    padding: 2,
+  },
+  // Summary Statistics
+  summaryContainer: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    padding: 12,
     gap: 8,
   },
-  participantHeader: {
+  summaryHeader: {
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
-  participantHeaderPressed: {
-    opacity: 0.7,
-    backgroundColor: '#E0F2FE',
+  summaryText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1e293b',
+    textAlign: 'right',
   },
-  participantInfoContainer: {
+  summaryPercentage: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#457B9D',
+  },
+  progressBarContainer: {
+    height: 8,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  summaryStats: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-around',
+    gap: 8,
+  },
+  statItem: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 10,
-    flex: 1,
+    gap: 4,
+  },
+  statDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statText: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  // Grid Layout
+  gridContent: {
+    paddingBottom: 16,
+  },
+  gridRow: {
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    paddingHorizontal: 2,
+  },
+  gridCard: {
+    width: '31.5%',
+    aspectRatio: 0.85,
+    borderRadius: 12,
+    borderWidth: 2,
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 120,
+  },
+  gridCardUnmarked: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#D1D5DB',
+  },
+  gridCardAttended: {
+    backgroundColor: '#10B981',
+    borderColor: '#059669',
+  },
+  gridCardAbsent: {
+    backgroundColor: '#EF4444',
+    borderColor: '#DC2626',
+  },
+  gridCardPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.97 }],
+  },
+  gridProfileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   profileImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 2,
     borderColor: '#E5E7EB',
     backgroundColor: '#F3F4F6',
   },
   profileImagePlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#F3F4F6',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  nameBadge: {
-    flex: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  participantName: {
-    color: '#0284C7',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  participantControls: {
-    gap: 8,
-  },
-  // Modern Switch-style Toggle
-  attendanceSwitchContainer: {
-    flexDirection: 'row-reverse', // RTL support
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    padding: 3,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    overflow: 'hidden',
-  },
-  switchOption: {
-    flex: 1,
-    flexDirection: 'row-reverse', // RTL: icon on right
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    minHeight: 44, // Better touch target
-  },
-  switchOptionLeft: {
-    // For absent (left side in RTL)
-  },
-  switchOptionRight: {
-    // For present (right side in RTL)
-  },
-  switchOptionActive: {
-    shadowColor: '#000000',
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  switchOptionAbsentActive: {
-    backgroundColor: '#EF4444',
-  },
-  switchOptionPresentActive: {
-    backgroundColor: '#10B981',
-  },
-  switchOptionPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.98 }],
-  },
-  switchDivider: {
-    width: 1,
-    backgroundColor: '#CBD5E1',
-    marginVertical: 8,
-  },
-  switchOptionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  switchOptionTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  notesContainer: {
-    gap: 4,
-  },
-  notesLabel: {
-    color: '#334155',
+  gridKidName: {
     fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'right',
+    fontWeight: '700',
+    textAlign: 'center',
+    lineHeight: 16,
+    paddingHorizontal: 2,
   },
-  notesInput: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
-    color: '#1e293b',
-    fontSize: 14,
-    minHeight: 50,
-    textAlignVertical: 'top',
+  gridIconContainer: {
+    marginTop: 4,
   },
 });
 

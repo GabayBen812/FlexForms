@@ -13,13 +13,17 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://flexforms-production.up.railway.app"
+        // "EXPO_PUBLIC_API_URL": "https://flexforms-production.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "http://localhost:3101"
       }
+
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://flexforms-production.up.railway.app"
+        // "EXPO_PUBLIC_API_URL": "https://flexforms-production.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "http://localhost:3101"
+
       }
     }
   },

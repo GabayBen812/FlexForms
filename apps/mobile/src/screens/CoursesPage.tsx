@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 
 import { fetchCourses, fetchCourseSessions, fetchCourseEnrollments, type Course, type CourseSession, type CourseEnrollment } from '../api/courses';
 import type { HomeStackParamList } from '../navigation/AppNavigator';
@@ -22,6 +23,7 @@ const CoursesPage = () => {
     isLoading: coursesLoading,
     isError: coursesError,
     error: coursesErrorDetails,
+    refetch: refetchCourses,
   } = useQuery({
     queryKey: ['courses'],
     queryFn: fetchCourses,
@@ -132,24 +134,176 @@ const CoursesPage = () => {
               <Text style={styles.stateText}>טוען את הקורסים...</Text>
             </View>
           ) : isError ? (
-            <View style={styles.stateContainer}>
-              <Text style={[styles.stateText, styles.errorText]}>שגיאה בטעינת הקורסים</Text>
-              {coursesErrorDetails && (
-                <Text style={[styles.stateText, styles.errorDetails]}>
-                  {coursesErrorDetails instanceof Error
-                    ? coursesErrorDetails.message
-                    : 'נסה שוב מאוחר יותר'}
-                </Text>
-              )}
-              {coursesErrorDetails &&
-                typeof coursesErrorDetails === 'object' &&
-                'response' in coursesErrorDetails &&
-                (coursesErrorDetails as { response?: { status?: number } }).response?.status === 401 && (
-                  <Text style={[styles.stateText, styles.errorDetails]}>
-                    נדרש להתחבר מחדש
-                  </Text>
-                )}
-            </View>
+            <ScrollView style={styles.errorScrollView} contentContainerStyle={styles.errorScrollContent}>
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorMainTitle}>❌ שגיאה בטעינת הקורסים</Text>
+                <Text style={styles.errorTimestamp}>זמן: {new Date().toLocaleString('he-IL')}</Text>
+
+                {coursesErrorDetails && (() => {
+                  const axiosError = coursesErrorDetails as AxiosError;
+                  const isAxiosError = axiosError.isAxiosError === true;
+
+                  return (
+                    <>
+                      {/* Error Type */}
+                      <View style={styles.errorSection}>
+                        <Text style={styles.errorSectionTitle}>🔍 סוג שגיאה:</Text>
+                        <Text style={styles.errorSectionContent}>
+                          {isAxiosError ? 'Axios Network Error' : 'JavaScript Error'}
+                        </Text>
+                      </View>
+
+                      {/* Error Message */}
+                      <View style={styles.errorSection}>
+                        <Text style={styles.errorSectionTitle}>📝 הודעת שגיאה:</Text>
+                        <Text style={styles.errorSectionContent}>
+                          {axiosError.message || 'אין הודעת שגיאה'}
+                        </Text>
+                      </View>
+
+                      {/* HTTP Status */}
+                      {isAxiosError && axiosError.response && (
+                        <View style={styles.errorSection}>
+                          <Text style={styles.errorSectionTitle}>🌐 HTTP Status:</Text>
+                          <Text style={styles.errorSectionContent}>
+                            {axiosError.response.status} - {axiosError.response.statusText || 'No Status Text'}
+                          </Text>
+                          {axiosError.response.status === 401 && (
+                            <Text style={styles.errorWarning}>⚠️ נדרש להתחבר מחדש</Text>
+                          )}
+                          {axiosError.response.status === 403 && (
+                            <Text style={styles.errorWarning}>⚠️ אין הרשאות</Text>
+                          )}
+                          {axiosError.response.status === 404 && (
+                            <Text style={styles.errorWarning}>⚠️ הנתיב לא נמצא</Text>
+                          )}
+                          {axiosError.response.status === 500 && (
+                            <Text style={styles.errorWarning}>⚠️ שגיאת שרת</Text>
+                          )}
+                        </View>
+                      )}
+
+                      {/* Request Details */}
+                      {isAxiosError && axiosError.config && (
+                        <View style={styles.errorSection}>
+                          <Text style={styles.errorSectionTitle}>🔗 פרטי בקשה:</Text>
+                          <Text style={styles.errorSectionContent}>
+                            Method: {axiosError.config.method?.toUpperCase() || 'GET'}
+                          </Text>
+                          <Text style={styles.errorSectionContent}>
+                            URL: {axiosError.config.baseURL || ''}{axiosError.config.url || ''}
+                          </Text>
+                          {axiosError.config.headers?.Authorization && (
+                            <Text style={styles.errorSectionContent}>
+                              Auth: Bearer Token Present
+                            </Text>
+                          )}
+                        </View>
+                      )}
+
+                      {/* Response Data */}
+                      {isAxiosError && axiosError.response?.data && (
+                        <View style={styles.errorSection}>
+                          <Text style={styles.errorSectionTitle}>📦 תשובת השרת:</Text>
+                          <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                            <Text style={styles.errorSectionContentMono}>
+                              {JSON.stringify(axiosError.response.data, null, 2)}
+                            </Text>
+                          </ScrollView>
+                        </View>
+                      )}
+
+                      {/* Network Error */}
+                      {isAxiosError && !axiosError.response && axiosError.request && (
+                        <View style={styles.errorSection}>
+                          <Text style={styles.errorSectionTitle}>🚨 שגיאת רשת:</Text>
+                          <Text style={styles.errorSectionContent}>
+                            הבקשה נשלחה אך לא התקבלה תשובה מהשרת
+                          </Text>
+                          <Text style={styles.errorSectionContent}>
+                            • בדוק את חיבור האינטרנט
+                          </Text>
+                          <Text style={styles.errorSectionContent}>
+                            • וודא שהשרת פועל
+                          </Text>
+                          <Text style={styles.errorSectionContent}>
+                            • בדוק את כתובת ה-API: {axiosError.config?.baseURL}
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Error Code */}
+                      {isAxiosError && axiosError.code && (
+                        <View style={styles.errorSection}>
+                          <Text style={styles.errorSectionTitle}>🏷️ קוד שגיאה:</Text>
+                          <Text style={styles.errorSectionContent}>{axiosError.code}</Text>
+                          {axiosError.code === 'ECONNABORTED' && (
+                            <Text style={styles.errorWarning}>⚠️ הבקשה בוטלה (timeout)</Text>
+                          )}
+                          {axiosError.code === 'ERR_NETWORK' && (
+                            <Text style={styles.errorWarning}>⚠️ בעיית רשת</Text>
+                          )}
+                          {axiosError.code === 'ERR_BAD_REQUEST' && (
+                            <Text style={styles.errorWarning}>⚠️ בקשה שגויה</Text>
+                          )}
+                        </View>
+                      )}
+
+                      {/* Stack Trace (for development) */}
+                      {axiosError.stack && __DEV__ && (
+                        <View style={styles.errorSection}>
+                          <Text style={styles.errorSectionTitle}>📚 Stack Trace (Dev Only):</Text>
+                          <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                            <Text style={styles.errorSectionContentMono}>
+                              {axiosError.stack}
+                            </Text>
+                          </ScrollView>
+                        </View>
+                      )}
+
+                      {/* Full Error Object (for extreme debugging) */}
+                      {__DEV__ && (
+                        <View style={styles.errorSection}>
+                          <Text style={styles.errorSectionTitle}>🔬 Full Error Object (Dev Only):</Text>
+                          <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                            <Text style={styles.errorSectionContentMono}>
+                              {JSON.stringify(
+                                {
+                                  message: axiosError.message,
+                                  code: axiosError.code,
+                                  isAxiosError: axiosError.isAxiosError,
+                                  config: {
+                                    url: axiosError.config?.url,
+                                    method: axiosError.config?.method,
+                                    baseURL: axiosError.config?.baseURL,
+                                    headers: axiosError.config?.headers,
+                                  },
+                                  response: axiosError.response ? {
+                                    status: axiosError.response.status,
+                                    statusText: axiosError.response.statusText,
+                                    data: axiosError.response.data,
+                                    headers: axiosError.response.headers,
+                                  } : undefined,
+                                },
+                                null,
+                                2
+                              )}
+                            </Text>
+                          </ScrollView>
+                        </View>
+                      )}
+                    </>
+                  );
+                })()}
+
+                <Pressable
+                  style={styles.retryButton}
+                  onPress={() => refetchCourses()}
+                >
+                  <Text style={styles.retryButtonText}>🔄 נסה שוב</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
           ) : sortedCourses.length === 0 ? (
             <View style={styles.stateContainer}>
               <Text style={styles.stateText}>לא נמצאו קורסים</Text>
@@ -249,15 +403,87 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontSize: 16,
   },
-  errorText: {
-    color: '#E85A3F',
-    fontWeight: '600',
+  errorScrollView: {
+    flex: 1,
   },
-  errorDetails: {
-    color: '#E85A3F',
-    fontSize: 14,
-    opacity: 0.8,
-    marginTop: 8,
+  errorScrollContent: {
+    paddingVertical: 16,
+  },
+  errorContainer: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#FCA5A5',
+    gap: 16,
+  },
+  errorMainTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#991B1B',
+    textAlign: 'right',
+  },
+  errorTimestamp: {
+    fontSize: 12,
+    color: '#DC2626',
+    textAlign: 'right',
+    fontStyle: 'italic',
+  },
+  errorSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    gap: 8,
+  },
+  errorSectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#B91C1C',
+    textAlign: 'right',
+    marginBottom: 4,
+  },
+  errorSectionContent: {
+    fontSize: 13,
+    color: '#374151',
+    textAlign: 'right',
+    lineHeight: 20,
+  },
+  errorSectionContentMono: {
+    fontSize: 11,
+    color: '#374151',
+    textAlign: 'left',
+    fontFamily: 'monospace',
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 8,
+    lineHeight: 18,
+  },
+  errorWarning: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#EA580C',
+    textAlign: 'right',
+    marginTop: 4,
+  },
+  retryButton: {
+    backgroundColor: '#457B9D',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginTop: 12,
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
   listContent: {
     paddingBottom: 24,

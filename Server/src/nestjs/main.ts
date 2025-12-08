@@ -35,6 +35,7 @@ async function bootstrap() {
   const explicitOrigins = new Set([
     "http://localhost:5173",
     "http://localhost:8081",
+    "http://localhost:8082",  // Expo mobile web
     "https://www.Paradize-erp.com",
     "https://Paradize-erp.com",
   ]);

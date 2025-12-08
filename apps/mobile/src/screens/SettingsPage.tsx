@@ -34,18 +34,6 @@ const SettingsPage = () => {
     enabled: showSeasons,
   });
 
-  // Debug logging
-  console.log('[SettingsPage] Debug Info:', {
-    showSeasons,
-    isLoadingFF,
-    isLoadingSeasons,
-    hasOrg: !!organization,
-    currentSeasonId: organization?.currentSeasonId,
-    currentSeason: organization?.currentSeason,
-    seasonsCount: seasons.length,
-    seasons: seasons.map(s => ({ _id: s._id, name: s.name })),
-  });
-
   const handleBack = () => {
     navigation.goBack();
   };
@@ -102,21 +90,11 @@ const SettingsPage = () => {
                   <ActivityIndicator size="small" color="#64748B" />
                 </View>
               ) : (
-                <>
-                  <Text style={styles.organizationName}>
-                    {organization?.currentSeason?.name || 
-                     seasons.find(s => s._id === organization?.currentSeasonId)?.name ||
-                     'לא נבחרה עונה'}
-                  </Text>
-                  {/* Debug info */}
-                  <Text style={styles.userInfoLabel}>
-                    Debug: currentSeasonId={organization?.currentSeasonId || 'null'}, 
-                    hasCurrentSeason={organization?.currentSeason ? 'yes' : 'no'},
-                    seasonsCount={seasons.length}, 
-                    showSeasons={showSeasons ? 'yes' : 'no'},
-                    isLoadingSeasons={isLoadingSeasons ? 'yes' : 'no'}
-                  </Text>
-                </>
+                <Text style={styles.organizationName}>
+                  {organization?.currentSeason?.name || 
+                   seasons.find(s => s._id === organization?.currentSeasonId)?.name ||
+                   'לא נבחרה עונה'}
+                </Text>
               )}
             </View>
           )}
@@ -141,7 +119,7 @@ const SettingsPage = () => {
               <View style={styles.userInfoContainer}>
                 <Text style={styles.userInfoLabel}>תפקיד:</Text>
                 <Text style={styles.userInfoValue}>
-                  {user.role === 'admin' ? 'מנהל' : 
+                  {user.role === 'system_admin' ? 'מנהל' : 
                    user.role === 'parent' ? 'הורה' : 
                    user.role === 'assistant_employee' ? 'עובד' : user.role}
                 </Text>

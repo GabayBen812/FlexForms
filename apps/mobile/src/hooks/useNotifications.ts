@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import { showWarningToast, showInfoToast } from '../utils/toast';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -86,7 +87,10 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
     }
     
     if (finalStatus !== 'granted') {
-      alert('נדרשת הרשאה להתראות כדי לקבל עדכונים');
+      showWarningToast(
+        'כדי לקבל עדכונים על הודעות חדשות ועדכונים חשובים, יש לאשר הרשאות התראות בהגדרות המכשיר.',
+        'הרשאת התראות נדרשת'
+      );
       return null;
     }
     
@@ -102,7 +106,13 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
       console.error('Error getting push token:', error);
     }
   } else {
-    alert('יש להשתמש במכשיר פיזי להתראות דחיפה');
+    // Only show this warning if not on web (web doesn't support push notifications)
+    if (Platform.OS !== 'web') {
+      showInfoToast(
+        'התראות דחיפה זמינות רק במכשירים פיזיים (לא בסימולטור).',
+        'מכשיר פיזי נדרש'
+      );
+    }
   }
 
   return token;

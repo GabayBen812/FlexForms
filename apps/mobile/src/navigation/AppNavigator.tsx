@@ -23,6 +23,7 @@ import IncomeListPage from '../screens/IncomeListPage';
 import ExpensesListPage from '../screens/ExpensesListPage';
 import CoursesPage from '../screens/CoursesPage';
 import CourseAttendancePage from '../screens/CourseAttendancePage';
+import SettingsPage from '../screens/SettingsPage';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -48,6 +49,7 @@ export type HomeStackParamList = {
   CourseAttendancePage: { courseId: string };
   KidDetails: { kidId: string };
   ParentDetails: { parentId: string };
+  SettingsPage: undefined;
 };
 
 export type KidsStackParamList = {
@@ -101,6 +103,7 @@ const HomeStackNavigator = () => {
       <HomeStack.Screen name="CourseAttendancePage" component={CourseAttendancePage} />
       <HomeStack.Screen name="KidDetails" component={KidDetailsPage} />
       <HomeStack.Screen name="ParentDetails" component={ParentDetailsPage} />
+      <HomeStack.Screen name="SettingsPage" component={SettingsPage} />
     </HomeStack.Navigator>
   );
 };

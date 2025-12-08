@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -10,21 +11,30 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
+import { useQueryClient, type InfiniteData } from '@tanstack/react-query';
 
 import type { MessagesStackParamList } from '../navigation/AppNavigator';
 import { useAuth } from '../providers/AuthProvider';
 import {
+  chatQueryKeys,
   useChatGroups,
   useChatMessages,
   useSendChatMessage,
 } from '../features/chat/chatQueries';
 import { useOrganizationUsers } from '../features/chat/useOrganizationUsers';
-import type { ChatMessage } from '../api/chat';
+import type { ChatMessage, ChatMessagesResponse } from '../api/chat';
+import { MessageStatusIcon } from '../components/chat/MessageStatusIcon';
+import { MediaPicker } from '../components/chat/MediaPicker';
+import { ImageMessage } from '../components/chat/ImageMessage';
+import { VideoMessage } from '../components/chat/VideoMessage';
+import type { MediaAsset } from '../utils/mediaUtils';
+import { Feather } from '@expo/vector-icons';
 
 type ChatPageRouteProp = RouteProp<MessagesStackParamList, 'ChatPage'>;
 type ChatPageNavProp = NativeStackNavigationProp<MessagesStackParamList>;
@@ -89,6 +99,7 @@ const ChatBubble = ({
   isOwn: boolean;
 }) => {
   const timeLabel = useMemo(() => {
+    if (!message.createdAt) return '';
     const date = new Date(message.createdAt);
     return date.toLocaleTimeString('he-IL', {
       hour: '2-digit',
@@ -101,43 +112,89 @@ const ChatBubble = ({
     [message.content]
   );
 
+  const messageStatus = message.status || (isOwn ? 'sent' : undefined);
+
+  const hasMedia = message.mediaUrl && message.mediaType;
+  const hasText = message.content && message.content.trim().length > 0;
+
   return (
     <View
       style={[
         styles.messageRow,
         isOwn ? styles.messageRowOwn : styles.messageRowOther,
+        message.isOptimistic && styles.messageRowOptimistic,
       ]}
     >
       <View
         style={[
           styles.messageBubble,
           isOwn ? styles.messageBubbleOwn : styles.messageBubbleOther,
+          message.isOptimistic && styles.messageBubbleOptimistic,
+          hasMedia && !hasText && styles.messageBubbleMedia,
         ]}
       >
-        <View style={styles.messageContent}>
-          {messageParts.map((part, idx) => {
-            if (part.type === 'mention') {
+        {/* Media Content */}
+        {hasMedia && (
+          <View style={styles.mediaContainer}>
+            {message.mediaType === 'image' && (
+              <ImageMessage
+                uri={message.mediaUrl!}
+                width={message.mediaWidth}
+                height={message.mediaHeight}
+                isOwn={isOwn}
+                uploadProgress={message.uploadProgress}
+                isUploading={message.isOptimistic}
+              />
+            )}
+            {message.mediaType === 'video' && (
+              <VideoMessage
+                uri={message.mediaUrl!}
+                width={message.mediaWidth}
+                height={message.mediaHeight}
+                isOwn={isOwn}
+                uploadProgress={message.uploadProgress}
+                isUploading={message.isOptimistic}
+              />
+            )}
+          </View>
+        )}
+
+        {/* Text Content */}
+        {hasText && (
+          <View style={styles.messageContent}>
+            {messageParts.map((part, idx) => {
+              if (part.type === 'mention') {
+                return (
+                  <View key={idx} style={styles.mentionCard}>
+                    <Text style={styles.mentionCardText}>@{part.value}</Text>
+                  </View>
+                );
+              }
+              // Split text by newlines to preserve line breaks
+              const lines = part.value.split('\n');
               return (
-                <View key={idx} style={styles.mentionCard}>
-                  <Text style={styles.mentionCardText}>@{part.value}</Text>
-                </View>
+                <Text key={idx} style={styles.messageText}>
+                  {lines.map((line, lineIdx) => (
+                    <Text key={lineIdx}>
+                      {line}
+                      {lineIdx < lines.length - 1 && '\n'}
+                    </Text>
+                  ))}
+                </Text>
               );
-            }
-            // Split text by newlines to preserve line breaks
-            const lines = part.value.split('\n');
-            return (
-              <Text key={idx} style={styles.messageText}>
-                {lines.map((line, lineIdx) => (
-                  <Text key={lineIdx}>
-                    {line}
-                    {lineIdx < lines.length - 1 && '\n'}
-                  </Text>
-                ))}
-              </Text>
-            );
-          })}
+            })}
+          </View>
+        )}
+
+        {/* Meta Info (time + status) */}
+        <View style={styles.messageMetaRow}>
+          <Text style={styles.messageMeta}>{timeLabel}</Text>
+          {isOwn && messageStatus && (
+            <View style={styles.messageStatusIcon}>
+              <MessageStatusIcon status={messageStatus} size={16} />
+            </View>
+          )}
         </View>
-        <Text style={styles.messageMeta}>{timeLabel}</Text>
       </View>
     </View>
   );
@@ -153,6 +210,7 @@ const ChatPage = () => {
   const route = useRoute<ChatPageRouteProp>();
   const { groupId, groupName } = route.params;
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const [inputValue, setInputValue] = useState('');
   const [selectedMention, setSelectedMention] = useState<MentionUser | null>(
@@ -161,6 +219,8 @@ const ChatPage = () => {
   const [isMentionOpen, setIsMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [isMediaPickerVisible, setIsMediaPickerVisible] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<MediaAsset[]>([]);
   const listRef = useRef<FlatList<ChatMessage> | null>(null);
   const inputRef = useRef<TextInput | null>(null);
 
@@ -296,21 +356,163 @@ const ChatPage = () => {
       return;
     }
 
+    // Haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    // Create optimistic message
+    const optimisticMessage: ChatMessage = {
+      id: `temp-${Date.now()}-${Math.random()}`,
+      groupId,
+      senderId: user?.id || '',
+      content: trimmed,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      readBy: [],
+      status: 'sending',
+      isOptimistic: true,
+    };
+
+    // Clear input immediately
+    setInputValue('');
+    setSelectedMention(null);
+    Keyboard.dismiss();
+
+    // Add optimistic message to cache
+    queryClient.setQueryData<InfiniteData<ChatMessagesResponse>>(
+      chatQueryKeys.messages(groupId),
+      (existing) => {
+        if (!existing) {
+          return {
+            pages: [{ messages: [optimisticMessage], hasMore: false }],
+            pageParams: [undefined],
+          };
+        }
+
+        const pages = existing.pages.map((page, index) => {
+          if (index !== existing.pages.length - 1) {
+            return page;
+          }
+
+          return {
+            ...page,
+            messages: [...page.messages, optimisticMessage],
+          };
+        });
+
+        return {
+          ...existing,
+          pages,
+        };
+      }
+    );
+
+    // Scroll to bottom
+    setTimeout(() => {
+      if (listRef.current) {
+        listRef.current.scrollToEnd({ animated: true });
+      }
+    }, 100);
+
     try {
-      await sendMessageMutation.mutateAsync({
+      const serverMessage = await sendMessageMutation.mutateAsync({
         groupId,
         content: trimmed,
       });
-      setInputValue('');
-      setSelectedMention(null);
-    } catch {
-      // errors are handled by the hook's consumers if needed
+
+      // Replace optimistic message with server message
+      queryClient.setQueryData<InfiniteData<ChatMessagesResponse>>(
+        chatQueryKeys.messages(groupId),
+        (existing) => {
+          if (!existing) return existing;
+
+          const pages = existing.pages.map((page, index) => {
+            if (index !== existing.pages.length - 1) {
+              return page;
+            }
+
+            // Remove optimistic message and add real message
+            const filtered = page.messages.filter(
+              (msg) => msg.id !== optimisticMessage.id
+            );
+
+            // Check if server message already exists (from socket)
+            const alreadyExists = filtered.some(
+              (msg) => msg.id === serverMessage.id
+            );
+
+            if (alreadyExists) {
+              return { ...page, messages: filtered };
+            }
+
+            return {
+              ...page,
+              messages: [...filtered, { ...serverMessage, status: 'sent' as const }],
+            };
+          });
+
+          return {
+            ...existing,
+            pages,
+          };
+        }
+      );
+    } catch (error) {
+      // Mark message as failed
+      queryClient.setQueryData<InfiniteData<ChatMessagesResponse>>(
+        chatQueryKeys.messages(groupId),
+        (existing) => {
+          if (!existing) return existing;
+
+          const pages = existing.pages.map((page, index) => {
+            if (index !== existing.pages.length - 1) {
+              return page;
+            }
+
+            return {
+              ...page,
+              messages: page.messages.map((msg) =>
+                msg.id === optimisticMessage.id
+                  ? { ...msg, status: 'failed' as const }
+                  : msg
+              ),
+            };
+          });
+
+          return {
+            ...existing,
+            pages,
+          };
+        }
+      );
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };
 
   const handleInputChange = (text: string) => {
     setInputValue(text);
   };
+
+  const handleBackPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.goBack();
+  }, [navigation]);
+
+  const handleMediaPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsMediaPickerVisible(true);
+  }, []);
+
+  const handleMediaSelected = useCallback((assets: MediaAsset[]) => {
+    setSelectedMedia(assets);
+    // TODO: For now, just store selected media
+    // In next phase, we'll upload and send these
+  }, []);
+
+  const handleRemoveMedia = useCallback((index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedMedia((prev) => prev.filter((_, i) => i !== index));
+  }, []);
 
   const handleRemoveMention = () => {
     if (selectedMention) {
@@ -343,7 +545,7 @@ const ChatPage = () => {
           <View style={styles.container}>
             <View style={styles.header}>
               <Pressable
-                onPress={() => navigation.goBack()}
+                onPress={handleBackPress}
                 style={({ pressed }) => [
                   styles.backButton,
                   pressed && styles.backButtonPressed,
@@ -398,6 +600,19 @@ const ChatPage = () => {
                       </Pressable>
                     </View>
                   )}
+                  {selectedMedia.length > 0 && (
+                    <View style={styles.mediaPreviewContainer}>
+                      {selectedMedia.map((media, index) => (
+                        <View key={index} style={styles.mediaPreviewBadge}>
+                          <Feather name="image" size={16} color="#457B9D" />
+                          <Text style={styles.mediaPreviewText}>תמונה {index + 1}</Text>
+                          <Pressable onPress={() => handleRemoveMedia(index)}>
+                            <Text style={styles.mediaPreviewClose}>×</Text>
+                          </Pressable>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                   <View style={styles.inputContainer}>
                     <TextInput
                       ref={inputRef}
@@ -435,6 +650,15 @@ const ChatPage = () => {
                   </View>
                 </View>
                 <Pressable
+                  onPress={handleMediaPress}
+                  style={({ pressed }) => [
+                    styles.mediaButton,
+                    pressed && styles.mediaButtonPressed,
+                  ]}
+                >
+                  <Feather name="camera" size={24} color="#457B9D" />
+                </Pressable>
+                <Pressable
                   onPress={handleSend}
                   disabled={
                     (selectedMention
@@ -470,6 +694,12 @@ const ChatPage = () => {
             )}
           </View>
         </KeyboardAvoidingView>
+
+        <MediaPicker
+          visible={isMediaPickerVisible}
+          onClose={() => setIsMediaPickerVisible(false)}
+          onMediaSelected={handleMediaSelected}
+        />
       </SafeAreaView>
     </LinearGradient>
   );
@@ -488,13 +718,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 24,
+    paddingVertical: 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   headerTextGroup: {
     flex: 1,
@@ -503,23 +736,26 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: '#1e293b',
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
     textAlign: 'right',
+    lineHeight: 30,
   },
   headerSubtitle: {
-    marginTop: 4,
+    marginTop: 2,
     color: '#64748B',
-    fontSize: 13,
+    fontSize: 14,
     textAlign: 'right',
   },
   backButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#D1D5DB',
     backgroundColor: '#FFFFFF',
+    minHeight: 44,
+    justifyContent: 'center',
   },
   backButtonPressed: {
     opacity: 0.85,
@@ -527,7 +763,7 @@ const styles = StyleSheet.create({
   },
   backButtonLabel: {
     color: '#457B9D',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
   },
   centerContent: {
@@ -538,15 +774,17 @@ const styles = StyleSheet.create({
   },
   centerText: {
     color: '#64748B',
-    fontSize: 16,
+    fontSize: 17,
+    fontWeight: '500',
+    lineHeight: 24,
   },
   messagesList: {
-    paddingVertical: 8,
-    paddingBottom: 12,
+    paddingVertical: 12,
+    paddingBottom: 16,
   },
   messageRow: {
     flexDirection: 'row',
-    marginVertical: 4,
+    marginVertical: 6,
   },
   messageRowOwn: {
     justifyContent: 'flex-end',
@@ -555,10 +793,10 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   messageBubble: {
-    maxWidth: '78%',
+    maxWidth: '80%',
     borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   messageBubbleOwn: {
     backgroundColor: '#e0f2fe',
@@ -576,12 +814,13 @@ const styles = StyleSheet.create({
   },
   messageText: {
     color: '#0f172a',
-    fontSize: 15,
+    fontSize: 16,
+    lineHeight: 24,
     textAlign: 'right',
   },
   mentionCard: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 12,
     backgroundColor: '#DBEAFE',
     borderWidth: 1,
@@ -590,15 +829,38 @@ const styles = StyleSheet.create({
   },
   mentionCardText: {
     color: '#457B9D',
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     textAlign: 'right',
   },
+  messageMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginTop: 6,
+    gap: 5,
+  },
   messageMeta: {
-    marginTop: 4,
     color: '#94A3B8',
-    fontSize: 11,
+    fontSize: 12,
+    fontWeight: '500',
     textAlign: 'left',
+  },
+  messageStatusIcon: {
+    marginLeft: 2,
+  },
+  messageRowOptimistic: {
+    opacity: 0.7,
+  },
+  messageBubbleOptimistic: {
+    opacity: 0.8,
+  },
+  messageBubbleMedia: {
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+  },
+  mediaContainer: {
+    marginBottom: 4,
   },
   loadMoreContainer: {
     paddingVertical: 8,
@@ -608,63 +870,108 @@ const styles = StyleSheet.create({
   },
   loadMoreText: {
     color: '#94A3B8',
-    fontSize: 12,
+    fontSize: 14,
+    fontWeight: '500',
   },
   composerContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingTop: 8,
-    paddingBottom: 8,
-    paddingHorizontal: 8,
+    paddingTop: 12,
+    paddingBottom: 12,
+    paddingHorizontal: 12,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
+    gap: 10,
   },
   composerInputWrapper: {
     flex: 1,
     position: 'relative',
   },
   mentionBadgeContainer: {
-    marginBottom: 8,
+    marginBottom: 10,
     alignItems: 'flex-end',
   },
   mentionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 999,
     backgroundColor: '#DBEAFE',
     borderWidth: 1,
     borderColor: '#457B9D',
-    gap: 6,
+    gap: 8,
   },
   mentionBadgeText: {
     color: '#457B9D',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   mentionBadgeClose: {
     color: '#457B9D',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    lineHeight: 18,
+    lineHeight: 20,
+  },
+  mediaPreviewContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+    alignItems: 'flex-end',
+  },
+  mediaPreviewBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#E0F2FE',
+    borderWidth: 1,
+    borderColor: '#457B9D',
+    gap: 6,
+  },
+  mediaPreviewText: {
+    color: '#457B9D',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  mediaPreviewClose: {
+    color: '#457B9D',
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
+  mediaButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E0F2FE',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mediaButtonPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.95 }],
   },
   inputContainer: {
     position: 'relative',
   },
   composerInput: {
     flex: 1,
+    minHeight: 48,
     maxHeight: 120,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#F9FAFB',
     textAlign: 'right',
     color: '#0f172a',
-    fontSize: 15,
+    fontSize: 16,
+    lineHeight: 22,
   },
   mentionDropdown: {
     position: 'absolute',
@@ -688,26 +995,32 @@ const styles = StyleSheet.create({
     maxHeight: 200,
   },
   mentionItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
+    minHeight: 52,
+    justifyContent: 'center',
   },
   mentionItemHighlighted: {
     backgroundColor: '#DBEAFE',
   },
   mentionItemText: {
     color: '#1e293b',
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 22,
     textAlign: 'right',
   },
   sendButton: {
-    marginLeft: 8,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 999,
+    minWidth: 80,
+    minHeight: 48,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
     backgroundColor: '#457B9D',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sendButtonPressed: {
     opacity: 0.9,
@@ -718,22 +1031,24 @@ const styles = StyleSheet.create({
   },
   sendButtonLabel: {
     color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
   },
   readOnlyContainer: {
-    paddingTop: 12,
-    paddingBottom: 12,
-    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FEF3C7',
     alignItems: 'center',
   },
   readOnlyText: {
-    color: '#64748B',
-    fontSize: 14,
+    color: '#92400E',
+    fontSize: 15,
+    fontWeight: '600',
     textAlign: 'center',
+    lineHeight: 22,
   },
 });
 

@@ -5,8 +5,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery, useQueries } from '@tanstack/react-query';
+import { Feather } from '@expo/vector-icons';
 
-import GradientButton from '../components/ui/GradientButton';
 import { useAuth } from '../providers/AuthProvider';
 import type { HomeStackParamList } from '../navigation/AppNavigator';
 import { courseAttendanceApi } from '../api/course-attendance';
@@ -284,7 +284,7 @@ const MonthlyFinanceCard = ({ onPress }: MonthlyFinanceCardProps) => {
 };
 
 const HomeScreen = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
   const parentNavigation = useNavigation();
   
@@ -307,6 +307,10 @@ const HomeScreen = () => {
 
   const navigateToCourses = () => {
     navigation.navigate('CoursesPage');
+  };
+
+  const navigateToSettings = () => {
+    navigation.navigate('SettingsPage');
   };
 
   const currentDayData = useMemo(() => {
@@ -344,27 +348,47 @@ const HomeScreen = () => {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.glowTop} />
         <View style={styles.glowBottom} />
+        
+        {/* Settings Icon - Top Left */}
+        <Pressable
+          onPress={navigateToSettings}
+          style={({ pressed }) => [styles.settingsIcon, pressed && styles.settingsIconPressed]}
+        >
+          <Feather name="settings" size={20} color="#457B9D" />
+        </Pressable>
 
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.container}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.devLabel}>HomeScreen</Text>
-          <View style={styles.header}>
-            <Pressable
-              onPress={() => navigation.navigate('HomeVer2')}
-              style={({ pressed }) => [styles.dateGroup, pressed && styles.dateGroupPressed]}
-            >
-              <Text style={styles.dateTitle}>{currentDayData.dayName}</Text>
-              <Text style={styles.dateSubtitle}>{currentDayData.formattedDate}</Text>
-            </Pressable>
-            <View style={styles.headerTextGroup}>
-              <Text style={styles.headerBadge}>דף הבית</Text>
-              <Text style={styles.headerTitle}>
-                ברוך הבא, {user?.name ?? user?.email ?? 'משתמש'}
-              </Text>
-              {user?.email ? <Text style={styles.headerSubtitle}>{user.email}</Text> : null}
+          {/* Version Badge - Top Right */}
+          <View style={styles.versionBadge}>
+            <Text style={styles.versionText}>v0.0.5</Text>
+          </View>
+
+          <View style={styles.headerCard}>
+            <View style={styles.header}>
+              <Pressable
+                onPress={() => navigation.navigate('HomeVer2')}
+                style={({ pressed }) => [styles.dateGroup, pressed && styles.dateGroupPressed]}
+              >
+                <Text style={styles.dateTitle}>{currentDayData.dayName}</Text>
+                <Text style={styles.dateSubtitle}>{currentDayData.formattedDate}</Text>
+              </Pressable>
+              <View style={styles.headerTextGroup}>
+                <LinearGradient
+                  colors={['#457B9D', '#5A9FBC']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.headerBadgePill}
+                >
+                  <Text style={styles.headerBadge}>דף הבית</Text>
+                </LinearGradient>
+                <Text style={styles.headerTitle}>
+                  ברוך הבא, {user?.name ?? user?.email ?? 'משתמש'}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -381,39 +405,6 @@ const HomeScreen = () => {
             />
             <ParentMessagesCard onPress={navigateToMessages} />
             <MonthlyFinanceCard onPress={navigateToFinance} />
-          </View>
-
-          <View style={styles.actionsCard}>
-            <Text style={styles.actionsCardTitle}>פעולות מהירות</Text>
-            <View style={styles.actionsButtonsRow}>
-              <GradientButton
-                label="רישום הוצאה"
-                onPress={() => {}}
-                colors={['#FF6B4D', '#E85A3F']}
-                containerStyle={styles.actionButtonContainer}
-                buttonStyle={styles.actionButton}
-                labelStyle={styles.actionButtonLabel}
-              />
-              <GradientButton
-                label="איתור קבלה"
-                onPress={() => {}}
-                colors={['#457B9D', '#0284C7']}
-                containerStyle={styles.actionButtonContainer}
-                buttonStyle={styles.actionButton}
-                labelStyle={styles.actionButtonLabel}
-              />
-            </View>
-          </View>
-
-          <View style={styles.logoutSection}>
-            <GradientButton
-              label="התנתקות"
-              onPress={logout}
-              colors={['#FF6B4D', '#E85A3F']}
-              containerStyle={styles.logoutContainer}
-              buttonStyle={styles.logoutButton}
-              labelStyle={styles.logoutLabel}
-            />
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -436,75 +427,90 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     paddingBottom: 24,
   },
+  versionBadge: {
+    position: 'absolute',
+    top: 16,
+    right: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    zIndex: 999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  versionText: {
+    color: '#64748B',
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  headerCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 28,
   },
   dateGroup: {
     alignItems: 'flex-start',
-    gap: 4,
+    gap: 3,
   },
   dateGroupPressed: {
     opacity: 0.7,
     transform: [{ scale: 0.98 }],
   },
-  devLabel: {
-    alignSelf: 'flex-end',
-    color: '#94A3B8',
-    fontSize: 10,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-  },
   dateTitle: {
     color: '#334155',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
   },
   dateSubtitle: {
     color: '#64748B',
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 11,
+    fontWeight: '600',
   },
   headerTextGroup: {
     flex: 1,
     alignItems: 'flex-end',
-    gap: 6,
+    gap: 8,
+  },
+  headerBadgePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 16,
+    shadowColor: '#457B9D',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
   headerBadge: {
-    color: '#457B9D',
-    fontSize: 12,
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   headerTitle: {
     color: '#1e293b',
-    fontSize: 24,
+    fontSize: 19,
     fontWeight: '700',
     textAlign: 'right',
-  },
-  headerSubtitle: {
-    textAlign: 'right',
-    color: '#64748B',
-    fontSize: 14,
-  },
-  logoutContainer: {
-    borderRadius: 14,
-    shadowOpacity: 0.25,
-  },
-  logoutButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 22,
-    borderRadius: 14,
-  },
-  logoutLabel: {
-    fontSize: 14,
-  },
-  logoutSection: {
-    marginTop: 20,
-    alignItems: 'center',
-    paddingBottom: 24,
+    lineHeight: 24,
   },
   dashboardGrid: {
     flexDirection: 'row',
@@ -665,46 +671,6 @@ const styles = StyleSheet.create({
   financeSummaryValueProfit: {
     color: '#10B981',
   },
-  actionsCard: {
-    width: '100%',
-    paddingHorizontal: 24,
-    paddingVertical: 26,
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000000',
-    shadowOpacity: 0.08,
-    shadowRadius: 26,
-    shadowOffset: { width: 0, height: 20 },
-    elevation: 14,
-  },
-  actionsCardTitle: {
-    textAlign: 'right',
-    color: '#1e293b',
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 18,
-  },
-  actionsButtonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  actionButtonContainer: {
-    flex: 1,
-    borderRadius: 18,
-    shadowOpacity: 0.3,
-    shadowRadius: 18,
-  },
-  actionButton: {
-    borderRadius: 18,
-    paddingVertical: 14,
-  },
-  actionButtonLabel: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
   glowTop: {
     position: 'absolute',
     width: 320,
@@ -722,6 +688,27 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 107, 77, 0.08)',
     bottom: -160,
     left: -140,
+  },
+  settingsIcon: {
+    position: 'absolute',
+    top: 16,
+    left: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+  },
+  settingsIconPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.96 }],
   },
 });
 

@@ -27,7 +27,6 @@ export const getDynamicData = async (
     } = req.query;
 
     const organizationIdNumber = Number(organizationId);
-    console.log(req.query, "req.query");
 
     const pageNumber = page ? parseInt(page as string, 10) : undefined;
     const pageSizeNumber = pageSize

@@ -8,6 +8,8 @@ export type ChatGroup = {
   createdBy: string;
   isArchived: boolean;
   isReadOnlyForParents: boolean;
+  isPinned?: boolean;
+  pinnedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   /**
@@ -26,6 +28,13 @@ export type ChatMessage = {
   createdAt: string;
   updatedAt: string;
   readBy: string[];
+  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+  isOptimistic?: boolean; // Flag for local-only messages not yet confirmed by server
+  mediaUrl?: string | null; // URL to uploaded media (image/video)
+  mediaType?: 'image' | 'video' | null;
+  mediaWidth?: number;
+  mediaHeight?: number;
+  uploadProgress?: number; // For optimistic updates during upload
 };
 
 export type ChatMessagesResponse = {
@@ -67,6 +76,20 @@ export async function sendChatMessage(
     `/chat/groups/${input.groupId}/messages`,
     { content: input.content }
   );
+
+  return response.data;
+}
+
+/**
+ * Pin or unpin a chat group
+ */
+export async function togglePinChatGroup(
+  groupId: string,
+  isPinned: boolean
+): Promise<ChatGroup> {
+  const response = await api.patch<ChatGroup>(`/chat/groups/${groupId}/pin`, {
+    isPinned,
+  });
 
   return response.data;
 }

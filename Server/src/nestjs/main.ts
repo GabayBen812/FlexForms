@@ -6,8 +6,6 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 async function bootstrap() {
-  console.log("MONGODB_URI =", JSON.stringify(process.env.MONGODB_URI));
-
   const app = await NestFactory.create(AppModule);
 
   app.use(cookieParser());
@@ -57,7 +55,6 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      console.log("Incoming request from origin:", origin);
       // Allow requests with no origin (like mobile apps, curl, etc.)
       if (!origin) return callback(null, true);
       if (explicitOrigins.has(origin)) return callback(null, true);
@@ -67,7 +64,6 @@ async function bootstrap() {
       if (origin.startsWith("https://firebasestorage"))
         return callback(null, true);
 
-      console.log("CORS blocked for origin:", origin);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,

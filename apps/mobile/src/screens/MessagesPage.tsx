@@ -1,12 +1,20 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
+  ActionSheetIOS,
   ActivityIndicator,
+  Alert,
   FlatList,
+  Keyboard,
+  Platform,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
+  type ListRenderItemInfo,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -16,26 +24,54 @@ import type { MessagesStackParamList } from '../navigation/AppNavigator';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { fetchChatGroups, type ChatGroup } from '../api/chat';
 import { useChatSocket } from '../hooks/useChatSocket';
+import { usePinChatGroup } from '../hooks/usePinChatGroup';
+import { ChatAvatar } from '../components/chat/ChatAvatar';
+import { SkeletonChatList } from '../components/chat/SkeletonChatList';
+import { SearchBar } from '../components/chat/SearchBar';
+import { formatChatTimestamp } from '../utils/dateUtils';
 
 type ChatListItemProps = {
   group: ChatGroup;
   onPress: () => void;
+  onLongPress: () => void;
 };
 
-const ChatListItem = ({ group, onPress }: ChatListItemProps) => {
-  const { name, lastMessagePreview, unreadCount, updatedAt, isReadOnlyForParents } = group;
+const ChatListItem = ({ group, onPress, onLongPress }: ChatListItemProps) => {
+  const { name, lastMessagePreview, unreadCount, updatedAt, isReadOnlyForParents, isPinned } = group;
+
+  const handlePress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onPress();
+  }, [onPress]);
+
+  const handleLongPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onLongPress();
+  }, [onLongPress]);
+
+  const formattedTime = useMemo(() => {
+    return updatedAt ? formatChatTimestamp(updatedAt) : '';
+  }, [updatedAt]);
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
+      onLongPress={handleLongPress}
       style={({ pressed }) => [
         styles.chatItem,
         pressed && styles.chatItemPressed,
       ]}
     >
+      {/* Avatar */}
+      <ChatAvatar name={name} size={58} />
+
+      {/* Content */}
       <View style={styles.chatItemTextGroup}>
         <View style={styles.chatItemTitleRow}>
-          <Text style={styles.chatItemTitle}>{name}</Text>
+          {isPinned && (
+            <Feather name="pin" size={16} color="#457B9D" style={styles.pinIcon} />
+          )}
+          <Text style={styles.chatItemTitle} numberOfLines={1}>{name}</Text>
           {isReadOnlyForParents && (
             <View style={styles.readOnlyBadge}>
               <Text style={styles.readOnlyBadgeText}>קריאה בלבד</Text>
@@ -43,23 +79,24 @@ const ChatListItem = ({ group, onPress }: ChatListItemProps) => {
           )}
         </View>
         {lastMessagePreview ? (
-          <Text style={styles.chatItemSubtitle} numberOfLines={1}>
+          <Text style={styles.chatItemSubtitle} numberOfLines={2}>
             {lastMessagePreview}
           </Text>
-        ) : null}
+        ) : (
+          <Text style={styles.chatItemSubtitleEmpty}>אין הודעות עדיין</Text>
+        )}
       </View>
+
+      {/* Meta Info */}
       <View style={styles.chatItemMetaGroup}>
-        {updatedAt ? (
-          <Text style={styles.chatItemMeta}>
-            {new Date(updatedAt).toLocaleTimeString('he-IL', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </Text>
+        {formattedTime ? (
+          <Text style={styles.chatItemMeta}>{formattedTime}</Text>
         ) : null}
         {typeof unreadCount === 'number' && unreadCount > 0 ? (
           <View style={styles.unreadBadge}>
-            <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
+            <Text style={styles.unreadBadgeText}>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </Text>
           </View>
         ) : null}
       </View>
@@ -71,6 +108,10 @@ const MessagesPage = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<MessagesStackParamList>>();
   const { isConnected } = useChatSocket({ enabled: true });
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const pinMutation = usePinChatGroup();
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['chat', 'groups'],
@@ -78,6 +119,117 @@ const MessagesPage = () => {
   });
 
   const groups = data ?? [];
+
+  // Separate and sort groups: pinned first, then by updatedAt
+  const sortedGroups = useMemo(() => {
+    const pinned = groups.filter((g) => g.isPinned);
+    const unpinned = groups.filter((g) => !g.isPinned);
+
+    // Sort pinned by pinnedAt (most recent first)
+    pinned.sort((a, b) => {
+      const aTime = a.pinnedAt ? new Date(a.pinnedAt).getTime() : 0;
+      const bTime = b.pinnedAt ? new Date(b.pinnedAt).getTime() : 0;
+      return bTime - aTime;
+    });
+
+    // Sort unpinned by updatedAt (most recent first)
+    unpinned.sort((a, b) => {
+      const aTime = new Date(a.updatedAt).getTime();
+      const bTime = new Date(b.updatedAt).getTime();
+      return bTime - aTime;
+    });
+
+    return [...pinned, ...unpinned];
+  }, [groups]);
+
+  const filteredGroups = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return sortedGroups;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return sortedGroups.filter((group) => {
+      const nameMatch = group.name.toLowerCase().includes(query);
+      const messageMatch = group.lastMessagePreview?.toLowerCase().includes(query);
+      return nameMatch || messageMatch;
+    });
+  }, [sortedGroups, searchQuery]);
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await refetch();
+    setIsRefreshing(false);
+  }, [refetch]);
+
+  const toggleSearch = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsSearchVisible((prev) => {
+      if (prev) {
+        // Closing search
+        setSearchQuery('');
+        Keyboard.dismiss();
+        return false;
+      }
+      // Opening search
+      return true;
+    });
+  }, []);
+
+  const handlePinToggle = useCallback(
+    (group: ChatGroup) => {
+      const isPinned = group.isPinned || false;
+      const action = isPinned ? 'בטל נעיצה' : 'נעץ';
+      const pinnedCount = groups.filter((g) => g.isPinned).length;
+
+      // Check if trying to pin when already at max
+      if (!isPinned && pinnedCount >= 5) {
+        Alert.alert(
+          'מגבלת נעיצה',
+          'ניתן לנעוץ עד 5 צ\'אטים. בטל נעיצה של צ\'אט אחר כדי להמשיך.',
+          [{ text: 'אישור', style: 'default' }]
+        );
+        return;
+      }
+
+      if (Platform.OS === 'ios') {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: ['ביטול', action],
+            cancelButtonIndex: 0,
+            title: group.name,
+          },
+          (buttonIndex) => {
+            if (buttonIndex === 1) {
+              pinMutation.mutate({
+                groupId: group.id,
+                isPinned: !isPinned,
+              });
+            }
+          }
+        );
+      } else {
+        Alert.alert(
+          group.name,
+          `האם אתה בטוח שברצונך ל${action} את הצ'אט הזה?`,
+          [
+            { text: 'ביטול', style: 'cancel' },
+            {
+              text: action,
+              style: 'default',
+              onPress: () => {
+                pinMutation.mutate({
+                  groupId: group.id,
+                  isPinned: !isPinned,
+                });
+              },
+            },
+          ]
+        );
+      }
+    },
+    [pinMutation, groups]
+  );
 
   const emptyState = useMemo(
     () => (
@@ -91,14 +243,49 @@ const MessagesPage = () => {
     []
   );
 
+  const renderChatItem = useCallback(
+    ({ item }: ListRenderItemInfo<ChatGroup>) => (
+      <ChatListItem
+        group={item}
+        onPress={() =>
+          navigation.navigate('ChatPage', {
+            groupId: item.id,
+            groupName: item.name,
+          })
+        }
+        onLongPress={() => handlePinToggle(item)}
+      />
+    ),
+    [navigation, handlePinToggle]
+  );
+
+  const keyExtractor = useCallback((item: ChatGroup) => item.id, []);
+
+  const itemSeparator = useCallback(() => <View style={styles.chatItemSeparator} />, []);
+
   return (
     <LinearGradient colors={['#FFFFFF', '#F0F9FF', '#FFFFFF']} style={styles.root}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <View style={styles.headerTextGroup}>
-              <Text style={styles.headerBadge}>הודעות</Text>
-              <Text style={styles.headerTitle}>כל קבוצות הצ'אט</Text>
+            <View style={styles.headerRow}>
+              <View style={styles.headerTextGroup}>
+                <Text style={styles.headerBadge}>הודעות</Text>
+                <Text style={styles.headerTitle}>כל קבוצות הצ'אט</Text>
+              </View>
+              <Pressable
+                onPress={toggleSearch}
+                style={({ pressed }) => [
+                  styles.searchButton,
+                  pressed && styles.searchButtonPressed,
+                ]}
+              >
+                <Feather
+                  name={isSearchVisible ? 'x' : 'search'}
+                  size={24}
+                  color="#457B9D"
+                />
+              </Pressable>
             </View>
             <View
               style={[
@@ -118,16 +305,27 @@ const MessagesPage = () => {
             </View>
           </View>
 
-          {isLoading ? (
-            <View style={styles.centerContent}>
-              <ActivityIndicator size="large" color="#457B9D" />
-              <Text style={styles.centerText}>טוען קבוצות…</Text>
+          {isSearchVisible && (
+            <View style={styles.searchContainer}>
+              <SearchBar
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="חפש קבוצות..."
+                autoFocus
+              />
             </View>
+          )}
+
+          {isLoading ? (
+            <SkeletonChatList />
           ) : isError ? (
             <View style={styles.centerContent}>
               <Text style={styles.errorText}>אירעה שגיאה בטעינת הקבוצות.</Text>
               <Pressable
-                onPress={() => refetch()}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  refetch();
+                }}
                 style={({ pressed }) => [
                   styles.retryButton,
                   pressed && styles.retryButtonPressed,
@@ -136,25 +334,37 @@ const MessagesPage = () => {
                 <Text style={styles.retryButtonLabel}>נסה שוב</Text>
               </Pressable>
             </View>
-          ) : groups.length === 0 ? (
-            emptyState
+          ) : filteredGroups.length === 0 ? (
+            searchQuery.trim() ? (
+              <View style={styles.emptyState}>
+                <Feather name="search" size={48} color="#94A3B8" />
+                <Text style={styles.emptyStateTitle}>לא נמצאו תוצאות</Text>
+                <Text style={styles.emptyStateSubtitle}>
+                  נסה לחפש בביטוי אחר
+                </Text>
+              </View>
+            ) : (
+              emptyState
+            )
           ) : (
             <FlatList
-              data={groups}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <ChatListItem
-                  group={item}
-                  onPress={() =>
-                    navigation.navigate('ChatPage', {
-                      groupId: item.id,
-                      groupName: item.name,
-                    })
-                  }
-                />
-              )}
-              ItemSeparatorComponent={() => <View style={styles.chatItemSeparator} />}
+              data={filteredGroups}
+              keyExtractor={keyExtractor}
+              renderItem={renderChatItem}
+              ItemSeparatorComponent={itemSeparator}
               contentContainerStyle={styles.chatList}
+              refreshControl={
+                <RefreshControl
+                  refreshing={isRefreshing}
+                  onRefresh={handleRefresh}
+                  tintColor="#457B9D"
+                  colors={['#457B9D']}
+                />
+              }
+              removeClippedSubviews={true}
+              maxToRenderPerBatch={10}
+              updateCellsBatchingPeriod={50}
+              windowSize={21}
             />
           )}
         </View>
@@ -172,15 +382,18 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 32,
-    gap: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    gap: 16,
   },
   header: {
+    marginBottom: 12,
+    gap: 16,
+  },
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
   },
   headerTextGroup: {
     flex: 1,
@@ -189,21 +402,21 @@ const styles = StyleSheet.create({
   headerBadge: {
     alignSelf: 'flex-end',
     color: '#457B9D',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   headerTitle: {
     color: '#1e293b',
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
     textAlign: 'right',
-    marginTop: 4,
+    marginTop: 6,
   },
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
   },
@@ -216,8 +429,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
   },
   statusDot: {
-    width: 8,
-    height: 8,
+    width: 10,
+    height: 10,
     borderRadius: 999,
     marginLeft: 8,
   },
@@ -229,36 +442,51 @@ const styles = StyleSheet.create({
   },
   statusText: {
     color: '#4b5563',
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  searchButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E0F2FE',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchButtonPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.95 }],
+  },
+  searchContainer: {
+    marginBottom: 12,
   },
   chatList: {
     paddingTop: 8,
-    paddingBottom: 32,
-    gap: 12,
+    paddingBottom: 24,
   },
   chatItem: {
     flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     paddingVertical: 18,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
     shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+    gap: 14,
+    minHeight: 88,
   },
   chatItemPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.98 }],
   },
   chatItemSeparator: {
-    height: 14,
+    height: 16,
   },
   chatItemTextGroup: {
     flex: 1,
@@ -267,16 +495,20 @@ const styles = StyleSheet.create({
   chatItemTitleRow: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+  },
+  pinIcon: {
+    marginLeft: 2,
   },
   chatItemTitle: {
     color: '#1e293b',
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
+    lineHeight: 26,
   },
   readOnlyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 12,
     backgroundColor: '#F3F4F6',
     borderWidth: 1,
@@ -284,13 +516,23 @@ const styles = StyleSheet.create({
   },
   readOnlyBadgeText: {
     color: '#6B7280',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   chatItemSubtitle: {
     marginTop: 6,
     color: '#64748B',
-    fontSize: 14,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'right',
+  },
+  chatItemSubtitleEmpty: {
+    marginTop: 6,
+    color: '#94A3B8',
+    fontSize: 15,
+    lineHeight: 22,
+    fontStyle: 'italic',
+    textAlign: 'right',
   },
   chatItemMetaGroup: {
     alignItems: 'flex-end',
@@ -299,18 +541,20 @@ const styles = StyleSheet.create({
   },
   chatItemMeta: {
     color: '#94A3B8',
-    fontSize: 12,
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'right',
   },
   unreadBadge: {
-    minWidth: 28,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    minWidth: 32,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 999,
     backgroundColor: '#FF6B4D',
   },
   unreadBadgeText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -326,16 +570,19 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#E85A3F',
-    fontSize: 16,
+    fontSize: 17,
+    fontWeight: '600',
+    lineHeight: 26,
     textAlign: 'center',
   },
   retryButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
     borderRadius: 18,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#FFD4C4',
     backgroundColor: '#FFF5F3',
+    minHeight: 48,
   },
   retryButtonPressed: {
     opacity: 0.85,
@@ -343,8 +590,8 @@ const styles = StyleSheet.create({
   },
   retryButtonLabel: {
     color: '#FF6B4D',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
   },
   emptyState: {
     flex: 1,
@@ -354,12 +601,14 @@ const styles = StyleSheet.create({
   },
   emptyStateTitle: {
     color: '#1e293b',
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '700',
+    lineHeight: 30,
   },
   emptyStateSubtitle: {
     color: '#64748B',
-    fontSize: 14,
+    fontSize: 16,
+    lineHeight: 24,
     textAlign: 'center',
     paddingHorizontal: 20,
   },

@@ -24,9 +24,7 @@ export class UserController {
     @Query('page') page?: number,
     @Query('pageSize') pageSize?: number
   ) {
-    console.log('Received request:', { organizationId, page, pageSize });
     if (!organizationId) return [];
-    console.log("im yyyy");
     const skip = page && pageSize ? (page - 1) * pageSize : 0;
     const limit = pageSize ? Number(pageSize) : 10;
   

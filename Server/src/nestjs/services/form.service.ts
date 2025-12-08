@@ -23,7 +23,6 @@ export class FormService {
   async create(data: Partial<Form>, user: UserFromRequest) {
     const code = await this.generateUniqueCode();
     const organizationId = new Types.ObjectId(user.organizationId);
-    console.log(data, "data");
     return this.model.create({
       ...data,
       code,
@@ -114,16 +113,10 @@ export class FormService {
     const pageSize = parseInt(query.pageSize as string) || 10;
     const skip = (page - 1) * pageSize;
 
-    console.log("Pagination:", { page, pageSize, skip });
-    console.log("Constructed filter (forms):", filter);
-
     const [results, total] = await Promise.all([
       this.model.find(filter).skip(skip).limit(pageSize).exec(),
       this.model.countDocuments(filter),
     ]);
-
-    console.log("Results count (forms):", results.length);
-    console.log("Total count:", total);
 
     return {
       data: results,
@@ -151,24 +144,18 @@ export class FormService {
     try {
       // Validate if the ID is a valid MongoDB ObjectId
       if (!Types.ObjectId.isValid(id)) {
-        console.log("Invalid ObjectId format:", id);
         throw new Error("Invalid form ID format");
       }
 
-      console.log("Attempting to delete form with ID:", id);
-
       // First check if form exists
       const form = await this.model.findById(id).exec();
-      console.log("Found form:", form);
 
       if (!form) {
-        console.log("Form not found");
         throw new Error("Form not found");
       }
 
       // Delete the form
       const result = await this.model.findByIdAndDelete(id).exec();
-      console.log("Delete result:", result);
 
       return result;
     } catch (error) {

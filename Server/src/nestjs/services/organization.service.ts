@@ -21,7 +21,6 @@ export class OrganizationService {
   }
 
   async findAll(query: any = {}) {
-    console.log('Incoming query:', query);
     const filter: any = {};
 
     // Global search (search input)
@@ -47,35 +46,54 @@ export class OrganizationService {
       }
     });
 
-    console.log('Constructed filter:', filter);
     // Populate the owner field with user data
     return this.model.find(filter).populate('owner', 'name email').exec();
   }
 
   async findById(id: string) {
-    console.log("trying to find by id", id);
-    
     const organization = await this.model.findById(id).exec();
     
     if (!organization) {
+      console.log('[OrganizationService] Organization not found for ID:', id);
       return null;
     }
     
     // Convert to plain object and populate currentSeason manually
     const orgObj: any = organization.toObject ? organization.toObject() : organization;
+    console.log('[OrganizationService] Organization found:', {
+      _id: orgObj._id,
+      name: orgObj.name,
+      currentSeasonId: orgObj.currentSeasonId,
+    });
     
     // Convert currentSeasonId to string if it exists
     if (orgObj.currentSeasonId) {
       const seasonIdString = orgObj.currentSeasonId.toString();
       orgObj.currentSeasonId = seasonIdString;
+      console.log('[OrganizationService] Looking up season with ID:', seasonIdString);
       
       // Manually populate currentSeason
       const season = await this.seasonModel.findById(seasonIdString).lean().exec();
+      console.log('[OrganizationService] Season query result:', season ? { _id: season._id, name: season.name } : 'not found');
+      
       if (season) {
-        orgObj.currentSeason = season;
+        orgObj.currentSeason = {
+          _id: season._id.toString(),
+          name: season.name,
+          order: season.order,
+          organizationId: season.organizationId?.toString(),
+          createdAt: (season as any).createdAt,
+          updatedAt: (season as any).updatedAt,
+        };
+        console.log('[OrganizationService] Populated currentSeason:', orgObj.currentSeason);
+      } else {
+        console.log('[OrganizationService] Season not found in database for ID:', seasonIdString);
       }
+    } else {
+      console.log('[OrganizationService] No currentSeasonId set on organization');
     }
     
+    console.log('[OrganizationService] Returning organization with currentSeason:', !!orgObj.currentSeason);
     return orgObj;
   }
   

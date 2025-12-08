@@ -51,9 +51,7 @@ export class FormController {
   @UseGuards(JwtAuthGuard)
   @Get()
   async getAll(@Query() query: any) {
-    console.log("Query params:", query);
     const result = await this.service.findAll(query);
-    console.log("Query result:", result);
     return {
       status: 200,
       data: result.data,
@@ -83,9 +81,7 @@ export class FormController {
   @Delete(":id")
   async delete(@Param("id") id: string) {
     try {
-      console.log("Delete request received for form ID:", id);
       const result = await this.service.delete(id);
-      console.log("Delete result:", result);
       return result;
     } catch (error) {
       //@ts-ignore

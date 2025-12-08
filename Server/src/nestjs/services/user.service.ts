@@ -27,7 +27,6 @@ export class UserService {
       .lean()
       .exec();
 
-    console.log('Users found:', result);
     return result;
   }
 

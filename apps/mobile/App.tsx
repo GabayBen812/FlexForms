@@ -11,9 +11,20 @@ import { config } from '@gluestack-ui/config';
 
 import AppNavigator from './src/navigation/AppNavigator';
 import { AuthProvider } from './src/providers/AuthProvider';
-import VersionBadge from './src/components/VersionBadge';
+import { useNotifications } from './src/hooks/useNotifications';
 
 const queryClient = new QueryClient();
+
+function AppContent() {
+  // Initialize notifications
+  useNotifications();
+
+  return (
+    <View style={styles.appShell}>
+      <AppNavigator />
+    </View>
+  );
+}
 
 export default function App() {
   return (
@@ -22,10 +33,7 @@ export default function App() {
         <AuthProvider>
           <GluestackUIProvider config={config}>
             <SafeAreaProvider>
-              <View style={styles.appShell}>
-                <AppNavigator />
-                <VersionBadge />
-              </View>
+              <AppContent />
               <StatusBar style="dark" />
             </SafeAreaProvider>
           </GluestackUIProvider>

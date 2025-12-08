@@ -93,7 +93,7 @@ export default function CreateOrganizationDialog({
         throw new Error(userResponse.error || "Failed to create user");
       }
 
-      createdUserId = userResponse.data._id || userResponse.data.id;
+      createdUserId = String(userResponse.data._id || userResponse.data.id);
       
       if (!createdUserId) {
         throw new Error("User created but ID not found");

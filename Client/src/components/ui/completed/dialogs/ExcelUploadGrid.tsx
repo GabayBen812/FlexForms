@@ -29,7 +29,7 @@ interface ProgressState {
   fileName?: string;
 }
 
-const normalizeHeader = (header?: string | number | null) =>
+const normalizeHeader = (header?: string | number | Date | null) =>
   header?.toString().trim().toLowerCase() || "";
 
 export function ExcelUploadGrid({ columns, onSave, excludeFields = [] }: ExcelUploadGridProps) {

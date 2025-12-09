@@ -575,16 +575,14 @@ export default function FormRegistration() {
                       validationSchema={validationSchema}
                       onSubmit={handleFormSubmit}
                       extraButtons={
-                        form.saveContactsToDatabase !== false && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setStep(existingKid ? 2 : 2)}
-                            className="w-full sm:w-auto"
-                          >
-                            חזור
-                          </Button>
-                        )
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setStep(existingKid ? 2 : 2)}
+                          className="w-full sm:w-auto"
+                        >
+                          חזור
+                        </Button>
                       }
                     />
                   </CardContent>

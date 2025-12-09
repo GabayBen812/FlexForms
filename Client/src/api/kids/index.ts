@@ -3,7 +3,7 @@ import { Kid } from "@/types/kids/kid";
 
 export const findKidByIdNumber = async (idNumber: string, organizationId: string) => {
   const response = await apiClient.get<{ status: number; data: Kid | null }>(
-    "/kids/find-by-id-number",
+    "/kids/public/find-by-id-number",
     {
       params: { idNumber, organizationId },
     }

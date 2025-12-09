@@ -72,6 +72,21 @@ export class KidController {
     return this.kidService.create(createKidDto);
   }
 
+  @Get('public/find-by-id-number')
+  async findByIdNumberPublic(
+    @Query('idNumber') idNumber: string,
+    @Query('organizationId') organizationId: string,
+  ) {
+    if (!idNumber || !organizationId) {
+      return { status: 400, message: 'idNumber and organizationId are required' };
+    }
+    const kid = await this.kidService.findByIdNumber(idNumber, organizationId);
+    return {
+      status: 200,
+      data: kid,
+    };
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   findOne(@Param('id') id: string) {

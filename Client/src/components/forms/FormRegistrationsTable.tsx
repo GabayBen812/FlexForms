@@ -16,6 +16,11 @@ import { useToast } from "@/hooks/use-toast";
 import { getSelectionColumn } from "@/components/tables/selectionColumns";
 import { showConfirm } from "@/utils/swal";
 import { FieldConfig } from "@/components/forms/DynamicForm";
+import { Link } from "react-router-dom";
+import { Kid } from "@/types/kids/kid";
+import { useOrganization } from "@/hooks/useOrganization";
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "@/api/apiClient";
 
 const registrationsApi = createApiService<UserRegistration>("/registrations");
 const formsApi = createApiService<Form>("/forms");
@@ -28,6 +33,7 @@ interface Props {
 export default function FormRegistrationsTable({ form, onFormUpdate }: Props) {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { organization } = useOrganization();
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
     {}
   );
@@ -40,6 +46,7 @@ export default function FormRegistrationsTable({ form, onFormUpdate }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [linkedKids, setLinkedKids] = useState<Record<string, Kid>>({});
 
   const actions: TableAction<UserRegistration>[] = [
     { label: t("delete"), type: "delete" },
@@ -55,6 +62,61 @@ export default function FormRegistrationsTable({ form, onFormUpdate }: Props) {
       inputRef.current.select();
     }
   }, [isEditingTitle]);
+
+  // Fetch linked kids based on kidId from registrations
+  useEffect(() => {
+    const fetchLinkedKids = async () => {
+      if (!registrations.length || !organization?._id) {
+        return;
+      }
+
+      const kidsMap: Record<string, Kid> = {};
+      
+      // Extract unique kid IDs from registrations
+      const kidIdsToFetch = new Set<string>();
+      registrations.forEach((reg) => {
+        if (reg.kidId) {
+          kidIdsToFetch.add(reg.kidId);
+        }
+      });
+
+      if (kidIdsToFetch.size === 0) {
+        setLinkedKids({});
+        return;
+      }
+
+      // Fetch kids by their _id
+      try {
+        const fetchPromises = Array.from(kidIdsToFetch).map(async (kidId) => {
+          try {
+            const response = await apiClient.get(`/kids/${kidId}`);
+            if (response.data && response.data._id) {
+              return { kidId, kid: response.data };
+            }
+          } catch (error) {
+            // Kid not found, continue
+            return null;
+          }
+          return null;
+        });
+
+        const results = await Promise.all(fetchPromises);
+        
+        // Build the kids map (key = kidId from registration)
+        results.forEach((result) => {
+          if (result && result.kid) {
+            kidsMap[result.kidId] = result.kid;
+          }
+        });
+
+        setLinkedKids(kidsMap);
+      } catch (error) {
+        console.error('Error fetching linked kids:', error);
+      }
+    };
+
+    fetchLinkedKids();
+  }, [registrations, organization?._id]);
 
   const handleSaveTitle = async () => {
     if (!editedTitle.trim()) {
@@ -196,7 +258,8 @@ export default function FormRegistrationsTable({ form, onFormUpdate }: Props) {
             form.fields || [],
             registrations.some(
               (r) => r.additionalData && r.additionalData.paymentDetails
-            )
+            ),
+            linkedKids
           )}
           idField="_id"
           defaultPageSize={10}
@@ -220,7 +283,8 @@ export default function FormRegistrationsTable({ form, onFormUpdate }: Props) {
 function getColumns(
   t: ReturnType<typeof useTranslation>["t"],
   fields: FieldConfig[],
-  showPaymentColumns: boolean
+  showPaymentColumns: boolean,
+  linkedKids: Record<string, Kid>
 ): ColumnDef<UserRegistration>[] {
   const selectionColumn = getSelectionColumn<UserRegistration>();
   const baseColumns: ColumnDef<UserRegistration>[] = [
@@ -233,6 +297,38 @@ function getColumns(
       meta: { isDate: true, editable: false },
       cell: ({ row }) =>
         formatDateTimeForDisplay(row.original.createdAt) || "-",
+    },
+    {
+      accessorKey: "linkedKid",
+      header: t("linked_kid"),
+      meta: { editable: false },
+      cell: ({ row }) => {
+        const kidId = row.original.kidId;
+        
+        if (!kidId) {
+          return "-";
+        }
+        
+        const kid = linkedKids[kidId];
+        if (!kid) {
+          return "-";
+        }
+        
+        const displayName = `${kid.firstname} ${kid.lastname}`;
+        const displayText = kid.idNumber 
+          ? `${displayName} (${kid.idNumber})`
+          : displayName;
+        
+        return (
+          <Link 
+            to="/kids" 
+            className="text-primary hover:underline font-medium"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {displayText}
+          </Link>
+        );
+      },
     },
   ];
 

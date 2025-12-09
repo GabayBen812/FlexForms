@@ -22,6 +22,9 @@ export class Registration {
 
   @Prop({ type: Object })
   additionalData?: Record<string, any>;
+
+  @Prop({ type: Types.ObjectId, ref: 'Kid' })
+  kidId?: Types.ObjectId;
   
 }
 

@@ -10,11 +10,13 @@ import { coursesApi } from "@/api/courses";
 import { Course } from "@/types/courses/Course";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSeasons } from "@/api/seasons";
+import { useViewSeason } from "@/hooks/useViewSeason";
 
 export default function Courses() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { organization } = useOrganization();
+  const { viewSeasonId } = useViewSeason();
 
   // Fetch seasons for the season column
   const { data: seasons = [] } = useQuery({
@@ -105,7 +107,7 @@ export default function Courses() {
             pageSize,
             page,
             organizationId: organization._id,
-            seasonId: organization.currentSeasonId,
+            seasonId: viewSeasonId || organization.currentSeasonId,
           },
           false,
           organization._id
@@ -136,7 +138,7 @@ export default function Courses() {
         };
       }
     },
-    [organization?._id]
+    [organization?._id, organization?.currentSeasonId, viewSeasonId]
   );
 
   const handleAddCourse = useCallback(

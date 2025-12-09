@@ -17,6 +17,7 @@ import { Parent } from "@/types/parents/parent";
 import { Kid } from "@/types/kids/kid";
 import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
+import { useViewSeason } from "@/hooks/useViewSeason";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
@@ -392,6 +393,7 @@ export default function ParentsPage() {
   const { t } = useTranslation();
   const { organization } = useOrganization();
   const { isEnabled: isUnifiedContacts, isLoading: isContactsFlagLoading } = useFeatureFlag("FF_CONTACTS_UNIFIED");
+  const { viewSeasonId } = useViewSeason();
   const parentRelationshipsRef = useRef<Record<string, ContactRelationship[]>>({});
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
     {}
@@ -733,12 +735,18 @@ export default function ParentsPage() {
         } as ApiResponse<Parent>;
       }
 
+      // Build params with optional seasonId filter
+      const queryParams = {
+        ...(params || {}),
+        ...(viewSeasonId ? { seasonId: viewSeasonId } : {}),
+      };
+
       if (!isUnifiedContacts) {
-        return parentsApi.fetchAll(params, false, organization._id);
+        return parentsApi.fetchAll(queryParams, false, organization._id);
       }
 
       const contactResponse = await fetchContacts({
-        ...(params || {}),
+        ...queryParams,
         type: "parent",
       });
 
@@ -788,7 +796,7 @@ export default function ParentsPage() {
         totalPages: contactResponse.data.totalPages,
       } as ApiResponse<Parent>;
     },
-    [organization?._id, isUnifiedContacts, mapContactToParent],
+    [organization?._id, isUnifiedContacts, mapContactToParent, viewSeasonId],
   );
 
   const createParentRecord = useCallback(

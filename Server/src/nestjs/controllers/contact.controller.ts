@@ -52,6 +52,8 @@ export class ContactController {
 
     const limit = limitParam ? Number(limitParam) : undefined;
     const offset = offsetParam ? Number(offsetParam) : undefined;
+    const sortField = toStringParam(query.sortField);
+    const sortDirection = toStringParam(query.sortDirection) as 'asc' | 'desc' | undefined;
 
     const namespacedFieldFilters: Record<string, unknown> = {};
     Object.entries(query).forEach(([key, value]) => {
@@ -84,6 +86,8 @@ export class ContactController {
       limit,
       offset,
       dynamicFieldFilters,
+      sortField,
+      sortDirection,
     });
   }
 

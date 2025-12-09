@@ -5,6 +5,7 @@ import { ZodObject } from "zod";
 import { Input } from "@/components/ui/Input";
 import { DateInput } from "@/components/ui/date-input";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { IdNumberInput } from "@/components/ui/id-number-input";
 import FieldConfigEditor from "./FieldConfigEditor";
 import SignatureCanvas from "react-signature-canvas";
 import { useRef, useState, useEffect } from "react";
@@ -353,9 +354,28 @@ export default function DynamicForm({
             )}
           />
         );
+      case "idNumber":
+        return (
+          <Controller
+            name={field.name}
+            control={control}
+            render={({ field: formField }) => (
+              <IdNumberInput
+                value={formField.value || ""}
+                onChange={(value) => {
+                  formField.onChange(value);
+                }}
+                onBlur={formField.onBlur}
+                disabled={mode !== "registration"}
+                required={field.isRequired}
+                name={formField.name}
+                data-cy={`field-input-${field.name}`}
+              />
+            )}
+          />
+        );
       case "text":
       case "email":
-      case "idNumber":
         return field.type === "email" ? (
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
@@ -380,12 +400,6 @@ export default function DynamicForm({
         ) : (
           <Input
             type="text"
-            inputMode={
-              field.type === "idNumber"
-                ? "numeric"
-                : undefined
-            }
-            pattern={field.type === "idNumber" ? "[0-9]*" : undefined}
             {...register(field.name)}
             disabled={mode !== "registration"}
             data-cy={`field-input-${field.name}`}
@@ -755,6 +769,31 @@ export default function DynamicForm({
                   disabled={mode !== "registration"}
                   data-cy={`field-input-${field.name}`}
                 />
+              ) : field.type === "idNumber" ? (
+                <>
+                  <Controller
+                    name={field.name}
+                    control={control}
+                    render={({ field: formField }) => (
+                      <IdNumberInput
+                        value={formField.value || ""}
+                        onChange={(value) => {
+                          formField.onChange(value);
+                        }}
+                        onBlur={formField.onBlur}
+                        disabled={mode !== "registration"}
+                        required={field.isRequired}
+                        name={formField.name}
+                        data-cy={`field-input-${field.name}`}
+                      />
+                    )}
+                  />
+                  {errors[field.name] && (
+                    <p className="text-red-500 text-sm mt-1" data-cy={`field-error-${field.name}`}>
+                      {errors[field.name]?.message as string}
+                    </p>
+                  )}
+                </>
               ) : field.type === "email" ? (
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />

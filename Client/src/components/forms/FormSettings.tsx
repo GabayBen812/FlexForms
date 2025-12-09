@@ -19,6 +19,7 @@ export default function FormSettings({ form }: Props) {
   const initialTime = initialDeadline ? dayjs(initialDeadline).format('HH:mm') : '';
 
   const [isActive, setIsActive] = useState(form.isActive ?? true);
+  const [saveContactsToDatabase, setSaveContactsToDatabase] = useState(form.saveContactsToDatabase ?? true);
   const [maxRegistrators, setMaxRegistrators] = useState(form.maxRegistrators?.toString() ?? '');
   const [registrationDeadline, setRegistrationDeadline] = useState<Date | undefined>(initialDeadline);
   const [timeValue, setTimeValue] = useState<string>(initialTime);
@@ -28,7 +29,7 @@ export default function FormSettings({ form }: Props) {
   const handleSave = async () => {
     setLoading(true);
     try {
-      const payload: any = { isActive };
+      const payload: any = { isActive, saveContactsToDatabase };
       if (maxRegistrators === '') {
         payload.maxRegistrators = null; // Backend should remove this property if null
       } else {
@@ -160,6 +161,17 @@ export default function FormSettings({ form }: Props) {
         <div className="flex items-center justify-between">
           <span className="font-medium">האם הטופס פעיל?</span>
           <Switch checked={isActive} onCheckedChange={setIsActive} />
+        </div>
+
+        {/* Save Contacts to Database Switch */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="font-medium">האם לשמור אנשים במאגר?</span>
+            <Switch checked={saveContactsToDatabase} onCheckedChange={setSaveContactsToDatabase} />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            שמירה למאגר תשמור פירוט של אנשי קשר רלוונטיים במאגר האנשים של הארגון לצורך שימוש עתידי
+          </p>
         </div>
 
         {/* Max Registrators */}

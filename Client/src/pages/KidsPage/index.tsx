@@ -17,6 +17,7 @@ import { Kid } from "@/types/kids/kid";
 import { Parent } from "@/types/parents/parent";
 import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
+import { useViewSeason } from "@/hooks/useViewSeason";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
@@ -407,6 +408,7 @@ export default function KidsPage() {
   const { t } = useTranslation();
   const { organization } = useOrganization();
   const { isEnabled: isUnifiedContacts, isLoading: isContactsFlagLoading } = useFeatureFlag("FF_CONTACTS_UNIFIED");
+  const { viewSeasonId } = useViewSeason();
   const kidRelationshipsRef = useRef<Record<string, ContactRelationship[]>>({});
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
     {}
@@ -780,12 +782,20 @@ export default function KidsPage() {
         } as ApiResponse<Kid>;
       }
 
+      // Build params with optional seasonId filter
+      const queryParams = {
+        ...(params || {}),
+        sortField: '_id',
+        sortDirection: 'desc' as const,
+        ...(viewSeasonId ? { seasonId: viewSeasonId } : {}),
+      };
+
       if (!isUnifiedContacts) {
-        return kidsApi.fetchAll(params, false, organization._id);
+        return kidsApi.fetchAll(queryParams, false, organization._id);
       }
 
       const contactResponse = await fetchContacts({
-        ...(params || {}),
+        ...queryParams,
         type: "kid",
       });
 
@@ -833,7 +843,7 @@ export default function KidsPage() {
         totalPages: contactResponse.data.totalPages,
       } as ApiResponse<Kid>;
     },
-    [organization?._id, isUnifiedContacts, mapContactToKid],
+    [organization?._id, isUnifiedContacts, mapContactToKid, viewSeasonId],
   );
 
   const createKidRecord = useCallback(

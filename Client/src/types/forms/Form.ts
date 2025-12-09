@@ -16,4 +16,5 @@ export type Form = {
   maxRegistrators?: number;
   registrationDeadline?: string;
   backgroundColor?: string;
+  saveContactsToDatabase?: boolean;
 };

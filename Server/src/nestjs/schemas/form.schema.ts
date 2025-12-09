@@ -40,6 +40,9 @@ export class Form {
 
   @Prop()
   backgroundColor?: string;
+
+  @Prop({ default: true })
+  saveContactsToDatabase?: boolean;
 }
 
 export const FormSchema = SchemaFactory.createForClass(Form);

@@ -5,6 +5,7 @@ import { NavigationLoader } from "@/components/routes/NavigationLoader";
 import { TabsProvider } from "@/contexts/TabsContext";
 import { TabsNavigationListener } from "@/components/routes/TabsNavigationListener";
 import { Footer } from "./Footer/Footer";
+import { SeasonViewBanner } from "./SeasonViewBanner";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,6 +16,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <TabsProvider>
       <div className="flex h-screen flex-col relative">
         <Topbar />
+        <SeasonViewBanner />
         <SidebarProvider className="flex-row-reverse">
           <SidebarInset>
             <div className="flex flex-col mt-28 min-h-[calc(100svh-7rem)] overflow-x-hidden">

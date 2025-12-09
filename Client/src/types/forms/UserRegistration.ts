@@ -5,6 +5,7 @@ export interface UserRegistration {
     phone?: string;
     formId: string;
     organizationId: string;
+    kidId?: string; // ID of the linked kid
     additionalData?: Record<string, any>;
     createdAt: string;
   }

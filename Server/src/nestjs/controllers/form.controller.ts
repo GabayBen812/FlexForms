@@ -40,11 +40,12 @@ export class FormController {
   @Put(":id/settings")
   async updateSettings(@Param("id") id: string, @Body() body: any) {
     // Only allow updating specific fields
-    const { isActive, maxRegistrators, registrationDeadline } = body;
+    const { isActive, maxRegistrators, registrationDeadline, saveContactsToDatabase } = body;
     return this.service.update(id, {
       isActive,
       maxRegistrators,
       registrationDeadline,
+      saveContactsToDatabase,
     });
   }
 

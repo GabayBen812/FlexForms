@@ -22,4 +22,8 @@ export class CreateRegistrationDto {
   @IsOptional()
   @IsObject()
   additionalData?: Record<string, any>;
+
+  @IsOptional()
+  @IsString()
+  kidId?: string;
 }

@@ -22,7 +22,7 @@ export class RegistrationService {
       const formId = new Types.ObjectId(data.formId);
       const organizationId = new Types.ObjectId(data.organizationId);
 
-      const registration = {
+      const registration: any = {
         formId,
         organizationId,
         fullName: data.fullName,
@@ -30,6 +30,11 @@ export class RegistrationService {
         phone: data.phone,
         additionalData: data.additionalData || {},
       };
+
+      // Add kidId if provided
+      if (data.kidId) {
+        registration.kidId = new Types.ObjectId(data.kidId);
+      }
 
       const result = await this.model.create(registration);
 

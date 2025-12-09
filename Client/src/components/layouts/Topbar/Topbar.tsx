@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useViewSeason } from "@/hooks/useViewSeason";
 
 function Topbar() {
   const { organization, isOrganizationFetching, refetchOrganization } = useOrganization();
@@ -45,6 +46,18 @@ function Topbar() {
     queryFn: fetchSeasons,
     enabled: showSeasons,
   });
+
+  // Use view season hook for system_admin users
+  const { viewSeasonId, setViewSeasonId } = useViewSeason();
+
+  // Handler for season change (only for system_admin)
+  const handleSeasonChange = (seasonId: string) => {
+    setViewSeasonId(seasonId);
+    const season = seasons.find(s => s._id === seasonId);
+    toast({ 
+      title: t("season_view_switched", { seasonName: season?.name || seasonId }) 
+    });
+  };
 
   // Keyboard shortcut: Cmd/Ctrl+K to open command palette
   useEffect(() => {
@@ -209,15 +222,20 @@ function Topbar() {
           <div className="flex-1 flex items-center justify-end gap-3">
             {showSeasons && (
               <Select 
-                value={organization?.currentSeasonId || ""} 
-                disabled={true}
+                value={viewSeasonId || organization?.currentSeasonId || ""} 
+                disabled={user?.role !== "system_admin"}
+                onValueChange={handleSeasonChange}
               >
                 <SelectTrigger 
-                  className="w-[180px] h-9 border-muted bg-muted/30 transition-colors"
+                  className={`w-[180px] h-9 border-muted transition-colors ${
+                    user?.role === "system_admin" 
+                      ? "bg-background hover:bg-muted cursor-pointer" 
+                      : "bg-muted/30 cursor-default"
+                  }`}
                 >
                   <SelectValue placeholder={t("seasons:select_season") || "Select season"}>
-                    {organization?.currentSeason?.name || 
-                     seasons.find(s => s._id === organization?.currentSeasonId)?.name ||
+                    {seasons.find(s => s._id === (viewSeasonId || organization?.currentSeasonId))?.name ||
+                     organization?.currentSeason?.name || 
                      t("seasons:no_season_selected") || 
                      "No season selected"}
                   </SelectValue>

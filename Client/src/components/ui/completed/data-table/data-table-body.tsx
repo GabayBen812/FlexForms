@@ -1774,6 +1774,12 @@ const RowComponent = React.memo(function RowComponent<T>({
           delete duplicateData._id;
           // @ts-ignore
           delete duplicateData.code; // Remove code so backend generates a new one
+          // Add "(copy)" to the title
+          // @ts-ignore
+          if (duplicateData.title) {
+            // @ts-ignore
+            duplicateData.title = `${duplicateData.title} (copy)`;
+          }
           duplicateMeta.handleAdd(duplicateData);
         }
         break;

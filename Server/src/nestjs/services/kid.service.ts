@@ -145,7 +145,12 @@ export class KidService {
       }
     });
 
-    return this.kidModel.find(filter).exec();
+    // Handle sorting
+    const sortField = query.sortField || '_id';
+    const sortDirection = query.sortDirection === 'asc' ? 1 : -1;
+    const sort: Record<string, 1 | -1> = { [sortField]: sortDirection };
+
+    return this.kidModel.find(filter).sort(sort).exec();
   }
 
   async count(organizationId: string): Promise<number> {
@@ -156,6 +161,16 @@ export class KidService {
 
   async findOne(id: string): Promise<Kid | null> {
     return this.kidModel.findById(id).exec();
+  }
+
+  async findByIdNumber(idNumber: string, organizationId: string): Promise<Kid | null> {
+    if (!idNumber || !organizationId) {
+      return null;
+    }
+    return this.kidModel.findOne({
+      idNumber,
+      organizationId: new Types.ObjectId(organizationId),
+    }).exec();
   }
 
   async findByIds(ids: string[]): Promise<KidDocument[]> {

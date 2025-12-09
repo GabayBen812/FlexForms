@@ -14,6 +14,8 @@ export interface ContactQueryOptions {
   dynamicFieldFilters?: Record<string, unknown>;
   limit?: number;
   offset?: number;
+  sortField?: string;
+  sortDirection?: 'asc' | 'desc';
 }
 
 export interface ContactSearchResult {
@@ -192,12 +194,17 @@ export class ContactService {
     const limit = Math.min(options.limit ?? 50, 100);
     const offset = options.offset ?? 0;
 
+    // Handle sorting
+    const sortField = options.sortField || '_id';
+    const sortDirection = options.sortDirection === 'asc' ? 1 : -1;
+    const sort: Record<string, 1 | -1> = { [sortField]: sortDirection };
+
     const [data, total] = await Promise.all([
       this.contactModel
         .find(filter)
         .skip(offset)
         .limit(limit)
-        .sort({ lastname: 1, firstname: 1 })
+        .sort(sort)
         .lean<Contact[]>()
         .exec(),
       this.contactModel.countDocuments(filter).exec(),

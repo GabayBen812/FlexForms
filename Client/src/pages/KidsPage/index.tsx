@@ -791,7 +791,25 @@ export default function KidsPage() {
       };
 
       if (!isUnifiedContacts) {
-        return kidsApi.fetchAll(queryParams, false, organization._id);
+        const response = await kidsApi.fetchAll(queryParams, false, organization._id);
+        
+        // Denamespace dynamic fields for each kid
+        if (response.data && Array.isArray(response.data)) {
+          const kidsWithDenamespacedFields = response.data.map((kid) => ({
+            ...kid,
+            dynamicFields: denamespaceDynamicFields(
+              kid.dynamicFields as Record<string, unknown> | undefined,
+              'kid'
+            ) as Record<string, any> | undefined,
+          }));
+          
+          return {
+            ...response,
+            data: kidsWithDenamespacedFields,
+          };
+        }
+        
+        return response;
       }
 
       const contactResponse = await fetchContacts({
@@ -865,7 +883,12 @@ export default function KidsPage() {
           organizationId: organization?._id || "",
           linked_parents: Array.isArray(data.linked_parents) ? data.linked_parents : [],
           profileImageUrl: data.profileImageUrl ?? undefined,
-          ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
+          ...(data.dynamicFields && { 
+            dynamicFields: namespaceDynamicFields(
+              data.dynamicFields as Record<string, unknown> | undefined,
+              'kid'
+            )
+          }),
         };
         const res = await kidsApi.create(newKid);
 
@@ -876,7 +899,15 @@ export default function KidsPage() {
 
         if (res.status === 200 || res.status === 201) {
           if (res.data) {
-            return { kid: res.data };
+            // Denamespace dynamic fields in the response
+            const createdKid = {
+              ...res.data,
+              dynamicFields: denamespaceDynamicFields(
+                res.data.dynamicFields as Record<string, unknown> | undefined,
+                'kid'
+              ) as Record<string, any> | undefined,
+            };
+            return { kid: createdKid };
           }
           return { shouldRefresh: true };
         }
@@ -1120,11 +1151,23 @@ export default function KidsPage() {
                 typeof p === "string" ? p : p?._id || p?.toString() || p,
               )
             : [],
-          ...(data.dynamicFields && { dynamicFields: data.dynamicFields }),
+          ...(data.dynamicFields && { 
+            dynamicFields: namespaceDynamicFields(
+              data.dynamicFields as Record<string, unknown> | undefined,
+              'kid'
+            )
+          }),
         };
         const res = await kidsApi.update(updatedKid);
         if (res.status === 200 || res.data) {
-          const updatedKidData = res.data;
+          // Denamespace dynamic fields in the response
+          const updatedKidData = {
+            ...res.data,
+            dynamicFields: denamespaceDynamicFields(
+              res.data.dynamicFields as Record<string, unknown> | undefined,
+              'kid'
+            ) as Record<string, any> | undefined,
+          };
           toast.success(t("updated_successfully") || "Record updated successfully");
           setIsEditDialogOpen(false);
           setEditingKid(null);

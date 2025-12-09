@@ -366,9 +366,15 @@ export default function KidDetailsForm({ initialValues, onSubmit, onBack, isLoad
       ? namespaceDynamicFields(dynamicFields, 'kid')
       : undefined;
     
-    // Prepare submission data
+    // Prepare submission data - only include base fields that the server expects
     const submissionData = {
-      ...data,
+      firstname: data.firstname,
+      lastname: data.lastname,
+      idNumber: data.idNumber,
+      birthDate: data.birthDate,
+      gender: data.gender,
+      address: data.address,
+      profileImageUrl: data.profileImageUrl,
       dynamicFields: namespacedDynamicFields,
     };
     
@@ -752,20 +758,20 @@ export default function KidDetailsForm({ initialValues, onSubmit, onBack, isLoad
                 >
                   {[
                     { 
-                      value: 'זכר', 
-                      label: 'זכר', 
-                      selectedColor: 'border-blue-500 bg-blue-50',
-                      iconColor: 'text-blue-600',
-                      textColor: 'text-blue-700',
-                      symbol: '♂'
-                    },
-                    { 
                       value: 'נקבה', 
                       label: 'נקבה', 
                       selectedColor: 'border-pink-500 bg-pink-50',
                       iconColor: 'text-pink-600',
                       textColor: 'text-pink-700',
                       symbol: '♀'
+                    },
+                    { 
+                      value: 'זכר', 
+                      label: 'זכר', 
+                      selectedColor: 'border-blue-500 bg-blue-50',
+                      iconColor: 'text-blue-600',
+                      textColor: 'text-blue-700',
+                      symbol: '♂'
                     },
                   ].map((option) => {
                     const isSelected = field.value === option.value;

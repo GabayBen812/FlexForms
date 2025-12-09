@@ -777,23 +777,30 @@ export default function DynamicForm({
                   />
                 </div>
               ) : field.type === "phone" ? (
-                <Controller
-                  name={field.name}
-                  control={control}
-                  render={({ field: formField }) => (
-                    <PhoneInput
-                      value={formField.value || ""}
-                      onChange={(value) => {
-                        formField.onChange(value);
-                      }}
-                      onBlur={formField.onBlur}
-                      disabled={mode !== "registration"}
-                      required={field.isRequired}
-                      name={formField.name}
-                      data-cy={`field-input-${field.name}`}
-                    />
+                <>
+                  <Controller
+                    name={field.name}
+                    control={control}
+                    render={({ field: formField }) => (
+                      <PhoneInput
+                        value={formField.value || ""}
+                        onChange={(value) => {
+                          formField.onChange(value);
+                        }}
+                        onBlur={formField.onBlur}
+                        disabled={mode !== "registration"}
+                        required={field.isRequired}
+                        name={formField.name}
+                        data-cy={`field-input-${field.name}`}
+                      />
+                    )}
+                  />
+                  {errors[field.name] && (
+                    <p className="text-red-500 text-sm mt-1" data-cy={`field-error-${field.name}`}>
+                      {errors[field.name]?.message as string}
+                    </p>
                   )}
-                />
+                </>
               ) : field.type === "date" ? (
                 // <Input
                 //   type={field.type}
@@ -801,104 +808,125 @@ export default function DynamicForm({
                 //   disabled={mode !== "registration"}
                 //   data-cy={`field-input-${field.name}`}
                 // />
-                <Controller
-                  name={field.name}
-                  control={control}
-                  render={({ field: formField }) => (
-                    <DateInput
-                      value={formField.value || ""}
-                      onChange={(value) => {
-                        formField.onChange(value);
-                      }}
-                      onBlur={formField.onBlur}
-                      disabled={mode !== "registration"}
-                      required={field.isRequired}
-                      name={formField.name}
-                      data-cy={`field-input-${field.name}`}
-                    />
-                  )}
-                />
-              ) : field.type === "select" ? (
-                <Controller
-                  name={field.name}
-                  control={control}
-                  defaultValue=""
-                  render={({ field: controllerField }) => {
-                    // Convert empty string to undefined for Radix Select, but keep empty string in form state
-                    const selectValue = controllerField.value === "" ? undefined : controllerField.value;
-                    return (
-                      <Select
-                        value={selectValue}
-                        onValueChange={(value) => {
-                          controllerField.onChange(value === undefined ? "" : value);
+                <>
+                  <Controller
+                    name={field.name}
+                    control={control}
+                    render={({ field: formField }) => (
+                      <DateInput
+                        value={formField.value || ""}
+                        onChange={(value) => {
+                          formField.onChange(value);
                         }}
+                        onBlur={formField.onBlur}
                         disabled={mode !== "registration"}
-                      >
-                        <SelectTrigger
-                          className="w-full"
-                          data-cy={`field-select-${field.name}`}
-                        >
-                          <SelectValue placeholder={t("select_option")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {field.config?.options?.map((opt: any, i: number) => (
-                            <SelectItem
-                              key={i}
-                              value={opt.value || opt.label || ""}
-                              data-cy={`field-select-option-${field.name}-${opt.value}`}
-                            >
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    );
-                  }}
-                />
-              ) : field.type === "radio" ? (
-                <Controller
-                  name={field.name}
-                  control={control}
-                  defaultValue=""
-                  render={({ field: formField }) => (
-                    <RadioGroup
-                      value={formField.value || ""}
-                      onValueChange={formField.onChange}
-                      disabled={mode !== "registration"}
-                      className="grid gap-3 sm:gap-2"
-                    >
-                      {field.config?.options?.map((opt: any, i: number) => {
-                        const isSelected = formField.value === (opt.value || opt.label || "");
-                        return (
-                          <label
-                            key={i}
-                            htmlFor={`${field.name}-form-${i}`}
-                            className={`flex items-center gap-3 p-3 sm:p-3.5 rounded-lg border-2 cursor-pointer transition-all ${
-                              isSelected
-                                ? "border-primary bg-primary/5 shadow-sm"
-                                : "border-gray-200 hover:border-primary/50 hover:bg-gray-50"
-                            } ${mode !== "registration" ? "opacity-60 cursor-not-allowed" : ""} ${
-                              isRTL ? "flex-row-reverse" : ""
-                            }`}
-                            data-cy={`field-radio-option-${field.name}-${opt.value}`}
-                          >
-                            <RadioGroupItem
-                              value={opt.value || opt.label || ""}
-                              id={`${field.name}-form-${i}`}
-                              data-cy={`field-radio-input-${field.name}-${opt.value}`}
-                              className="shrink-0"
-                            />
-                            <span className={`text-sm sm:text-base flex-1 ${isSelected ? "font-medium text-primary" : "text-gray-700"} ${
-                              isRTL ? "text-right" : "text-left"
-                            }`}>
-                              {opt.label}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </RadioGroup>
+                        required={field.isRequired}
+                        name={formField.name}
+                        data-cy={`field-input-${field.name}`}
+                      />
+                    )}
+                  />
+                  {errors[field.name] && (
+                    <p className="text-red-500 text-sm mt-1" data-cy={`field-error-${field.name}`}>
+                      {errors[field.name]?.message as string}
+                    </p>
                   )}
-                />
+                </>
+              ) : field.type === "select" ? (
+                <>
+                  <Controller
+                    name={field.name}
+                    control={control}
+                    defaultValue=""
+                    render={({ field: controllerField }) => {
+                      // Convert empty string to undefined for Radix Select, but keep empty string in form state
+                      const selectValue = controllerField.value === "" ? undefined : controllerField.value;
+                      return (
+                        <Select
+                          value={selectValue}
+                          onValueChange={(value) => {
+                            controllerField.onChange(value === undefined ? "" : value);
+                          }}
+                          disabled={mode !== "registration"}
+                        >
+                          <SelectTrigger
+                            className="w-full"
+                            data-cy={`field-select-${field.name}`}
+                          >
+                            <SelectValue placeholder={t("select_option")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {field.config?.options?.map((opt: any, i: number) => (
+                              <SelectItem
+                                key={i}
+                                value={opt.value || opt.label || ""}
+                                data-cy={`field-select-option-${field.name}-${opt.value}`}
+                              >
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      );
+                    }}
+                  />
+                  {errors[field.name] && (
+                    <p className="text-red-500 text-sm mt-1" data-cy={`field-error-${field.name}`}>
+                      {errors[field.name]?.message as string}
+                    </p>
+                  )}
+                </>
+              ) : field.type === "radio" ? (
+                <>
+                  <Controller
+                    name={field.name}
+                    control={control}
+                    defaultValue=""
+                    render={({ field: formField }) => (
+                      <RadioGroup
+                        value={formField.value || ""}
+                        onValueChange={formField.onChange}
+                        disabled={mode !== "registration"}
+                        className="grid gap-3 sm:gap-2"
+                      >
+                        {field.config?.options?.map((opt: any, i: number) => {
+                          const isSelected = formField.value === (opt.value || opt.label || "");
+                          return (
+                            <label
+                              key={i}
+                              htmlFor={`${field.name}-form-${i}`}
+                              className={`flex items-center gap-3 p-3 sm:p-3.5 rounded-lg border-2 cursor-pointer transition-all ${
+                                isSelected
+                                  ? "border-primary bg-primary/5 shadow-sm"
+                                  : "border-gray-200 hover:border-primary/50 hover:bg-gray-50"
+                              } ${mode !== "registration" ? "opacity-60 cursor-not-allowed" : ""} ${
+                                isRTL ? "flex-row-reverse" : ""
+                              }`}
+                              data-cy={`field-radio-option-${field.name}-${opt.value}`}
+                            >
+                              <RadioGroupItem
+                                value={opt.value || opt.label || ""}
+                                id={`${field.name}-form-${i}`}
+                                data-cy={`field-radio-input-${field.name}-${opt.value}`}
+                                className="shrink-0"
+                              />
+                              <span className={`text-sm sm:text-base flex-1 ${isSelected ? "font-medium text-primary" : "text-gray-700"} ${
+                                isRTL ? "text-right" : "text-left"
+                              }`}>
+                                {opt.label}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </RadioGroup>
+                    )}
+                  />
+                  {errors[field.name] && (
+                    <p className="text-red-500 text-sm mt-1" data-cy={`field-error-${field.name}`}>
+                      {errors[field.name]?.message as string}
+                    </p>
+                  )}
+                </>
               ) : field.type === "checkbox" ? (
                 <label
                   className="flex items-center gap-2"

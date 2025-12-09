@@ -93,7 +93,6 @@ export function PhoneInput({
       <Input
         type="tel"
         inputMode="numeric"
-        pattern="[0-9]*"
         value={displayValue}
         onChange={handleChange}
         onPaste={handlePaste}

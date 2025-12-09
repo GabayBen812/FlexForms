@@ -21,7 +21,7 @@ import { IdNumberInput } from "@/components/ui/id-number-input";
 import { PageLoader } from "@/components/ui/page-loader";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, CheckCircle2, ArrowRight, CheckCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, ArrowRight, CheckCircle, Circle } from "lucide-react";
 import { isValidIsraeliID } from "@/lib/israeliIdValidator";
 import { isValidIsraeliPhone, unformatPhoneNumber } from "@/lib/phoneUtils";
 
@@ -55,6 +55,7 @@ export default function FormRegistration() {
   const [searchingKid, setSearchingKid] = useState(false);
   const [existingKid, setExistingKid] = useState<Kid | null>(null);
   const [createdKidId, setCreatedKidId] = useState<string | null>(null);
+  const [currentKid, setCurrentKid] = useState<Kid | null>(null);
   const [idError, setIdError] = useState('');
 
   useEffect(() => {
@@ -259,6 +260,7 @@ export default function FormRegistration() {
         // Kid was created in the meantime, use existing
         const kidId = existingCheck.data._id || existingCheck.data.id || '';
         setCreatedKidId(kidId);
+        setCurrentKid(existingCheck.data);
       } else {
         // Create new kid
         const newKid = await createKidPublic({
@@ -267,6 +269,7 @@ export default function FormRegistration() {
         });
         const kidId = newKid._id || newKid.id || '';
         setCreatedKidId(kidId);
+        setCurrentKid(newKid);
       }
       
       setStep(3);
@@ -279,6 +282,7 @@ export default function FormRegistration() {
   const handleExistingKidContinue = () => {
     const kidId = existingKid?._id || existingKid?.id || '';
     setCreatedKidId(kidId);
+    setCurrentKid(existingKid);
     setStep(3);
   };
 
@@ -371,11 +375,76 @@ export default function FormRegistration() {
     }
   };
 
+  // Progress indicator component
+  const ProgressIndicator = ({ currentStep }: { currentStep: Step }) => {
+    const steps = [
+      { number: 1, label: "זיהוי הילד", key: "identification" },
+      { number: 2, label: "פרטי הילד", key: "details" },
+      { number: 3, label: "טופס הרשמה", key: "registration" },
+    ];
+
+    return (
+      <div className="w-full mb-6">
+        <div className="flex items-center justify-between relative">
+          {/* Progress line */}
+          <div className="absolute top-5 right-0 left-0 h-0.5 bg-gray-200 -z-10">
+            <div
+              className="h-full bg-primary transition-all duration-300"
+              style={{
+                width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`,
+              }}
+            />
+          </div>
+
+          {steps.map((stepItem) => {
+            const isCompleted = stepItem.number < currentStep;
+            const isCurrent = stepItem.number === currentStep;
+
+            return (
+              <div key={stepItem.key} className="flex flex-col items-center flex-1 relative">
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                    isCompleted
+                      ? "bg-primary border-primary text-white"
+                      : isCurrent
+                      ? "bg-primary border-primary text-white ring-4 ring-primary/20"
+                      : "bg-white border-gray-300 text-gray-400"
+                  }`}
+                >
+                  {isCompleted ? (
+                    <CheckCircle className="w-6 h-6" />
+                  ) : (
+                    <span className="text-sm font-semibold">{stepItem.number}</span>
+                  )}
+                </div>
+                <span
+                  className={`mt-2 text-xs sm:text-sm font-medium text-center ${
+                    isCurrent || isCompleted
+                      ? "text-primary"
+                      : "text-gray-400"
+                  }`}
+                >
+                  {stepItem.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   if (!form) {
     return <PageLoader />;
   }
 
   const pageUrl = typeof window !== "undefined" ? window.location.href : "";
+  
+  // Determine if we should show progress indicator (only when form has multiple steps)
+  const showProgressIndicator = form.saveContactsToDatabase !== false;
+  
+  // Get current kid for display (either existingKid or currentKid)
+  const displayKid = existingKid || currentKid;
 
   return (
     <>
@@ -439,6 +508,9 @@ export default function FormRegistration() {
           {/* Multi-Step Content */}
           {!showPayment && form.saveContactsToDatabase !== false ? (
             <>
+              {/* Progress Indicator */}
+              {showProgressIndicator && <ProgressIndicator currentStep={step} />}
+              
               {/* Step 1: ID Entry */}
               {step === 1 && (
                 <Card className="shadow-lg border-0">
@@ -569,6 +641,28 @@ export default function FormRegistration() {
               {step === 3 && (
                 <Card className="shadow-lg border-0">
                   <CardContent className="pt-6">
+                    {/* Kid Display */}
+                    {displayKid && (
+                      <div className="mb-6 pb-6 border-b">
+                        <div className="flex items-center gap-4">
+                          <Avatar className="w-12 h-12 border-2 border-primary/20">
+                            {displayKid.profileImageUrl ? (
+                              <AvatarImage src={displayKid.profileImageUrl} alt={`${displayKid.firstname} ${displayKid.lastname}`} />
+                            ) : (
+                              <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
+                                {displayKid.firstname?.charAt(0)}{displayKid.lastname?.charAt(0)}
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                          <div className="flex-1">
+                            <p className="text-sm text-muted-foreground mb-1">ממלא עבור:</p>
+                            <p className="text-lg font-semibold text-primary">
+                              {displayKid.firstname} {displayKid.lastname}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <DynamicForm
                       mode="registration"
                       fields={dynamicFields}

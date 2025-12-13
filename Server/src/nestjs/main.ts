@@ -38,6 +38,7 @@ async function bootstrap() {
     "http://localhost:8082",  // Expo mobile web
     "https://www.Paradize-erp.com",
     "https://Paradize-erp.com",
+    "https://flex-forms.vercel.app",  // Production frontend
   ]);
 
   if (process.env.CLIENT_URL) {
@@ -58,13 +59,22 @@ async function bootstrap() {
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, curl, etc.)
       if (!origin) return callback(null, true);
-      if (explicitOrigins.has(origin)) return callback(null, true);
-      // Allow all Vercel preview and production URLs
-      if (origin.endsWith(".vercel.app")) return callback(null, true);
-      // Allow Firebase Storage
-      if (origin.startsWith("https://firebasestorage"))
+      if (explicitOrigins.has(origin)) {
+        console.log(`✅ CORS: Allowed origin (explicit): ${origin}`);
         return callback(null, true);
+      }
+      // Allow all Vercel preview and production URLs
+      if (origin.endsWith(".vercel.app")) {
+        console.log(`✅ CORS: Allowed origin (Vercel): ${origin}`);
+        return callback(null, true);
+      }
+      // Allow Firebase Storage
+      if (origin.startsWith("https://firebasestorage")) {
+        console.log(`✅ CORS: Allowed origin (Firebase): ${origin}`);
+        return callback(null, true);
+      }
 
+      console.error(`❌ CORS: Blocked origin: ${origin}`);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,

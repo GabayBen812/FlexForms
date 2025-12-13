@@ -35,13 +35,18 @@ export class AuthController {
     
     const isProd = process.env.NODE_ENV === 'production';
     
-    res.cookie('jwt', token, {
+    const cookieOptions = {
       httpOnly: true,
       sameSite: isProd ? 'none' : 'lax',
       secure: isProd ? true : false,
       path: '/',
       maxAge: 1000 * 60 * 60 * 2,
-    });
+    };
+    
+    console.log(`🔐 Login successful for ${email} (${user.organizationId})`);
+    console.log(`🍪 Setting cookie with options:`, cookieOptions);
+    
+    res.cookie('jwt', token, cookieOptions as any);
   
     return res.status(200).json({ status: 200, message: 'התחברת בהצלחה' });
   }

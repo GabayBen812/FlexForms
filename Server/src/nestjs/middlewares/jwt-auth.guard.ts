@@ -37,7 +37,7 @@ export class JwtAuthGuard implements CanActivate {
         hasCookies: !!req.cookies,
         cookieKeys: req.cookies ? Object.keys(req.cookies) : [],
         hasAuthHeader: !!authHeader,
-        origin: req.headers.origin,
+        origin: req.headers['origin'],
         url: req.url
       });
       throw new UnauthorizedException('Missing token');

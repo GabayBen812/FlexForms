@@ -87,12 +87,6 @@ export class KidController {
     };
   }
 
-  @Get(':id')
-  @UseGuards(JwtAuthGuard)
-  findOne(@Param('id') id: string) {
-    return this.kidService.findOne(id);
-  }
-
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   update(@Param('id') id: string, @Body() updateKidDto: UpdateKidDto) {
@@ -103,6 +97,12 @@ export class KidController {
   @UseGuards(JwtAuthGuard)
   remove(@Param('id') id: string) {
     return this.kidService.remove(id);
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  findOne(@Param('id') id: string) {
+    return this.kidService.findOne(id);
   }
 }
 

@@ -123,6 +123,7 @@ export function DataTable<TData>({
   onBulkDelete,
   onBulkAdvancedUpdate,
   onExportSelected,
+  customBulkActions,
   addButtonClassName,
   addButtonWrapperClassName,
   prependNewItems = false,
@@ -406,7 +407,8 @@ export function DataTable<TData>({
   const hasSelectionActions =
     !!onBulkDelete ||
     !!onBulkAdvancedUpdate ||
-    !!(showAdvancedSearch || onExportSelected);
+    !!(showAdvancedSearch || onExportSelected) ||
+    !!customBulkActions;
 
   const handleLoadMore = () => {
     console.log("handleLoadMore called", { hasMore, isLoading });
@@ -1040,6 +1042,7 @@ export function DataTable<TData>({
                 onClick={handleBulkAdvancedUpdateClick}
               />
             )}
+            {customBulkActions}
             {(showAdvancedSearch || onExportSelected) && (
               <DataTableExportToExcelBtn
                 showAdvancedSearch={showAdvancedSearch || !!onExportSelected}

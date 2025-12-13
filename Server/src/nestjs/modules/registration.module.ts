@@ -6,15 +6,20 @@ import { RegistrationController } from '../controllers/registration.controller';
 import { EmailModule } from './email.module';
 import { FormModule } from './form.module';
 import { UserModule } from './user.module';
+import { PdfGeneratorService } from '../services/pdf-generator.service';
+import { KidModule } from './kid.module';
+import { OrganizationModule } from './organization.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Registration.name, schema: RegistrationSchema }]),
     EmailModule,
     FormModule,
-    UserModule
+    UserModule,
+    KidModule,
+    OrganizationModule,
   ],
-  providers: [RegistrationService],
+  providers: [RegistrationService, PdfGeneratorService],
   controllers: [RegistrationController],
   exports: [RegistrationService],
 })

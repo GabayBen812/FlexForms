@@ -104,7 +104,7 @@ export function IdNumberInput({
   return (
     <div className="relative w-full max-w-md mx-auto">
       {/* ID Card icon on the left */}
-      <div className="absolute inset-y-0 left-3 sm:left-4 flex items-center pointer-events-none z-10">
+      <div className="absolute inset-y-0 left-2 sm:left-4 flex items-center pointer-events-none z-10">
         <IdCard className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${getIconColor()}`} />
       </div>
 
@@ -126,7 +126,7 @@ export function IdNumberInput({
         autoComplete="off"
         dir="ltr"
         maxLength={9}
-        className={`!text-center text-lg sm:text-xl font-medium tracking-widest py-3.5 sm:py-4 px-10 sm:px-12 transition-all ${
+        className={`!text-center text-base sm:text-xl font-medium tracking-widest py-3.5 sm:py-4 px-8 sm:px-12 transition-all ${
           showCheckmark
             ? "border-green-500 focus:ring-green-500"
             : isInvalid
@@ -137,7 +137,7 @@ export function IdNumberInput({
 
       {/* Validation icon on the right */}
       {(showCheckmark || isInvalid) && (
-        <div className="absolute inset-y-0 right-3 sm:right-4 flex items-center pointer-events-none z-10">
+        <div className="absolute inset-y-0 right-2 sm:right-4 flex items-center pointer-events-none z-10">
           {renderValidationIcon()}
         </div>
       )}

@@ -652,7 +652,7 @@ export default function KidsPage() {
       </div>
     ),
     enableHiding: false,
-    size: 150,
+    size: 120, // Reduced from 150 for compactness
   };
   
 
@@ -681,11 +681,11 @@ export default function KidsPage() {
           </div>
         );
       },
-      size: 90,
+      size: 80, // More compact
     },
-    { accessorKey: "firstname", header: t("firstname"), meta: { editable: true } },
-    { accessorKey: "lastname", header: t("lastname"), meta: { editable: true } },
-    { accessorKey: "idNumber", header: t("id_number"), meta: { editable: true } },
+    { accessorKey: "firstname", header: t("firstname"), meta: { editable: true }, size: 130 },
+    { accessorKey: "lastname", header: t("lastname"), meta: { editable: true }, size: 130 },
+    { accessorKey: "idNumber", header: t("id_number"), meta: { editable: true }, size: 130 },
     { 
       accessorKey: "linked_parents", 
       header: t("linked_parents"), 
@@ -693,7 +693,8 @@ export default function KidsPage() {
         editable: true,
         relationshipOptions: parentsOptions,
         relationshipChipRenderer: renderParentChip,
-      } 
+      },
+      size: 180,
     },
     { 
       accessorKey: "birthDate", 
@@ -701,14 +702,16 @@ export default function KidsPage() {
       meta: { 
         editable: true,
         isDate: true,
-      } 
+      },
+      size: 130,
     },
     { 
       accessorKey: "address", 
       header: t("address", "כתובת"), 
       meta: { 
         editable: true,
-      } 
+      },
+      size: 170,
     },
     { 
       accessorKey: "gender", 
@@ -720,7 +723,8 @@ export default function KidsPage() {
           { value: "male", label: "זכר" },
           { value: "female", label: "נקבה" },
         ],
-      } 
+      },
+      size: 100,
     },
     { accessorKey: "organizationId", header: "", meta: { hidden: true, editable: false } },
     // Place selectionColumn as the last item so it renders at the right side of the table.

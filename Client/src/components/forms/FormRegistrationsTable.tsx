@@ -10,7 +10,7 @@ import { useState, useEffect, useRef } from "react";
 import { AdvancedSearchModal } from "@/components/ui/completed/data-table/AdvancedSearchModal";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
-import { Pencil, Check, X } from "lucide-react";
+import { Pencil, Check, X, FileDown } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/hooks/use-toast";
 import { getSelectionColumn } from "@/components/tables/selectionColumns";
@@ -21,6 +21,7 @@ import { Kid } from "@/types/kids/kid";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/api/apiClient";
+import { usePdfExport } from "@/hooks/usePdfExport";
 
 const registrationsApi = createApiService<UserRegistration>("/registrations");
 const formsApi = createApiService<Form>("/forms");
@@ -47,6 +48,7 @@ export default function FormRegistrationsTable({ form, onFormUpdate }: Props) {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [linkedKids, setLinkedKids] = useState<Record<string, Kid>>({});
+  const { exportToPdf, isExporting } = usePdfExport();
 
   const actions: TableAction<UserRegistration>[] = [
     { label: t("delete"), type: "delete" },
@@ -217,9 +219,29 @@ export default function FormRegistrationsTable({ form, onFormUpdate }: Props) {
     }
   };
 
+  const handleExportToPdf = async () => {
+    const selectedRows = Object.keys(rowSelection)
+      .filter((key) => rowSelection[key])
+      .map((key) => registrations[parseInt(key)]);
+    
+    const selectedIds = selectedRows
+      .map((row) => row._id)
+      .filter((id): id is string => !!id);
+
+    if (selectedIds.length === 0) {
+      toast({
+        title: t("error"),
+        description: t("export_failed"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await exportToPdf(selectedIds);
+  };
+
   return (
     <div className="col-span-2">
-      
       <div
         className="overflow-x-auto w-full"
         style={{
@@ -274,6 +296,18 @@ export default function FormRegistrationsTable({ form, onFormUpdate }: Props) {
           onRowSelectionChange={setRowSelection}
           onBulkDelete={handleBulkDelete}
           refreshTrigger={refreshTrigger}
+          customBulkActions={
+            <Button
+              onClick={handleExportToPdf}
+              disabled={isExporting}
+              variant="default"
+              size="sm"
+              className="gap-2"
+            >
+              <FileDown className="h-4 w-4" />
+              {isExporting ? t("exporting_pdf") : t("export_to_pdf")}
+            </Button>
+          }
         />
       </div>
     </div>

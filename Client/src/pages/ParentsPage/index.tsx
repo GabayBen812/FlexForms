@@ -17,7 +17,6 @@ import { Parent } from "@/types/parents/parent";
 import { Kid } from "@/types/kids/kid";
 import { FeatureFlag } from "@/types/feature-flags";
 import apiClient from "@/api/apiClient";
-import { useViewSeason } from "@/hooks/useViewSeason";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AddRecordDialog } from "@/components/ui/completed/dialogs/AddRecordDialog";
@@ -393,7 +392,6 @@ export default function ParentsPage() {
   const { t } = useTranslation();
   const { organization } = useOrganization();
   const { isEnabled: isUnifiedContacts, isLoading: isContactsFlagLoading } = useFeatureFlag("FF_CONTACTS_UNIFIED");
-  const { viewSeasonId } = useViewSeason();
   const parentRelationshipsRef = useRef<Record<string, ContactRelationship[]>>({});
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>(
     {}
@@ -633,7 +631,7 @@ export default function ParentsPage() {
       </div>
     ),
     enableHiding: false,
-    size: 150,
+    size: 120, // Reduced from 150 for compactness
   };
 
   const columns: ColumnDef<Parent>[] = [
@@ -661,11 +659,11 @@ export default function ParentsPage() {
           </div>
         );
       },
-      size: 90,
+      size: 80, // More compact
     },
-    { accessorKey: "firstname", header: t("firstname") },
-    { accessorKey: "lastname", header: t("lastname") },
-    { accessorKey: "idNumber", header: t("id_number") },
+    { accessorKey: "firstname", header: t("firstname"), size: 130 },
+    { accessorKey: "lastname", header: t("lastname"), size: 130 },
+    { accessorKey: "idNumber", header: t("id_number"), size: 130 },
     { 
       accessorKey: "linked_kids", 
       header: t("linked_kids"),
@@ -674,6 +672,7 @@ export default function ParentsPage() {
         relationshipOptions: kidsOptions,
         relationshipChipRenderer: renderKidChip,
       },
+      size: 180,
     },
     { accessorKey: "organizationId", header: "", meta: { hidden: true } },
   ];
@@ -735,18 +734,12 @@ export default function ParentsPage() {
         } as ApiResponse<Parent>;
       }
 
-      // Build params with optional seasonId filter
-      const queryParams = {
-        ...(params || {}),
-        ...(viewSeasonId ? { seasonId: viewSeasonId } : {}),
-      };
-
       if (!isUnifiedContacts) {
-        return parentsApi.fetchAll(queryParams, false, organization._id);
+        return parentsApi.fetchAll(params, false, organization._id);
       }
 
       const contactResponse = await fetchContacts({
-        ...queryParams,
+        ...(params || {}),
         type: "parent",
       });
 
@@ -796,7 +789,7 @@ export default function ParentsPage() {
         totalPages: contactResponse.data.totalPages,
       } as ApiResponse<Parent>;
     },
-    [organization?._id, isUnifiedContacts, mapContactToParent, viewSeasonId],
+    [organization?._id, isUnifiedContacts, mapContactToParent],
   );
 
   const createParentRecord = useCallback(

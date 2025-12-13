@@ -75,6 +75,7 @@ export interface DataTableProps<TData> {
   onBulkDelete?: (selectedRows: TData[]) => Promise<void> | void;
   onBulkAdvancedUpdate?: (selectedRows: TData[]) => Promise<void> | void;
   onExportSelected?: (selectedRows: TData[], table: Table<TData>) => Promise<void> | void;
+  customBulkActions?: React.ReactNode;
   enableColumnReordering?: boolean;
   columnOrder?: string[];
   [key: string]: any;

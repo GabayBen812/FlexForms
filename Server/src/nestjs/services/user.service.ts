@@ -81,7 +81,7 @@ export class UserService {
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
-    const { organizationId, linked_parent_id, ...rest } = updateUserDto;
+    const { organizationId, linked_parent_id, password, ...rest } = updateUserDto;
 
     const updateData: Partial<User> = { ...rest };
 
@@ -96,6 +96,11 @@ export class UserService {
       } else {
         updateData.linked_parent_id = new Types.ObjectId(linked_parent_id);
       }
+    }
+
+    // Hash password if provided (admin password reset)
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 10);
     }
 
     return this.userModel

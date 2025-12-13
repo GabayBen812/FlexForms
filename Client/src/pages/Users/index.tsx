@@ -200,7 +200,7 @@ export default function Users() {
         enableSorting: false,
         meta: {
           fieldType: "PASSWORD",
-          editable: false,
+          editable: true,
           excludeFromSearch: true,
         } satisfies UserColumnMeta,
       },
@@ -283,6 +283,12 @@ export default function Users() {
         id: editingUser._id,
         organizationId: organization?._id || "",
       };
+      
+      // Only include password if it's not empty (admin wants to change it)
+      if (!updatedUser.password || updatedUser.password.trim() === "") {
+        delete updatedUser.password;
+      }
+      
       const res = await usersApi.update(updatedUser);
       if (res.status === 200 || res.data) {
         const updatedUserData = {
@@ -410,7 +416,7 @@ export default function Users() {
           onOpenChange={setIsAddDialogOpen}
           columns={visibleColumns}
           onAdd={handleAddUser}
-          excludeFields={["organizationId"]}
+          excludeFields={["organizationId", "password"]}
           defaultValues={{
             organizationId: organization?._id || "",
           }}
@@ -439,10 +445,11 @@ export default function Users() {
                   email: editingUser.email,
                   role: editingUser.role,
                   linked_parent_id: editingUser.linked_parent_id || "",
+                  password: "",
                 }
               : undefined
           }
-          excludeFields={["organizationId", "password"]}
+          excludeFields={["organizationId"]}
           defaultValues={{
             organizationId: organization?._id || "",
           }}

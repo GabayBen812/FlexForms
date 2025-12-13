@@ -233,7 +233,6 @@ function DraggableHeaderCell({
           : isDynamic && isHovering
           ? "hsl(224, 29.60%, 30%)"
           : "var(--datatable-header)",
-        padding: "0.375rem 1rem",
         textAlign: "center",
         ...style,
       }}
@@ -411,27 +410,25 @@ function DataTableHeader<T>({
       );
     }
 
-    // Regular header with sorting support
+    // Regular header with sorting support - compact styling
     return (
       <div
-        className={`flex flex-col justify-center items-center gap-1 ${
+        className={`flex flex-col justify-center items-center gap-0.5 ${
           header.column.getCanSort() && "cursor-pointer select-none"
-        } whitespace-normal text-balance text-center`}
+        } whitespace-nowrap text-center`}
         onClick={header.column.getToggleSortingHandler()}
         style={{
           width: "100%",
-          padding: "0.375rem 1rem",
-          lineHeight: "1.3",
-          maxHeight: "4em",
-          fontSize: "1rem",
+          lineHeight: "1.2",
+          fontSize: "0.9375rem",
         }}
       >
         {flexRender(header.column.columnDef.header, header.getContext())}
         {header.column.getCanSort() &&
           (header.column.getIsSorted() === "asc" ? (
-            <ChevronUp className="h-4 w-4" />
+            <ChevronUp className="h-3.5 w-3.5" />
           ) : header.column.getIsSorted() === "desc" ? (
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="h-3.5 w-3.5" />
           ) : null)}
       </div>
     );

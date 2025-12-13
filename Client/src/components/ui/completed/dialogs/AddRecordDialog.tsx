@@ -772,8 +772,9 @@ export function AddRecordDialog({
                     value={fieldValue}
                     onChange={handleChange}
                     className="w-full"
-                    required={isRequiredField || fieldDefinition?.required}
+                    required={editMode ? false : (isRequiredField || fieldDefinition?.required)}
                     autoComplete="new-password"
+                    placeholder={editMode ? t("leave_blank_to_keep_password", { defaultValue: "Leave blank to keep current password" }) : ""}
                   />
                 ) : (isDynamic && fieldDefinition?.type === "CHECKBOX") ? (
                   <label className="flex items-center gap-2 cursor-pointer group">

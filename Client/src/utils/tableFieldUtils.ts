@@ -98,10 +98,52 @@ export function mergeColumnsWithDynamicFields<T>(
   
   const dynamicColumns: ColumnDef<T>[] = orderedFieldNames.map((fieldName) => {
     const fieldDef = dynamicFields[fieldName];
+    
+    // Determine compact size based on field type
+    let size = 140; // Default
+    switch (fieldDef.type) {
+      case "CHECKBOX":
+        size = 90;
+        break;
+      case "DATE":
+      case "TIME":
+        size = 130;
+        break;
+      case "NUMBER":
+        size = 120;
+        break;
+      case "MONEY":
+        size = 140;
+        break;
+      case "EMAIL":
+      case "PHONE":
+        size = 160;
+        break;
+      case "LINK":
+        size = 150;
+        break;
+      case "IMAGE":
+      case "FILE":
+        size = 100;
+        break;
+      case "ADDRESS":
+        size = 180;
+        break;
+      case "SELECT":
+        size = 130;
+        break;
+      case "MULTI_SELECT":
+        size = 180;
+        break;
+      default: // TEXT and others
+        size = 140;
+    }
+    
     const column: ColumnDef<T> = {
       accessorKey: `dynamicFields.${fieldName}`,
       id: `dynamicFields.${fieldName}`, // Explicit id for drag and drop
       header: fieldDef.label || fieldName,
+      size,
       meta: {
         isDynamic: true,
         fieldType: fieldDef.type === "SELECT" ? "SELECT" : 

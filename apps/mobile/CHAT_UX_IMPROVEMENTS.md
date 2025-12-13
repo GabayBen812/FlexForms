@@ -238,3 +238,4 @@ The chat experience is now significantly more modern, responsive, and intuitive:
 The mobile app now provides a professional chat experience that can effectively replace WhatsApp for kindergarten/school communication.
 
 
+

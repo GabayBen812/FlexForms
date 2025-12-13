@@ -162,16 +162,16 @@ function RelationshipChipsDisplay({
           className,
           ...chipProps
         }: React.HTMLAttributes<HTMLDivElement> = {}) => (
-          <div
-            className={cn(
-              "flex items-center gap-1 px-2 py-1 rounded-full text-base font-medium border",
-              relationshipChipClass,
-              className,
-            )}
-            {...chipProps}
-          >
-            <span>{label}</span>
-          </div>
+        <div
+          className={cn(
+            "flex items-center gap-1 px-2 py-0.5 rounded-full text-sm font-medium border",
+            relationshipChipClass,
+            className,
+          )}
+          {...chipProps}
+        >
+          <span>{label}</span>
+        </div>
         );
 
         const chipNode = renderChip
@@ -1774,12 +1774,6 @@ const RowComponent = React.memo(function RowComponent<T>({
           delete duplicateData._id;
           // @ts-ignore
           delete duplicateData.code; // Remove code so backend generates a new one
-          // Add "(copy)" to the title
-          // @ts-ignore
-          if (duplicateData.title) {
-            // @ts-ignore
-            duplicateData.title = `${duplicateData.title} (copy)`;
-          }
           duplicateMeta.handleAdd(duplicateData);
         }
         break;

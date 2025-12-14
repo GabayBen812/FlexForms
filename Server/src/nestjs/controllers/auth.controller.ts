@@ -44,6 +44,7 @@ export class AuthController {
       secure: isProd,
       path: '/',
       maxAge: 1000 * 60 * 60 * 2,
+      // Don't set domain - let browser handle it automatically
     };
     
     console.log(`🔐 Login successful for ${email} (${user.organizationId})`);
@@ -51,9 +52,14 @@ export class AuthController {
     console.log(`🌐 NODE_ENV:`, process.env.NODE_ENV);
     console.log(`🌐 Is Cross-Origin:`, isCrossOrigin);
     console.log(`🌐 Treating as Production:`, isProd);
-    console.log(`🍪 Setting cookie with options:`, cookieOptions);
+    console.log(`🌐 Request Host:`, res.req.headers.host);
+    console.log(`🌐 Request Protocol:`, res.req.protocol);
+    console.log(`🍪 Setting cookie 'jwt' with options:`, cookieOptions);
     
     res.cookie('jwt', token, cookieOptions as any);
+    
+    // Log response headers to verify Set-Cookie header
+    console.log(`📤 Response will include Set-Cookie header`);
   
     return res.status(200).json({ 
       status: 200, 

@@ -51,26 +51,40 @@ export default function Login() {
       return;
     }
 
-    addDebug(`✅ Login successful, waiting 200ms...`);
+    addDebug(`✅ Login API call successful, waiting 500ms for cookie...`);
     // Wait for the cookie to be set before refetching user data
-    await new Promise((res) => setTimeout(res, 200));
+    await new Promise((res) => setTimeout(res, 500));
+    
+    addDebug(`🍪 Document cookie after login: ${document.cookie || 'EMPTY - THIS IS THE PROBLEM!'}`);
     
     addDebug(`🔄 Invalidating user queries...`);
     await queryClient.invalidateQueries({ queryKey: ["user"] });
     
-    addDebug(`🔄 Refetching user data...`);
+    addDebug(`🔄 Refetching user data from /auth/user...`);
     try {
       const result = await queryClient.refetchQueries({ queryKey: ["user"] });
-      addDebug(`📊 Refetch result: ${JSON.stringify(result).substring(0, 100)}`);
+      addDebug(`📊 Refetch completed: ${result.length} queries updated`);
+      
+      // Check if user data was actually fetched
+      const userData = queryClient.getQueryData(["user"]);
+      addDebug(`👤 User data: ${userData ? JSON.stringify(userData).substring(0, 80) : 'NULL - LOGIN FAILED'}`);
+      
+      if (!userData) {
+        addDebug(`❌ NO USER DATA - Cookie not working! Stopping here.`);
+        setErrorMessage("Cookie not set properly - check logs above");
+        return;
+      }
+      
+      addDebug(`✅ User data fetched successfully!`);
+      addDebug(`🚀 Navigating to /home...`);
+      
+      // Only navigate after confirming user is logged in
+      navigate("/home");
     } catch (err: any) {
       addDebug(`❌ Refetch error: ${err.message}`);
+      addDebug(`❌ Full error: ${JSON.stringify(err, null, 2).substring(0, 200)}`);
+      setErrorMessage("Failed to fetch user data after login - check debug log");
     }
-
-    addDebug(`🍪 Document cookie after refetch: ${document.cookie || 'empty'}`);
-    addDebug(`🚀 Navigating to /home`);
-    
-    // Only navigate after successful login
-    navigate("/home");
   };
 
   const logoSrc = "/paradize-logo.svg";
@@ -262,7 +276,20 @@ export default function Login() {
 
             {/* API Configuration Info */}
             <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-left">
-              <h6 className="mb-1 text-xs font-bold text-blue-700">API Configuration:</h6>
+              <div className="flex items-center justify-between mb-2">
+                <h6 className="text-xs font-bold text-blue-700">API Configuration:</h6>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const info = `URL: ${apiBaseUrl}\nMode: ${import.meta.env.MODE}\nOrigin: ${window.location.origin}\nCookies: ${navigator.cookieEnabled}\nCurrent Cookie: ${document.cookie}`;
+                    navigator.clipboard.writeText(info);
+                    alert('Config copied to clipboard!');
+                  }}
+                  className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Copy
+                </button>
+              </div>
               <h6 className="text-xs font-mono text-blue-600">
                 URL: {apiBaseUrl}
               </h6>
@@ -275,17 +302,45 @@ export default function Login() {
               <h6 className="text-xs font-mono text-blue-600">
                 Cookies Enabled: {navigator.cookieEnabled ? 'Yes' : 'No'}
               </h6>
+              <h6 className="text-xs font-mono text-blue-600 break-all">
+                Current Cookie: {document.cookie || 'empty'}
+              </h6>
             </div>
 
             {/* Debug Info */}
             {debugInfo.length > 0 && (
-              <div className="mt-4 max-h-64 overflow-y-auto rounded-lg border border-gray-300 bg-gray-50 p-4 text-left">
-                <h6 className="mb-2 text-xs font-bold text-gray-700">Debug Log:</h6>
-                {debugInfo.map((info, idx) => (
-                  <h6 key={idx} className="mb-1 text-xs font-mono text-gray-600">
-                    {info}
-                  </h6>
-                ))}
+              <div className="mt-4 max-h-96 overflow-y-auto rounded-lg border-2 border-red-400 bg-red-50 p-4 text-left shadow-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <h6 className="text-sm font-bold text-red-700 uppercase">🔍 Debug Log:</h6>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(debugInfo.join('\n'));
+                      alert('Debug log copied to clipboard!');
+                    }}
+                    className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    Copy All
+                  </button>
+                </div>
+                {debugInfo.map((info, idx) => {
+                  const isError = info.includes('❌') || info.includes('EMPTY') || info.includes('PROBLEM') || info.includes('NULL');
+                  const isSuccess = info.includes('✅');
+                  const isCookie = info.includes('🍪');
+                  return (
+                    <h6 
+                      key={idx} 
+                      className={`mb-1.5 text-xs font-mono break-all ${
+                        isError ? 'text-red-700 font-bold' : 
+                        isSuccess ? 'text-green-700 font-semibold' : 
+                        isCookie ? 'text-blue-700 font-semibold' :
+                        'text-gray-700'
+                      }`}
+                    >
+                      {info}
+                    </h6>
+                  );
+                })}
               </div>
             )}
           </div>

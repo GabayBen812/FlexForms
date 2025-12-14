@@ -47,6 +47,8 @@ export class AuthController {
       // Don't set domain - let browser handle it automatically
     };
     
+
+    
     console.log(`🔐 Login successful for ${email} (${user.organizationId})`);
     console.log(`🌐 Request origin:`, origin);
     console.log(`🌐 NODE_ENV:`, process.env.NODE_ENV);

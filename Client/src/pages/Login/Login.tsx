@@ -9,6 +9,8 @@ import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 
 export default function Login() {
+
+  
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);

@@ -41,8 +41,20 @@ export default function Login() {
     });
 
     addDebug(`📡 Login response status: ${response?.status}`);
-    addDebug(`🍪 Document cookie: ${document.cookie || 'empty'}`);
-    addDebug(`📦 Response data: ${JSON.stringify(response?.data || {}).substring(0, 100)}`);
+    addDebug(`📦 Response data: ${JSON.stringify(response?.data || {}).substring(0, 200)}`);
+    
+    // Check if backend returned user data (new format)
+    if (response?.data) {
+      const data = response.data as any;
+      addDebug(`🔍 Has accessToken: ${!!data.accessToken}`);
+      addDebug(`🔍 Has user: ${!!data.user}`);
+      addDebug(`🔍 Has debug: ${!!data.debug}`);
+      if (data.debug) {
+        addDebug(`🔍 Backend debug - isProd: ${data.debug.isProd}, origin: ${data.debug.origin}`);
+      }
+    }
+    
+    addDebug(`🍪 Document cookie IMMEDIATELY after login: ${document.cookie || 'EMPTY!'}`);
 
     if (!response || response.status !== 200) {
       const errorMsg = response?.error || t("landing.login.error.generic");
@@ -51,12 +63,34 @@ export default function Login() {
       return;
     }
 
-    addDebug(`✅ Login API call successful, waiting 500ms for cookie...`);
-    // Wait for the cookie to be set before refetching user data
-    await new Promise((res) => setTimeout(res, 500));
+    addDebug(`✅ Login API call successful, waiting 1000ms for cookie...`);
     
-    addDebug(`🍪 Document cookie after login: ${document.cookie || 'EMPTY - THIS IS THE PROBLEM!'}`);
+    // Check cookies multiple times
+    for (let i = 0; i < 5; i++) {
+      await new Promise((res) => setTimeout(res, 200));
+      const cookies = document.cookie;
+      const hasJWT = cookies.includes('jwt=');
+      addDebug(`🍪 [${(i+1)*200}ms] Cookie: ${cookies || 'EMPTY'} | Has JWT: ${hasJWT}`);
+      if (hasJWT) break;
+    }
     
+    const finalCookies = document.cookie;
+    const hasJWTCookie = finalCookies.includes('jwt=');
+    
+    addDebug(`🔍 Final cookie check: ${hasJWTCookie ? '✅ JWT FOUND' : '❌ NO JWT - BROWSER REJECTED COOKIE'}`);
+    
+    if (!hasJWTCookie) {
+      addDebug(`⚠️ COOKIE NOT SET! Possible reasons:`);
+      addDebug(`   1. Backend not setting SameSite=None + Secure=true`);
+      addDebug(`   2. Browser blocking 3rd party cookies`);
+      addDebug(`   3. Backend not actually sending Set-Cookie header`);
+      addDebug(`   4. CORS issue - credentials not being sent/received`);
+      
+      setErrorMessage("Cookie not being set by browser. Check debug log above.");
+      return;
+    }
+    
+    addDebug(`🔄 Cookie found! Proceeding to fetch user data...`);
     addDebug(`🔄 Invalidating user queries...`);
     await queryClient.invalidateQueries({ queryKey: ["user"] });
     
@@ -67,11 +101,11 @@ export default function Login() {
       
       // Check if user data was actually fetched
       const userData = queryClient.getQueryData(["user"]);
-      addDebug(`👤 User data: ${userData ? JSON.stringify(userData).substring(0, 80) : 'NULL - LOGIN FAILED'}`);
+      addDebug(`👤 User data: ${userData ? JSON.stringify(userData).substring(0, 80) : 'NULL - FETCH FAILED'}`);
       
       if (!userData) {
-        addDebug(`❌ NO USER DATA - Cookie not working! Stopping here.`);
-        setErrorMessage("Cookie not set properly - check logs above");
+        addDebug(`❌ User fetch failed even with cookie present!`);
+        setErrorMessage("User fetch failed - check backend logs");
         return;
       }
       

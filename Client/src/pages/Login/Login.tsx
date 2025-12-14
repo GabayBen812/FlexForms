@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 export default function Login() {
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const auth = useContext(AuthContext);
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -18,32 +19,65 @@ export default function Login() {
   if (!auth) throw new Error("AuthContext must be used within an AuthProvider");
   const { isLoginLoading, login } = auth;
 
+  const addDebug = (msg: string) => {
+    console.log(msg);
+    setDebugInfo(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
+    setDebugInfo([]);
     const formData = new FormData(event.currentTarget);
     const { password, mail } = Object.fromEntries(formData);
+
+    addDebug(`🔐 Starting login for: ${String(mail).trim().toLowerCase()}`);
+    addDebug(`🌐 API Base URL: ${import.meta.env.VITE_API_BASE_URL || 'default'}`);
+    addDebug(`📍 Origin: ${window.location.origin}`);
 
     const response = await login({
       email: String(mail).trim().toLowerCase(),
       password: String(password),
     });
 
+    addDebug(`📡 Login response status: ${response?.status}`);
+    addDebug(`🍪 Document cookie: ${document.cookie || 'empty'}`);
+    addDebug(`📦 Response data: ${JSON.stringify(response?.data || {}).substring(0, 100)}`);
+
     if (!response || response.status !== 200) {
-      setErrorMessage(response?.error || t("landing.login.error.generic"));
+      const errorMsg = response?.error || t("landing.login.error.generic");
+      addDebug(`❌ Login failed: ${errorMsg}`);
+      setErrorMessage(errorMsg);
       return;
     }
 
+    addDebug(`✅ Login successful, waiting 200ms...`);
     // Wait for the cookie to be set before refetching user data
     await new Promise((res) => setTimeout(res, 200));
+    
+    addDebug(`🔄 Invalidating user queries...`);
     await queryClient.invalidateQueries({ queryKey: ["user"] });
-    await queryClient.refetchQueries({ queryKey: ["user"] });
+    
+    addDebug(`🔄 Refetching user data...`);
+    try {
+      const result = await queryClient.refetchQueries({ queryKey: ["user"] });
+      addDebug(`📊 Refetch result: ${JSON.stringify(result).substring(0, 100)}`);
+    } catch (err: any) {
+      addDebug(`❌ Refetch error: ${err.message}`);
+    }
 
+    addDebug(`🍪 Document cookie after refetch: ${document.cookie || 'empty'}`);
+    addDebug(`🚀 Navigating to /home`);
+    
     // Only navigate after successful login
     navigate("/home");
   };
 
   const logoSrc = "/paradize-logo.svg";
+  
+  // Get API info for debugging
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 
+    (import.meta.env.MODE === "development" ? "http://localhost:3101" : "https://flexforms-production.up.railway.app");
 
   return (
     <div className="flex min-h-screen flex-col overflow-hidden bg-white">
@@ -225,6 +259,35 @@ export default function Login() {
             <p className="mt-6 text-center text-sm text-gray-500">
               {t("landing.login.support")}
             </p>
+
+            {/* API Configuration Info */}
+            <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-left">
+              <h6 className="mb-1 text-xs font-bold text-blue-700">API Configuration:</h6>
+              <h6 className="text-xs font-mono text-blue-600">
+                URL: {apiBaseUrl}
+              </h6>
+              <h6 className="text-xs font-mono text-blue-600">
+                Mode: {import.meta.env.MODE}
+              </h6>
+              <h6 className="text-xs font-mono text-blue-600">
+                Origin: {window.location.origin}
+              </h6>
+              <h6 className="text-xs font-mono text-blue-600">
+                Cookies Enabled: {navigator.cookieEnabled ? 'Yes' : 'No'}
+              </h6>
+            </div>
+
+            {/* Debug Info */}
+            {debugInfo.length > 0 && (
+              <div className="mt-4 max-h-64 overflow-y-auto rounded-lg border border-gray-300 bg-gray-50 p-4 text-left">
+                <h6 className="mb-2 text-xs font-bold text-gray-700">Debug Log:</h6>
+                {debugInfo.map((info, idx) => (
+                  <h6 key={idx} className="mb-1 text-xs font-mono text-gray-600">
+                    {info}
+                  </h6>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Back to Home Link */}

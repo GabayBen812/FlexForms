@@ -36,12 +36,26 @@ export class JwtAuthGuard implements CanActivate {
       console.error('❌ JWT Guard: Missing token', {
         hasCookies: !!req.cookies,
         cookieKeys: req.cookies ? Object.keys(req.cookies) : [],
+        cookieValues: req.cookies,
         hasAuthHeader: !!authHeader,
+        authHeader: authHeader?.substring(0, 20) + '...',
         origin: req.headers['origin'],
-        url: req.url
+        referer: req.headers['referer'],
+        url: req.url,
+        headers: {
+          cookie: req.headers['cookie'],
+          'user-agent': req.headers['user-agent']?.substring(0, 50),
+        }
       });
       throw new UnauthorizedException('Missing token');
     }
+    
+    console.log('✅ JWT Guard: Token found', {
+      source: req.cookies?.jwt ? 'cookie' : 'header',
+      tokenPreview: token.substring(0, 20) + '...',
+      origin: req.headers['origin'],
+      url: req.url
+    });
 
     const secret = process.env.ACCESS_TOKEN_SECRET;
     if (!secret) throw new UnauthorizedException('Missing secret');

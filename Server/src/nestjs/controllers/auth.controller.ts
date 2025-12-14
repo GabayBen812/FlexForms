@@ -33,22 +33,45 @@ export class AuthController {
       { expiresIn: '2h' }
     );
     
-    const isProd = process.env.NODE_ENV === 'production';
+    // Check if request is cross-origin (production scenario)
+    const origin = res.req.headers.origin;
+    const isCrossOrigin = origin && !origin.includes('localhost');
+    const isProd = process.env.NODE_ENV === 'production' || isCrossOrigin;
     
     const cookieOptions = {
       httpOnly: true,
-      sameSite: isProd ? 'none' : 'lax',
-      secure: isProd ? true : false,
+      sameSite: isProd ? ('none' as const) : ('lax' as const),
+      secure: isProd,
       path: '/',
       maxAge: 1000 * 60 * 60 * 2,
     };
     
     console.log(`🔐 Login successful for ${email} (${user.organizationId})`);
+    console.log(`🌐 Request origin:`, origin);
+    console.log(`🌐 NODE_ENV:`, process.env.NODE_ENV);
+    console.log(`🌐 Is Cross-Origin:`, isCrossOrigin);
+    console.log(`🌐 Treating as Production:`, isProd);
     console.log(`🍪 Setting cookie with options:`, cookieOptions);
     
     res.cookie('jwt', token, cookieOptions as any);
   
-    return res.status(200).json({ status: 200, message: 'התחברת בהצלחה' });
+    return res.status(200).json({ 
+      status: 200, 
+      message: 'התחברת בהצלחה',
+      accessToken: token,
+      user: {
+        _id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        organizationId: user.organizationId,
+      },
+      debug: {
+        cookieSet: true,
+        isProd,
+        origin: res.req.headers.origin,
+      }
+    });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -58,11 +81,16 @@ export class AuthController {
   }
 
   @Post('logout')
-  logout(@Res() res: Response) {
+  logout(@Res() res: Response, @Req() req: ExpressRequest) {
+    const origin = req.headers.origin;
+    const isCrossOrigin = origin && !origin.includes('localhost');
+    const isProd = process.env.NODE_ENV === 'production' || isCrossOrigin;
+    
     res.clearCookie('jwt', {
       httpOnly: true,
-      sameSite: 'none',
-      secure: true,
+      sameSite: isProd ? ('none' as const) : ('lax' as const),
+      secure: isProd,
+      path: '/',
     });
     
     return res.status(200).json({ status: 200, message: 'התנתקת בהצלחה' });
@@ -106,12 +134,14 @@ export class AuthController {
       { expiresIn: '2h' }
     );
     
-    const isProd = process.env.NODE_ENV === 'production';
+    const origin = res.req.headers.origin;
+    const isCrossOrigin = origin && !origin.includes('localhost');
+    const isProd = process.env.NODE_ENV === 'production' || isCrossOrigin;
     
     res.cookie('jwt', token, {
       httpOnly: true,
-      sameSite: isProd ? 'none' : 'lax',
-      secure: isProd ? true : false,
+      sameSite: isProd ? ('none' as const) : ('lax' as const),
+      secure: isProd,
       path: '/',
       maxAge: 1000 * 60 * 60 * 2,
     });

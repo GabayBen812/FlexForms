@@ -62,8 +62,8 @@ export default function Login() {
     
     addDebug(`🔄 Refetching user data from /auth/user...`);
     try {
-      const result = await queryClient.refetchQueries({ queryKey: ["user"] });
-      addDebug(`📊 Refetch completed: ${result.length} queries updated`);
+      await queryClient.refetchQueries({ queryKey: ["user"] });
+      addDebug(`📊 Refetch completed`);
       
       // Check if user data was actually fetched
       const userData = queryClient.getQueryData(["user"]);

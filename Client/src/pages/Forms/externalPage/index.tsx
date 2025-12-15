@@ -24,6 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { AlertCircle, CheckCircle2, ArrowRight, CheckCircle, Circle } from "lucide-react";
 import { isValidIsraeliID } from "@/lib/israeliIdValidator";
 import { isValidIsraeliPhone, unformatPhoneNumber } from "@/lib/phoneUtils";
+import { APP_VERSION } from "@/version";
 
 const formsApi = createApiService<Form>("/forms", {
   customRoutes: {
@@ -57,6 +58,7 @@ export default function FormRegistration() {
   const [createdKidId, setCreatedKidId] = useState<string | null>(null);
   const [currentKid, setCurrentKid] = useState<Kid | null>(null);
   const [idError, setIdError] = useState('');
+  const [debugError, setDebugError] = useState<string>('');
 
   useEffect(() => {
     if (code) {
@@ -244,6 +246,25 @@ export default function FormRegistration() {
       setStep(2);
     } catch (error) {
       console.error('Error searching for kid:', error);
+      
+      // Build detailed error for debugging
+      const errorDetails: any = {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        response: axios.isAxiosError(error) ? {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          headers: error.response?.headers,
+        } : undefined,
+        config: axios.isAxiosError(error) ? {
+          url: error.config?.url,
+          method: error.config?.method,
+          baseURL: error.config?.baseURL,
+        } : undefined,
+      };
+      
+      setDebugError(JSON.stringify(errorDetails, null, 2));
       setIdError('שגיאה בחיפוש הילד. אנא נסה שוב.');
     } finally {
       setSearchingKid(false);
@@ -474,6 +495,11 @@ export default function FormRegistration() {
           backgroundColor: form.backgroundColor || "#FFFFFF",
         }}
       >
+        {/* Version Badge */}
+        <div className="fixed top-4 right-4 z-50 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md border border-gray-200">
+          <span className="text-xs text-gray-600 font-mono">v{APP_VERSION}</span>
+        </div>
+        
         <div className="max-w-3xl mx-auto space-y-6">
           {/* Organization Logo */}
           {logoUrl && (
@@ -540,6 +566,14 @@ export default function FormRegistration() {
                         </div>
                         {idError && (
                           <p className="text-sm text-red-500 text-center">{idError}</p>
+                        )}
+                        {debugError && (
+                          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <h6 className="text-xs font-semibold text-red-800 mb-2">Debug Error (Production):</h6>
+                            <pre className="text-xs text-red-700 overflow-auto max-h-64 whitespace-pre-wrap break-words">
+                              {debugError}
+                            </pre>
+                          </div>
                         )}
                       </div>
 

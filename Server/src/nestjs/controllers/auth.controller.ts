@@ -13,7 +13,7 @@ export class AuthController {
   ) {}
 
   @Post('login')
-  async login(@Body() body: any, @Res() res: Response) {
+  async login(@Body() body: any, @Res({ passthrough: true }) res: Response) {
     const { email, password } = body;
   
     const user = await this.authService.validateUser(email, password);
@@ -89,7 +89,7 @@ export class AuthController {
   }
 
   @Post('logout')
-  logout(@Res() res: Response, @Req() req: ExpressRequest) {
+  logout(@Res({ passthrough: true }) res: Response, @Req() req: ExpressRequest) {
     const origin = req.headers.origin;
     const isCrossOrigin = origin && !origin.includes('localhost');
     const isProd = process.env.NODE_ENV === 'production' || isCrossOrigin;
@@ -106,7 +106,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Post('switch-organization')
-  async switchOrganization(@Body() body: { organizationId: string }, @Req() req: ExpressRequest, @Res() res: Response) {
+  async switchOrganization(@Body() body: { organizationId: string }, @Req() req: ExpressRequest, @Res({ passthrough: true }) res: Response) {
     const currentUser = req.user as any;
     
     // Validate current user is system_admin

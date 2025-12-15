@@ -11,9 +11,21 @@ export async function login(credentials: LoginCredentials): Promise<MutationResp
     const response = await apiClient.post<LoginResponse>("/auth/login", credentials);
     
     // Log response headers to check Set-Cookie
-    console.log('🔍 Login response headers:', response.headers);
+    console.log('🔍 Login response headers (ALL):', JSON.stringify(response.headers, null, 2));
     console.log('🔍 Set-Cookie header:', response.headers['set-cookie']);
+    console.log('🔍 Raw response:', response);
     console.log('🍪 Document.cookie after response:', document.cookie);
+    
+    // Try to get Set-Cookie from various possible locations
+    if (response.headers) {
+      const headerKeys = Object.keys(response.headers);
+      console.log('🔍 Available header keys:', headerKeys);
+      headerKeys.forEach(key => {
+        if (key.toLowerCase().includes('cookie')) {
+          console.log(`🔍 Found cookie-related header "${key}":`, response.headers[key]);
+        }
+      });
+    }
     
     return {
       status: response.status,

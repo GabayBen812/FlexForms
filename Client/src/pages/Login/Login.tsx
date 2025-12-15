@@ -54,45 +54,44 @@ export default function Login() {
       if (data.debug) {
         addDebug(`🔍 Backend debug - isProd: ${data.debug.isProd}, origin: ${data.debug.origin}`);
       }
+      
+      // FALLBACK: Save token to localStorage if it exists
+      if (data.accessToken) {
+        addDebug(`💾 Saving accessToken to localStorage as fallback`);
+        localStorage.setItem("auth_token", data.accessToken);
+      }
     }
     
     addDebug(`🍪 Document cookie IMMEDIATELY after login: ${document.cookie || 'EMPTY!'}`);
 
-    if (!response || response.status !== 200) {
-      const errorMsg = response?.error || t("landing.login.error.generic");
-      addDebug(`❌ Login failed: ${errorMsg}`);
-      setErrorMessage(errorMsg);
-      return;
-    }
-
     addDebug(`✅ Login API call successful, waiting 1000ms for cookie...`);
     
     // Check cookies multiple times
+    let hasToken = !!localStorage.getItem("auth_token");
+    let hasJWTCookie = false;
+    
     for (let i = 0; i < 5; i++) {
       await new Promise((res) => setTimeout(res, 200));
       const cookies = document.cookie;
-      const hasJWT = cookies.includes('jwt=');
-      addDebug(`🍪 [${(i+1)*200}ms] Cookie: ${cookies || 'EMPTY'} | Has JWT: ${hasJWT}`);
-      if (hasJWT) break;
+      hasJWTCookie = cookies.includes('jwt=');
+      hasToken = !!localStorage.getItem("auth_token");
+      addDebug(`🍪 [${(i+1)*200}ms] Cookie: ${cookies || 'EMPTY'} | Has JWT: ${hasJWTCookie} | Has LocalToken: ${hasToken}`);
+      if (hasJWTCookie) break;
     }
     
     const finalCookies = document.cookie;
-    const hasJWTCookie = finalCookies.includes('jwt=');
+    hasJWTCookie = finalCookies.includes('jwt=');
+    hasToken = !!localStorage.getItem("auth_token");
     
-    addDebug(`🔍 Final cookie check: ${hasJWTCookie ? '✅ JWT FOUND' : '❌ NO JWT - BROWSER REJECTED COOKIE'}`);
+    addDebug(`🔍 Final check: JWT Cookie: ${hasJWTCookie ? '✅' : '❌'}, Local Token: ${hasToken ? '✅' : '❌'}`);
     
-    if (!hasJWTCookie) {
-      addDebug(`⚠️ COOKIE NOT SET! Possible reasons:`);
-      addDebug(`   1. Backend not setting SameSite=None + Secure=true`);
-      addDebug(`   2. Browser blocking 3rd party cookies`);
-      addDebug(`   3. Backend not actually sending Set-Cookie header`);
-      addDebug(`   4. CORS issue - credentials not being sent/received`);
-      
-      setErrorMessage("Cookie not being set by browser. Check debug log above.");
+    if (!hasJWTCookie && !hasToken) {
+      addDebug(`⚠️ NEITHER COOKIE NOR TOKEN SET!`);
+      setErrorMessage("Authentication failed - no token received");
       return;
     }
     
-    addDebug(`🔄 Cookie found! Proceeding to fetch user data...`);
+    addDebug(`🔄 Auth successful (Cookie or Token)! Proceeding...`);
     addDebug(`🔄 Invalidating user queries...`);
     await queryClient.invalidateQueries({ queryKey: ["user"] });
     
@@ -106,7 +105,15 @@ export default function Login() {
       addDebug(`👤 User data: ${userData ? JSON.stringify(userData).substring(0, 80) : 'NULL - FETCH FAILED'}`);
       
       if (!userData) {
-        addDebug(`❌ User fetch failed even with cookie present!`);
+        // If we have an access token but fetch failed, we might need to manually set it in cache from login response
+        if (response?.data && (response.data as any).user) {
+           addDebug(`⚠️ Fetch failed but we have user data from login response! Using that.`);
+           queryClient.setQueryData(["user"], (response.data as any).user);
+           navigate("/home");
+           return;
+        }
+
+        addDebug(`❌ User fetch failed even with cookie/token present!`);
         setErrorMessage("User fetch failed - check backend logs");
         return;
       }

@@ -106,7 +106,7 @@ async function migrateInvoices(dryRun: boolean = false): Promise<MigrationStats>
 
           // Calculate invoice totals from payment amount
           const invoiceAmount = paymentData.amount || 0;
-          const invoiceData = {
+          const invoiceData: any = {
             organizationId: paymentData.organizationId,
             formId: paymentData.formId,
             client: clientData,

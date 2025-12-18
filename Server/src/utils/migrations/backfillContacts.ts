@@ -26,8 +26,8 @@ if (!MONGODB_URI) {
   throw new Error('MONGODB_URI environment variable is not defined');
 }
 
-const ParentModel = mongoose.model<ParentDocument>(Parent.name, ParentSchema);
-const KidModel = mongoose.model<KidDocument>(Kid.name, KidSchema);
+const ParentModel = mongoose.model(Parent.name, ParentSchema) as unknown as mongoose.Model<ParentDocument>;
+const KidModel = mongoose.model(Kid.name, KidSchema) as unknown as mongoose.Model<KidDocument>;
 const ContactModel = mongoose.model(Contact.name, ContactSchema);
 const ContactRelationshipModel = mongoose.model(ContactRelationship.name, ContactRelationshipSchema);
 
@@ -119,8 +119,8 @@ const syncRelationships = async (parent: ParentDocument, kid: KidDocument) => {
 const backfillContacts = async () => {
   await mongoose.connect(MONGODB_URI);
 
-  const parents = await ParentModel.find().exec();
-  const kids = await KidModel.find().exec();
+  const parents = (await ParentModel.find().exec()) as ParentDocument[];
+  const kids = (await KidModel.find().exec()) as KidDocument[];
 
   for (const parent of parents) {
     stats.parentsProcessed += 1;
@@ -137,7 +137,7 @@ const backfillContacts = async () => {
       continue;
     }
 
-    const kidDocuments = await KidModel.find({ _id: { $in: parent.linked_kids } }).exec();
+    const kidDocuments = (await KidModel.find({ _id: { $in: parent.linked_kids } }).exec()) as KidDocument[];
 
     for (const kid of kidDocuments) {
       await syncRelationships(parent, kid);

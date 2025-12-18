@@ -134,7 +134,7 @@ export default function Login() {
   
   // Get API info for debugging
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 
-    (import.meta.env.MODE === "development" ? "http://localhost:3101" : "https://flexforms-production.up.railway.app");
+    (import.meta.env.MODE === "development" ? "http://localhost:3101" : "VITE_API_BASE_URL not set");
 
   return (
     <div className="flex min-h-screen flex-col overflow-hidden bg-white">

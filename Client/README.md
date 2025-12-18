@@ -1,6 +1,29 @@
-# React + TypeScript + Vite
+# Paradize Client - React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Web client for the Paradize ERP/CRM platform for education organizations.
+
+## Environment Variables
+
+### Required for Production
+
+**`VITE_API_BASE_URL`** - The base URL for the API server
+- **Development**: Defaults to `http://localhost:3101` if not set
+- **Production**: **MUST be set** to your production API URL (e.g., `https://api.paradize.com`)
+- Set this in your deployment platform (Vercel, Netlify, Railway, etc.)
+
+### Example Configuration
+
+Create a `.env.local` file for local development (optional):
+```env
+VITE_API_BASE_URL=http://localhost:3101
+```
+
+For production deployment, set the environment variable in your platform:
+- **Vercel**: Settings → Environment Variables
+- **Netlify**: Site settings → Environment variables
+- **Railway**: Variables tab in your service
+
+## Getting Started
 
 Currently, two official plugins are available:
 

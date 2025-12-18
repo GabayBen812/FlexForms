@@ -81,9 +81,13 @@ function generateHTML(formData: { title: string; description?: string }, url: st
 // Fetch form data from API
 async function fetchFormData(code: string): Promise<{ title: string; description?: string } | null> {
   try {
-    // Get API base URL from environment or use default
-    const apiBaseUrl = process.env.VITE_API_BASE_URL || 
-      'https://flexforms-production.up.railway.app';
+    // Get API base URL from environment (required in production)
+    const apiBaseUrl = process.env.VITE_API_BASE_URL;
+    
+    if (!apiBaseUrl) {
+      console.error('VITE_API_BASE_URL environment variable is not set');
+      return null;
+    }
     
     const response = await fetch(`${apiBaseUrl}/forms/find-by-code?code=${encodeURIComponent(code)}`, {
       headers: {

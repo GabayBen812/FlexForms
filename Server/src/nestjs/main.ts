@@ -73,6 +73,11 @@ async function bootstrap() {
         console.log(`✅ CORS: Allowed origin (Firebase): ${origin}`);
         return callback(null, true);
       }
+      // Allow miniz.co.il and all subdomains
+      if (origin === "https://miniz.co.il" || origin.endsWith(".miniz.co.il")) {
+        console.log(`✅ CORS: Allowed origin (miniz.co.il): ${origin}`);
+        return callback(null, true);
+      }
 
       console.error(`❌ CORS: Blocked origin: ${origin}`);
       return callback(new Error("Not allowed by CORS"));
